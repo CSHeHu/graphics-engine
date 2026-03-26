@@ -23,7 +23,7 @@
 #include "Object.h"
 #include "TextManager.h"
 
-
+void renderLoop(GLFWwindow* window);
 
 // settings
 const unsigned int SCR_WIDTH = 1920;
@@ -88,94 +88,93 @@ int main()
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-
-
-	// create shaders for view and projection
-	Shader projectionShader("shaders/projection.vs", "shaders/projection.fs");
-	Shader viewShader("shaders/view.vs", "shaders/view.fs");
-	Shader lightShader("shaders/lightSource.vs", "shaders/lightSource.fs");
-	Shader lightTargetShader("shaders/lightTarget.vs", "shaders/lightTarget.fs");
-
-	// scope for object's
-	{
-		//light cube
-		glm::vec3 lightPos(1.0f, 1.0f, -5.0f);
-		Object lightCube("shaders/lightSource.vs", "shaders/lightSource.fs", cubeVertices, lightPos);
-		glm::vec3 lightTargetPos(3.0f, 2.0f, -7.0f);
-		Object lightTargetCube("shaders/lightTarget.vs", "shaders/lightTarget.fs", cubeVertices, lightTargetPos);
-
-
-
-		// render loop
-		// -----------
-		while (!glfwWindowShouldClose(window))
-		{
-
-			// per-frame time logic
-			float currentFrame = static_cast<float>(glfwGetTime());
-			deltaTime = currentFrame - lastFrame;
-			lastFrame = currentFrame;
-
-			// input
-			// -----
-			InputManager::processInput(window, deltaTime);
-
-			// render
-			// ------
-			glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-
-
-			// Set up projection matrix
-			projectionShader.use();
-			glm::mat4 projection = glm::mat4(1.0f);
-			projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-			projectionShader.setMat4("projection", projection);
-
-			// Set up view matrix
-			viewShader.use();
-			glm::mat4 view = glm::mat4(1.0f);
-			view = camera.GetViewMatrix();
-			viewShader.setMat4("view", view);
-
-
-			//move light source
-			lightCube.setPosition(lightCube.getPosition() + (float)sin(glfwGetTime())/100);
-
-			// renred objects
-			lightCube.shader->use();
-			lightCube.shader->setMat4("projection", projection);
-			lightCube.shader->setMat4("view", view);
-			glBindVertexArray(lightCube.VAO);
-			glm::mat4 model = glm::mat4(1.0f);
-			model = glm::translate(model, lightCube.getPosition());
-			lightCube.shader->setMat4("model", model);
-			glDrawArrays(GL_TRIANGLES, 0, cubeVertices.size() / 5);
-
-			lightTargetCube.shader->use();
-			lightTargetCube.shader->setVec3("objectColor", 1.0f, 0.5f, 0.31f);
-			lightTargetCube.shader->setVec3("lightColor", 1.0f, 1.0f, 1.0f);
-			lightTargetCube.shader->setVec3("viewPos", camera.Position);
-			lightTargetCube.shader->setVec3("lightPos", lightCube.getPosition());
-			lightTargetCube.shader->setMat4("projection", projection);
-			lightTargetCube.shader->setMat4("view", view);
-			glBindVertexArray(lightTargetCube.VAO);
-			model = glm::mat4(1.0f);
-			model = glm::translate(model, lightTargetCube.getPosition());
-			model = glm::rotate(model, glm::radians(45.0f) + (float)glfwGetTime(), glm::vec3(1.0f, 5.0f, 45.0f));
-			lightTargetCube.shader->setMat4("model", model);
-			glDrawArrays(GL_TRIANGLES, 0, cubeVertices.size() / 5);
-
-			// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
-			// -------------------------------------------------------------------------------
-			glfwSwapBuffers(window);
-			glfwPollEvents();
-		}
-	}
+	renderLoop(window);
 
 	// glfw: terminate, clearing all previously allocated GLFW resources.
 	// ------------------------------------------------------------------
 	glfwTerminate();
 	return 0;
+}
+
+void renderLoop(GLFWwindow* window){
+	
+	// create shaders for view and projection
+	Shader projectionShader("shaders/projection.vs", "shaders/projection.fs");
+	Shader viewShader("shaders/view.vs", "shaders/view.fs");
+	Shader lightShader("shaders/lightSource.vs", "shaders/lightSource.fs");
+	Shader lightTargetShader("shaders/lightTarget.vs", "shaders/lightTarget.fs");
+	
+	//light cube
+	glm::vec3 lightPos(1.0f, 1.0f, -5.0f);
+	Object lightCube("shaders/lightSource.vs", "shaders/lightSource.fs", cubeVertices, lightPos);
+	glm::vec3 lightTargetPos(3.0f, 2.0f, -7.0f);
+	Object lightTargetCube("shaders/lightTarget.vs", "shaders/lightTarget.fs", cubeVertices, lightTargetPos);
+	
+	// render loop
+	// -----------
+	while (!glfwWindowShouldClose(window))
+	{
+
+		// per-frame time logic
+		float currentFrame = static_cast<float>(glfwGetTime());
+		deltaTime = currentFrame - lastFrame;
+		lastFrame = currentFrame;
+
+		// input
+		// -----
+		InputManager::processInput(window, deltaTime);
+
+		// render
+		// ------
+		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+
+
+		// Set up projection matrix
+		projectionShader.use();
+		glm::mat4 projection = glm::mat4(1.0f);
+		projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+		projectionShader.setMat4("projection", projection);
+
+		// Set up view matrix
+		viewShader.use();
+		glm::mat4 view = glm::mat4(1.0f);
+		view = camera.GetViewMatrix();
+		viewShader.setMat4("view", view);
+
+
+		//move light source
+		lightCube.setPosition(lightCube.getPosition() + (float)sin(glfwGetTime())/100);
+
+		// renred objects
+		lightCube.shader->use();
+		lightCube.shader->setMat4("projection", projection);
+		lightCube.shader->setMat4("view", view);
+		glBindVertexArray(lightCube.VAO);
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, lightCube.getPosition());
+		lightCube.shader->setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, cubeVertices.size() / 5);
+
+		lightTargetCube.shader->use();
+		lightTargetCube.shader->setVec3("objectColor", 1.0f, 0.5f, 0.31f);
+		lightTargetCube.shader->setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+		lightTargetCube.shader->setVec3("viewPos", camera.Position);
+		lightTargetCube.shader->setVec3("lightPos", lightCube.getPosition());
+		lightTargetCube.shader->setMat4("projection", projection);
+		lightTargetCube.shader->setMat4("view", view);
+		glBindVertexArray(lightTargetCube.VAO);
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, lightTargetCube.getPosition());
+		model = glm::rotate(model, glm::radians(45.0f) + (float)glfwGetTime(), glm::vec3(1.0f, 5.0f, 45.0f));
+		lightTargetCube.shader->setMat4("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, cubeVertices.size() / 5);
+
+		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
+		// -------------------------------------------------------------------------------
+		glfwSwapBuffers(window);
+		glfwPollEvents();
+	}
+
 }
