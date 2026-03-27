@@ -7,29 +7,47 @@
 
 #include "Object.h"
 
-struct ShaderPaths
+enum class SceneRole
 {
-    std::string vertex;
-    std::string fragment;
-    std::string geometry;
+    None,
+    LightSource,
+    LightTarget,
+    Ground,
+};
+
+enum class ShaderProgram
+{
+    LightSource,
+    LightTarget,
+};
+
+enum class RenderMode
+{
+    LightSource,
+    Lit,
+};
+
+enum class BehaviorType
+{
+    None,
+    Oscillate,
+    Spin,
 };
 
 struct SceneObjectDefinition
 {
     std::string id;
-    std::string role;
+    SceneRole role;
     std::string meshName;
     Object::VertexLayout layout;
     glm::vec3 position;
 
-    ShaderPaths shader;
+    ShaderProgram shaderProgram;
 
-    // Render mode values currently used by Scene: "lightSource", "lit"
-    std::string renderMode;
+    RenderMode renderMode;
     glm::vec3 objectColor;
 
-    // Behavior values currently used by Scene: "none", "oscillate", "spin"
-    std::string behavior;
+    BehaviorType behavior;
     float behaviorSpeed;
     glm::vec3 behaviorAxis;
     float behaviorAmplitude;

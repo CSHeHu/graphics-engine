@@ -14,6 +14,19 @@
 #include "SceneDefinition.h"
 #include "Shader.h"
 
+namespace
+{
+    std::shared_ptr<Shader> getShaderForProgram(AssetManager &assets, ShaderProgram program)
+    {
+        if (program == ShaderProgram::LightSource)
+        {
+            return assets.getShader("assets/shaders/lightSource.vs", "assets/shaders/lightSource.fs");
+        }
+
+        return assets.getShader("assets/shaders/lightTarget.vs", "assets/shaders/lightTarget.fs");
+    }
+} // namespace
+
 Scene::Scene(AssetManager &assetManager, SceneDefinition definitionValue)
     : assets(assetManager), definition(std::move(definitionValue)), elapsedTime(0.0f)
 {
@@ -34,10 +47,7 @@ bool Scene::init()
         const std::vector<float> &vertices = assets.getMeshVertices(objectDef.meshName);
         const std::size_t vertexCount = assets.getMeshVertexCount(objectDef.meshName);
 
-        std::shared_ptr<Shader> shader = assets.getShader(
-            objectDef.shader.vertex,
-            objectDef.shader.fragment,
-            objectDef.shader.geometry);
+        std::shared_ptr<Shader> shader = getShaderForProgram(assets, objectDef.shaderProgram);
 
         std::shared_ptr<Object> object = std::make_shared<Object>(
             shader,
@@ -63,7 +73,7 @@ bool Scene::init()
     for (const auto &entry : runtimeObjects)
     {
         const RuntimeSceneObject &runtimeObject = entry.second;
-        if (runtimeObject.role == "LightSource")
+        if (runtimeObject.role == SceneRole::LightSource)
         {
             activeLightSource = runtimeObject.object;
             break;
@@ -88,12 +98,12 @@ void Scene::update(float deltaTime)
         RuntimeSceneObject &runtimeObject = entry.second;
         std::shared_ptr<Object> object = runtimeObject.object;
 
-        if (runtimeObject.behavior == "oscillate")
+        if (runtimeObject.behavior == BehaviorType::Oscillate)
         {
             const float delta = std::sin(elapsedTime * runtimeObject.behaviorSpeed) * runtimeObject.behaviorAmplitude;
             object->setPosition(object->getPosition() + delta);
         }
-        else if (runtimeObject.behavior == "spin")
+        else if (runtimeObject.behavior == BehaviorType::Spin)
         {
             object->rotate(runtimeObject.behaviorSpeed * deltaTime, runtimeObject.behaviorAxis);
         }
@@ -111,7 +121,7 @@ void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm:
         object->shader->setMat4("projection", projection);
         object->shader->setMat4("view", view);
 
-        if (runtimeObject.renderMode == "lit")
+        if (runtimeObject.renderMode == RenderMode::Lit)
         {
             object->shader->setVec3("objectColor", runtimeObject.objectColor);
             object->shader->setVec3("lightColor", 1.0f, 1.0f, 1.0f);

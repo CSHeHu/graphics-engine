@@ -18,10 +18,10 @@ struct RuntimeSceneObject
 {
     std::shared_ptr<Object> object;
     std::size_t vertexCount;
-    std::string role;
-    std::string renderMode;
+    SceneRole role;
+    RenderMode renderMode;
     glm::vec3 objectColor;
-    std::string behavior;
+    BehaviorType behavior;
     float behaviorSpeed;
     glm::vec3 behaviorAxis;
     float behaviorAmplitude;
