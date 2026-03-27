@@ -18,13 +18,15 @@ public:
     void run();
 
 private:
+    using WindowHandle = std::unique_ptr<GLFWwindow, void (*)(GLFWwindow *)>;
+
     // Window and GL context
-    GLFWwindow *window;
+    WindowHandle window;
     static const unsigned int SCR_WIDTH = 1920;
     static const unsigned int SCR_HEIGHT = 1080;
 
     // Camera
-    Camera *camera;
+    std::unique_ptr<Camera> camera;
 
     // Timing
     float deltaTime;

@@ -10,26 +10,15 @@
 #include "Scene.h"
 
 Application::Application()
-    : window(nullptr), camera(nullptr), deltaTime(0.0f), lastFrame(0.0f), scene(nullptr)
+    : window(nullptr, glfwDestroyWindow), camera(nullptr), deltaTime(0.0f), lastFrame(0.0f), scene(nullptr)
 {
 }
 
 Application::~Application()
 {
     scene.reset();
-
-    if (camera != nullptr)
-    {
-        delete camera;
-        camera = nullptr;
-    }
-
-    if (window != nullptr)
-    {
-        glfwDestroyWindow(window);
-        window = nullptr;
-    }
-
+    camera.reset();
+    window.reset();
     glfwTerminate();
 }
 
@@ -42,26 +31,26 @@ bool Application::init()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     // glfw window creation
-    window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
-    if (window == NULL)
+    window.reset(glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL));
+    if (window == nullptr)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
         return false;
     }
-    glfwMakeContextCurrent(window);
+    glfwMakeContextCurrent(window.get());
 
     // Create and set up camera
-    camera = new Camera(glm::vec3(0.0f, 5.0f, 3.0f));
-    InputManager::setCamera(camera);
+    camera = std::make_unique<Camera>(glm::vec3(0.0f, 5.0f, 3.0f));
+    InputManager::setCamera(camera.get());
 
     // callbacks for window resize, mouse movement and scroll movement
-    glfwSetFramebufferSizeCallback(window, InputManager::framebufferSizeCallback);
-    glfwSetCursorPosCallback(window, InputManager::mouseCallback);
-    glfwSetScrollCallback(window, InputManager::scrollCallback);
+    glfwSetFramebufferSizeCallback(window.get(), InputManager::framebufferSizeCallback);
+    glfwSetCursorPosCallback(window.get(), InputManager::mouseCallback);
+    glfwSetScrollCallback(window.get(), InputManager::scrollCallback);
 
     // tell GLFW to capture our mouse
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(window.get(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     // glad: load all OpenGL function pointers
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -88,7 +77,7 @@ bool Application::init()
 void Application::run()
 {
     // render loop
-    while (!glfwWindowShouldClose(window))
+    while (!glfwWindowShouldClose(window.get()))
     {
         // per-frame time logic
         float currentFrame = static_cast<float>(glfwGetTime());
@@ -96,13 +85,13 @@ void Application::run()
         lastFrame = currentFrame;
 
         // input
-        InputManager::processInput(window, deltaTime);
+        InputManager::processInput(window.get(), deltaTime);
 
         // render
         renderFrame();
 
         // glfw: swap buffers and poll IO events
-        glfwSwapBuffers(window);
+        glfwSwapBuffers(window.get());
         glfwPollEvents();
     }
 }
