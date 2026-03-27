@@ -4,6 +4,7 @@ Application::Application() : window(nullptr), camera(nullptr), deltaTime(0.0f), 
 
 Application::~Application()
 {
+    ground.reset();
     lightCube.reset();
     lightTargetCube.reset();
     lightShader.reset();
@@ -43,7 +44,7 @@ bool Application::init()
     glfwMakeContextCurrent(window);
 
     // Create and set up camera
-    camera = new Camera(glm::vec3(0.0f, 0.0f, 3.0f));
+    camera = new Camera(glm::vec3(0.0f, 5.0f, 3.0f));
     InputManager::setCamera(camera);
 
     // callbacks for window resize, mouse movement and scroll movement
@@ -83,6 +84,11 @@ bool Application::init()
                                                cubeVertices,
                                                lightTargetPos,
                                                Object::VertexLayout::PositionNormal);
+
+    ground = std::make_shared<Object>(lightTargetShader,
+                                      groundVertices,
+                                      glm::vec3(0.0f, 0.0f, 0.0f),
+                                      Object::VertexLayout::PositionNormal);
 
     return true;
 }
@@ -148,4 +154,16 @@ void Application::renderFrame()
                         glm::vec3(1.0f, 5.0f, 45.0f));
     lightTargetCube->shader->setMat4("model", model);
     glDrawArrays(GL_TRIANGLES, 0, cubeVertices.size() / 5);
+
+    ground->shader->use();
+    ground->shader->setVec3("objectColor", 0.2f, 0.7f, 0.2f);
+    ground->shader->setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+    ground->shader->setVec3("viewPos", camera->Position);
+    ground->shader->setVec3("lightPos", lightCube->getPosition());
+    ground->shader->setMat4("projection", projection);
+    ground->shader->setMat4("view", view);
+    glBindVertexArray(ground->VAO);
+    model = glm::mat4(1.0f);
+    ground->shader->setMat4("model", model);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
 }

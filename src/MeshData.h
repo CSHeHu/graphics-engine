@@ -2,12 +2,8 @@
 #define MESHDATA_H
 
 #include <vector>
-#include <glm.hpp>
-
 
 extern std::vector<float> cubeVertices;
-extern std::vector<glm::vec3> cubePositions;
-extern std::vector<float> pyramidVertices;
-extern std::vector<glm::vec3> pyramidPositions;
+extern std::vector<float> groundVertices;
 
 #endif

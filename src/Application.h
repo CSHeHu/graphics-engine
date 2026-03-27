@@ -41,6 +41,7 @@ private:
     // Scene objects
     std::shared_ptr<Object> lightCube;
     std::shared_ptr<Object> lightTargetCube;
+    std::shared_ptr<Object> ground;
 
     // Shaders
     std::shared_ptr<Shader> lightShader;
