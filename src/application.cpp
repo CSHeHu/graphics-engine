@@ -45,10 +45,6 @@ int main()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-#ifdef __APPLE__
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-
 	// glfw window creation
 	// --------------------
 	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
@@ -98,8 +94,6 @@ void renderLoop(GLFWwindow* window){
 	// create shaders for view and projection
 	Shader projectionShader("shaders/projection.vs", "shaders/projection.fs");
 	Shader viewShader("shaders/view.vs", "shaders/view.fs");
-	Shader lightShader("shaders/lightSource.vs", "shaders/lightSource.fs");
-	Shader lightTargetShader("shaders/lightTarget.vs", "shaders/lightTarget.fs");
 	
 	//light cube
 	glm::vec3 lightPos(1.0f, 1.0f, -5.0f);
@@ -123,7 +117,7 @@ void renderLoop(GLFWwindow* window){
 
 		// render
 		// ------
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
