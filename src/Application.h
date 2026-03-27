@@ -29,6 +29,7 @@ private:
     std::unique_ptr<Camera> camera;
 
     // Timing
+    float currentFrame;
     float deltaTime;
     float lastFrame;
 

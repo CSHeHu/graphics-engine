@@ -10,7 +10,7 @@
 #include "Scene.h"
 
 Application::Application()
-    : window(nullptr, glfwDestroyWindow), camera(nullptr), deltaTime(0.0f), lastFrame(0.0f), scene(nullptr)
+    : window(nullptr, glfwDestroyWindow), camera(nullptr), deltaTime(0.0f), lastFrame(0.0f), scene(nullptr), currentFrame(0.0f)
 {
 }
 
@@ -80,7 +80,7 @@ void Application::run()
     while (!glfwWindowShouldClose(window.get()))
     {
         // per-frame time logic
-        float currentFrame = static_cast<float>(glfwGetTime());
+        currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
@@ -108,6 +108,6 @@ void Application::renderFrame()
     glm::mat4 view = glm::mat4(1.0f);
     view = camera->GetViewMatrix();
 
-    scene->update(static_cast<float>(glfwGetTime()));
+    scene->update(currentFrame);
     scene->render(*camera, projection, view);
 }
