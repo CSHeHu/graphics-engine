@@ -2,58 +2,76 @@
 
 #include <glad/glad.h>
 #include <cmath>
+#include <iostream>
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
+
+#include <utility>
 
 #include "AssetManager.h"
 #include "Camera.h"
 #include "Object.h"
+#include "SceneDefinition.h"
 #include "Shader.h"
 
-Scene::Scene(AssetManager &assetManager)
-    : assets(assetManager), elapsedTime(0.0f), cubeVertexCount(0), groundVertexCount(0)
+Scene::Scene(AssetManager &assetManager, SceneDefinition definitionValue)
+    : assets(assetManager), definition(std::move(definitionValue)), elapsedTime(0.0f)
 {
 }
 
 Scene::~Scene()
 {
+    runtimeObjects.clear();
+
     ground.reset();
     lightCube.reset();
     lightTargetCube.reset();
-    lightShader.reset();
-    lightTargetShader.reset();
 }
 
 bool Scene::init()
 {
-    const std::vector<float> &cubeVertices = assets.getMeshVertices("cube.obj");
-    const std::vector<float> &groundVertices = assets.getMeshVertices("ground.obj");
+    runtimeObjects.clear();
 
-    cubeVertexCount = assets.getMeshVertexCount("cube.obj");
-    groundVertexCount = assets.getMeshVertexCount("ground.obj");
+    for (const SceneObjectDefinition &objectDef : definition.objects)
+    {
+        const std::vector<float> &vertices = assets.getMeshVertices(objectDef.meshName);
+        const std::size_t vertexCount = assets.getMeshVertexCount(objectDef.meshName);
 
-    lightShader = assets.getShader("assets/shaders/lightSource.vs", "assets/shaders/lightSource.fs");
-    lightTargetShader = assets.getShader("assets/shaders/lightTarget.vs", "assets/shaders/lightTarget.fs");
+        std::shared_ptr<Shader> shader = assets.getShader(
+            objectDef.shader.vertex,
+            objectDef.shader.fragment,
+            objectDef.shader.geometry);
 
-    const glm::vec3 lightPos(1.0f, 1.0f, -5.0f);
-    lightCube = std::make_shared<Object>(
-        lightShader,
-        cubeVertices,
-        lightPos,
-        Object::VertexLayout::PositionNormal);
+        std::shared_ptr<Object> object = std::make_shared<Object>(
+            shader,
+            vertices,
+            objectDef.position,
+            objectDef.layout);
 
-    const glm::vec3 lightTargetPos(3.0f, 2.0f, -7.0f);
-    lightTargetCube = std::make_shared<Object>(
-        lightTargetShader,
-        cubeVertices,
-        lightTargetPos,
-        Object::VertexLayout::PositionNormal);
+        RuntimeSceneObject runtimeObject;
+        runtimeObject.object = object;
+        runtimeObject.vertexCount = vertexCount;
+        runtimeObject.renderMode = objectDef.renderMode;
+        runtimeObject.objectColor = objectDef.objectColor;
 
-    ground = std::make_shared<Object>(
-        lightTargetShader,
-        groundVertices,
-        glm::vec3(0.0f, 0.0f, 0.0f),
-        Object::VertexLayout::PositionNormal);
+        runtimeObjects[objectDef.id] = runtimeObject;
+    }
+
+    auto lightCubeIt = runtimeObjects.find("lightCube");
+    auto lightTargetCubeIt = runtimeObjects.find("lightTargetCube");
+    auto groundIt = runtimeObjects.find("ground");
+
+    if (lightCubeIt == runtimeObjects.end() ||
+        lightTargetCubeIt == runtimeObjects.end() ||
+        groundIt == runtimeObjects.end())
+    {
+        std::cout << "Scene definition must include ids: lightCube, lightTargetCube, ground" << std::endl;
+        return false;
+    }
+
+    lightCube = lightCubeIt->second.object;
+    lightTargetCube = lightTargetCubeIt->second.object;
+    ground = groundIt->second.object;
 
     return true;
 }
@@ -67,35 +85,26 @@ void Scene::update(float deltaTime)
 
 void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm::mat4 &view)
 {
-    lightCube->shader->use();
-    lightCube->shader->setMat4("projection", projection);
-    lightCube->shader->setMat4("view", view);
-    glBindVertexArray(lightCube->getVAO());
-    glm::mat4 model = lightCube->getModelMatrix();
-    lightCube->shader->setMat4("model", model);
-    glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(cubeVertexCount));
+    for (const auto &entry : runtimeObjects)
+    {
+        const RuntimeSceneObject &runtimeObject = entry.second;
+        std::shared_ptr<Object> object = runtimeObject.object;
 
-    lightTargetCube->shader->use();
-    lightTargetCube->shader->setVec3("objectColor", 1.0f, 0.5f, 0.31f);
-    lightTargetCube->shader->setVec3("lightColor", 1.0f, 1.0f, 1.0f);
-    lightTargetCube->shader->setVec3("viewPos", camera.Position);
-    lightTargetCube->shader->setVec3("lightPos", lightCube->getPosition());
-    lightTargetCube->shader->setMat4("projection", projection);
-    lightTargetCube->shader->setMat4("view", view);
-    glBindVertexArray(lightTargetCube->getVAO());
-    model = lightTargetCube->getModelMatrix();
-    lightTargetCube->shader->setMat4("model", model);
-    glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(cubeVertexCount));
+        object->shader->use();
+        object->shader->setMat4("projection", projection);
+        object->shader->setMat4("view", view);
 
-    ground->shader->use();
-    ground->shader->setVec3("objectColor", 0.2f, 0.7f, 0.2f);
-    ground->shader->setVec3("lightColor", 1.0f, 1.0f, 1.0f);
-    ground->shader->setVec3("viewPos", camera.Position);
-    ground->shader->setVec3("lightPos", lightCube->getPosition());
-    ground->shader->setMat4("projection", projection);
-    ground->shader->setMat4("view", view);
-    glBindVertexArray(ground->getVAO());
-    model = ground->getModelMatrix();
-    ground->shader->setMat4("model", model);
-    glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(groundVertexCount));
+        if (runtimeObject.renderMode == "lit")
+        {
+            object->shader->setVec3("objectColor", runtimeObject.objectColor);
+            object->shader->setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+            object->shader->setVec3("viewPos", camera.Position);
+            object->shader->setVec3("lightPos", lightCube->getPosition());
+        }
+
+        glBindVertexArray(object->getVAO());
+        glm::mat4 model = object->getModelMatrix();
+        object->shader->setMat4("model", model);
+        glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(runtimeObject.vertexCount));
+    }
 }

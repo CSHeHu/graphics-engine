@@ -9,6 +9,7 @@
 #include "Camera.h"
 #include "InputManager.h"
 #include "Scene.h"
+#include "SceneDefinitions.h"
 
 Application::Application()
     : window(nullptr, glfwDestroyWindow),
@@ -73,7 +74,7 @@ bool Application::init()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     assetManager = std::make_unique<AssetManager>();
-    scene = std::make_unique<Scene>(*assetManager);
+    scene = std::make_unique<Scene>(*assetManager, createBasicSceneDefinition());
     if (!scene->init())
     {
         std::cout << "Failed to initialize scene" << std::endl;
