@@ -5,12 +5,15 @@
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
 
+#include "AssetManager.h"
 #include "Camera.h"
-#include "MeshData.h"
 #include "Object.h"
 #include "Shader.h"
 
-Scene::Scene() : elapsedTime(0.0f) {}
+Scene::Scene(AssetManager &assetManager)
+    : assets(assetManager), elapsedTime(0.0f), cubeVertexCount(0), groundVertexCount(0)
+{
+}
 
 Scene::~Scene()
 {
@@ -23,11 +26,14 @@ Scene::~Scene()
 
 bool Scene::init()
 {
-    const std::vector<float> &cubeVertices = MeshData::getCubeVertices();
-    const std::vector<float> &groundVertices = MeshData::getGroundVertices();
+    const std::vector<float> &cubeVertices = assets.getMeshVertices("cube.obj");
+    const std::vector<float> &groundVertices = assets.getMeshVertices("ground.obj");
 
-    lightShader = std::make_shared<Shader>("shaders/lightSource.vs", "shaders/lightSource.fs");
-    lightTargetShader = std::make_shared<Shader>("shaders/lightTarget.vs", "shaders/lightTarget.fs");
+    cubeVertexCount = assets.getMeshVertexCount("cube.obj");
+    groundVertexCount = assets.getMeshVertexCount("ground.obj");
+
+    lightShader = assets.getShader("shaders/lightSource.vs", "shaders/lightSource.fs");
+    lightTargetShader = assets.getShader("shaders/lightTarget.vs", "shaders/lightTarget.fs");
 
     const glm::vec3 lightPos(1.0f, 1.0f, -5.0f);
     lightCube = std::make_shared<Object>(
@@ -61,9 +67,6 @@ void Scene::update(float deltaTime)
 
 void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm::mat4 &view)
 {
-    const std::size_t cubeVertexCount = MeshData::getCubeVertexCount();
-    const std::size_t groundVertexCount = MeshData::getGroundVertexCount();
-
     lightCube->shader->use();
     lightCube->shader->setMat4("projection", projection);
     lightCube->shader->setMat4("view", view);

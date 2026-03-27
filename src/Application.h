@@ -7,6 +7,7 @@
 
 class Camera;
 class Scene;
+class AssetManager;
 
 class Application
 {
@@ -35,6 +36,7 @@ private:
 
     // Scene
     std::unique_ptr<Scene> scene;
+    std::unique_ptr<AssetManager> assetManager;
 
     // Helper
     void renderFrame();

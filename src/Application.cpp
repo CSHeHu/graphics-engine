@@ -5,18 +5,26 @@
 #include <gtc/matrix_transform.hpp>
 #include <iostream>
 
+#include "AssetManager.h"
 #include "Camera.h"
 #include "InputManager.h"
 #include "Scene.h"
 
 Application::Application()
-    : window(nullptr, glfwDestroyWindow), camera(nullptr), deltaTime(0.0f), lastFrame(0.0f), scene(nullptr), currentFrame(0.0f)
+    : window(nullptr, glfwDestroyWindow),
+      camera(nullptr),
+      deltaTime(0.0f),
+      lastFrame(0.0f),
+      scene(nullptr),
+      assetManager(nullptr),
+      currentFrame(0.0f)
 {
 }
 
 Application::~Application()
 {
     scene.reset();
+    assetManager.reset();
     camera.reset();
     window.reset();
     glfwTerminate();
@@ -64,7 +72,8 @@ bool Application::init()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    scene = std::make_unique<Scene>();
+    assetManager = std::make_unique<AssetManager>();
+    scene = std::make_unique<Scene>(*assetManager);
     if (!scene->init())
     {
         std::cout << "Failed to initialize scene" << std::endl;
