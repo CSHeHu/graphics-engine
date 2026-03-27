@@ -15,13 +15,10 @@
 #include "Shader.h"
 #include "Camera.h"
 #include "InputManager.h"
-//#define STB_IMAGE_IMPLEMENTATION
-//#include "stb_image.h"
 #include "InputManager.h"
 #include "MeshData.h"
 #include "TextureManager.h"
 #include "Object.h"
-#include "TextManager.h"
 
 void renderLoop(GLFWwindow* window);
 
