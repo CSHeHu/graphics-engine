@@ -23,6 +23,9 @@ Scene::~Scene()
 
 bool Scene::init()
 {
+    const std::vector<float> &cubeVertices = MeshData::getCubeVertices();
+    const std::vector<float> &groundVertices = MeshData::getGroundVertices();
+
     lightShader = std::make_shared<Shader>("shaders/lightSource.vs", "shaders/lightSource.fs");
     lightTargetShader = std::make_shared<Shader>("shaders/lightTarget.vs", "shaders/lightTarget.fs");
 
@@ -58,13 +61,16 @@ void Scene::update(float deltaTime)
 
 void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm::mat4 &view)
 {
+    const std::size_t cubeVertexCount = MeshData::getCubeVertexCount();
+    const std::size_t groundVertexCount = MeshData::getGroundVertexCount();
+
     lightCube->shader->use();
     lightCube->shader->setMat4("projection", projection);
     lightCube->shader->setMat4("view", view);
     glBindVertexArray(lightCube->getVAO());
     glm::mat4 model = lightCube->getModelMatrix();
     lightCube->shader->setMat4("model", model);
-    glDrawArrays(GL_TRIANGLES, 0, cubeVertices.size() / 6);
+    glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(cubeVertexCount));
 
     lightTargetCube->shader->use();
     lightTargetCube->shader->setVec3("objectColor", 1.0f, 0.5f, 0.31f);
@@ -76,7 +82,7 @@ void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm:
     glBindVertexArray(lightTargetCube->getVAO());
     model = lightTargetCube->getModelMatrix();
     lightTargetCube->shader->setMat4("model", model);
-    glDrawArrays(GL_TRIANGLES, 0, cubeVertices.size() / 6);
+    glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(cubeVertexCount));
 
     ground->shader->use();
     ground->shader->setVec3("objectColor", 0.2f, 0.7f, 0.2f);
@@ -88,5 +94,5 @@ void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm:
     glBindVertexArray(ground->getVAO());
     model = ground->getModelMatrix();
     ground->shader->setMat4("model", model);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(groundVertexCount));
 }

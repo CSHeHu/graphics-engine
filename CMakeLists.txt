@@ -22,6 +22,7 @@ add_executable(OpenGLEngine ${SOURCES})
 
 # Copy shader and texture files to the build directory
 file(COPY ${CMAKE_SOURCE_DIR}/shaders DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY ${CMAKE_SOURCE_DIR}/assets DESTINATION ${CMAKE_BINARY_DIR})
 # file(COPY ${CMAKE_SOURCE_DIR}/textures DESTINATION ${CMAKE_BINARY_DIR})
 
 # Link libraries
