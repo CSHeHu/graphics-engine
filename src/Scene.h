@@ -18,8 +18,13 @@ struct RuntimeSceneObject
 {
     std::shared_ptr<Object> object;
     std::size_t vertexCount;
+    std::string role;
     std::string renderMode;
     glm::vec3 objectColor;
+    std::string behavior;
+    float behaviorSpeed;
+    glm::vec3 behaviorAxis;
+    float behaviorAmplitude;
 };
 
 class Scene
@@ -38,10 +43,7 @@ private:
     float elapsedTime;
 
     std::unordered_map<std::string, RuntimeSceneObject> runtimeObjects;
-
-    std::shared_ptr<Object> lightCube;
-    std::shared_ptr<Object> lightTargetCube;
-    std::shared_ptr<Object> ground;
+    std::shared_ptr<Object> activeLightSource;
 };
 
 #endif // SCENE_H

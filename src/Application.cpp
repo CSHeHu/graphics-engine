@@ -109,20 +109,23 @@ void Application::run()
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        // Switch to next configured scene index; wraps at end of cycle.
+        // Switch to next configured scene index; stop switching when cycle ends.
         if (currentFrame - lastSceneSwitchTime >= 5.0f)
         {
-            const std::size_t nextCyclePosition = (sceneCyclePosition + 1) % sceneCycleIndices.size();
-            const int nextSceneIndex = sceneCycleIndices[nextCyclePosition];
-            if (loadSceneByIndex(nextSceneIndex))
+            if (sceneCyclePosition + 1 < sceneCycleIndices.size())
             {
-                sceneCyclePosition = nextCyclePosition;
-                activeSceneIndex = nextSceneIndex;
-                lastSceneSwitchTime = currentFrame;
-            }
-            else
-            {
-                std::cout << "Failed to switch scene" << std::endl;
+                const std::size_t nextCyclePosition = sceneCyclePosition + 1;
+                const int nextSceneIndex = sceneCycleIndices[nextCyclePosition];
+                if (loadSceneByIndex(nextSceneIndex))
+                {
+                    sceneCyclePosition = nextCyclePosition;
+                    activeSceneIndex = nextSceneIndex;
+                    lastSceneSwitchTime = currentFrame;
+                }
+                else
+                {
+                    std::cout << "Failed to switch scene" << std::endl;
+                }
             }
         }
 

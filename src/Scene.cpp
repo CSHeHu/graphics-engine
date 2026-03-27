@@ -22,10 +22,7 @@ Scene::Scene(AssetManager &assetManager, SceneDefinition definitionValue)
 Scene::~Scene()
 {
     runtimeObjects.clear();
-
-    ground.reset();
-    lightCube.reset();
-    lightTargetCube.reset();
+    activeLightSource.reset();
 }
 
 bool Scene::init()
@@ -51,27 +48,33 @@ bool Scene::init()
         RuntimeSceneObject runtimeObject;
         runtimeObject.object = object;
         runtimeObject.vertexCount = vertexCount;
+        runtimeObject.role = objectDef.role;
         runtimeObject.renderMode = objectDef.renderMode;
         runtimeObject.objectColor = objectDef.objectColor;
+        runtimeObject.behavior = objectDef.behavior;
+        runtimeObject.behaviorSpeed = objectDef.behaviorSpeed;
+        runtimeObject.behaviorAxis = objectDef.behaviorAxis;
+        runtimeObject.behaviorAmplitude = objectDef.behaviorAmplitude;
 
         runtimeObjects[objectDef.id] = runtimeObject;
     }
 
-    auto lightCubeIt = runtimeObjects.find("lightCube");
-    auto lightTargetCubeIt = runtimeObjects.find("lightTargetCube");
-    auto groundIt = runtimeObjects.find("ground");
-
-    if (lightCubeIt == runtimeObjects.end() ||
-        lightTargetCubeIt == runtimeObjects.end() ||
-        groundIt == runtimeObjects.end())
+    activeLightSource.reset();
+    for (const auto &entry : runtimeObjects)
     {
-        std::cout << "Scene definition must include ids: lightCube, lightTargetCube, ground" << std::endl;
-        return false;
+        const RuntimeSceneObject &runtimeObject = entry.second;
+        if (runtimeObject.role == "LightSource")
+        {
+            activeLightSource = runtimeObject.object;
+            break;
+        }
     }
 
-    lightCube = lightCubeIt->second.object;
-    lightTargetCube = lightTargetCubeIt->second.object;
-    ground = groundIt->second.object;
+    if (!activeLightSource)
+    {
+        std::cout << "Scene definition must include an object with role: LightSource" << std::endl;
+        return false;
+    }
 
     return true;
 }
@@ -79,8 +82,22 @@ bool Scene::init()
 void Scene::update(float deltaTime)
 {
     elapsedTime += deltaTime;
-    lightCube->setPosition(lightCube->getPosition() + std::sin(elapsedTime) / 100.0f);
-    lightTargetCube->rotate(glm::radians(20.0f) * deltaTime, glm::vec3(1.0f, 0.0f, 1.0f));
+
+    for (auto &entry : runtimeObjects)
+    {
+        RuntimeSceneObject &runtimeObject = entry.second;
+        std::shared_ptr<Object> object = runtimeObject.object;
+
+        if (runtimeObject.behavior == "oscillate")
+        {
+            const float delta = std::sin(elapsedTime * runtimeObject.behaviorSpeed) * runtimeObject.behaviorAmplitude;
+            object->setPosition(object->getPosition() + delta);
+        }
+        else if (runtimeObject.behavior == "spin")
+        {
+            object->rotate(runtimeObject.behaviorSpeed * deltaTime, runtimeObject.behaviorAxis);
+        }
+    }
 }
 
 void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm::mat4 &view)
@@ -99,7 +116,7 @@ void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm:
             object->shader->setVec3("objectColor", runtimeObject.objectColor);
             object->shader->setVec3("lightColor", 1.0f, 1.0f, 1.0f);
             object->shader->setVec3("viewPos", camera.Position);
-            object->shader->setVec3("lightPos", lightCube->getPosition());
+            object->shader->setVec3("lightPos", activeLightSource->getPosition());
         }
 
         glBindVertexArray(object->getVAO());

@@ -17,6 +17,7 @@ struct ShaderPaths
 struct SceneObjectDefinition
 {
     std::string id;
+    std::string role;
     std::string meshName;
     Object::VertexLayout layout;
     glm::vec3 position;
@@ -26,6 +27,12 @@ struct SceneObjectDefinition
     // Render mode values currently used by Scene: "lightSource", "lit"
     std::string renderMode;
     glm::vec3 objectColor;
+
+    // Behavior values currently used by Scene: "none", "oscillate", "spin"
+    std::string behavior;
+    float behaviorSpeed;
+    glm::vec3 behaviorAxis;
+    float behaviorAmplitude;
 };
 
 struct SceneDefinition
