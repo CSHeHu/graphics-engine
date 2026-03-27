@@ -49,10 +49,11 @@ bool Scene::init()
     return true;
 }
 
-void Scene::update(float timeSeconds)
+void Scene::update(float deltaTime)
 {
-    elapsedTime = timeSeconds;
-    lightCube->setPosition(lightCube->getPosition() + std::sin(timeSeconds) / 100.0f);
+    elapsedTime += deltaTime;
+    lightCube->setPosition(lightCube->getPosition() + std::sin(elapsedTime) / 100.0f);
+    lightTargetCube->rotate(glm::radians(20.0f) * deltaTime, glm::vec3(1.0f, 0.0f, 1.0f));
 }
 
 void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm::mat4 &view)
@@ -61,8 +62,7 @@ void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm:
     lightCube->shader->setMat4("projection", projection);
     lightCube->shader->setMat4("view", view);
     glBindVertexArray(lightCube->getVAO());
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, lightCube->getPosition());
+    glm::mat4 model = lightCube->getModelMatrix();
     lightCube->shader->setMat4("model", model);
     glDrawArrays(GL_TRIANGLES, 0, cubeVertices.size() / 6);
 
@@ -74,10 +74,7 @@ void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm:
     lightTargetCube->shader->setMat4("projection", projection);
     lightTargetCube->shader->setMat4("view", view);
     glBindVertexArray(lightTargetCube->getVAO());
-    model = glm::mat4(1.0f);
-    model = glm::translate(model, lightTargetCube->getPosition());
-    model = glm::rotate(model, glm::radians(45.0f) + elapsedTime,
-                        glm::vec3(1.0f, 5.0f, 45.0f));
+    model = lightTargetCube->getModelMatrix();
     lightTargetCube->shader->setMat4("model", model);
     glDrawArrays(GL_TRIANGLES, 0, cubeVertices.size() / 6);
 
@@ -89,7 +86,7 @@ void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm:
     ground->shader->setMat4("projection", projection);
     ground->shader->setMat4("view", view);
     glBindVertexArray(ground->getVAO());
-    model = glm::mat4(1.0f);
+    model = ground->getModelMatrix();
     ground->shader->setMat4("model", model);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }

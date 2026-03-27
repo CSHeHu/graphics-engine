@@ -15,7 +15,7 @@ public:
     ~Scene();
 
     bool init();
-    void update(float timeSeconds);
+    void update(float deltaTime);
     void render(const Camera &camera, const glm::mat4 &projection, const glm::mat4 &view);
 
 private:

@@ -108,6 +108,6 @@ void Application::renderFrame()
     glm::mat4 view = glm::mat4(1.0f);
     view = camera->GetViewMatrix();
 
-    scene->update(currentFrame);
+    scene->update(deltaTime);
     scene->render(*camera, projection, view);
 }
