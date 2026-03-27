@@ -43,8 +43,6 @@ private:
     std::shared_ptr<Object> lightTargetCube;
 
     // Shaders
-    std::shared_ptr<Shader> projectionShader;
-    std::shared_ptr<Shader> viewShader;
     std::shared_ptr<Shader> lightShader;
     std::shared_ptr<Shader> lightTargetShader;
 

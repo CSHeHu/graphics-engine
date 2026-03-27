@@ -1,28 +1,38 @@
 #ifndef OBJECT_H
 #define OBJECT_H
 
-#include <string>
 #include <memory>
+#include <string>
+#include <vector>
+#include <glm.hpp>
 #include "Shader.h"
 #include "TextureManager.h"
 #include <glad/glad.h>
-#include "MeshData.h"
 
 class Object {
 public:
-    Object(const std::string& vertexPath, const std::string& fragmentPath, const std::string& texturePath1, const std::string& texturePath2, const std::vector<float>& vertices, const glm::vec3& position);
-    Object(const std::string& vertexPath, const std::string& fragmentPath, const std::vector<float>& vertices, const glm::vec3& position);
+    enum class VertexLayout
+    {
+        PositionUV,
+        PositionNormal
+    };
+
+    Object(std::shared_ptr<Shader> shaderProgram,
+           const std::vector<float>& vertices,
+           const glm::vec3& position,
+           VertexLayout layout,
+           const std::vector<std::string>& texturePaths = {});
     ~Object();
+
     glm::vec3 getPosition() const;
     void setPosition(glm::vec3 position);
 
     std::shared_ptr<Shader> shader;
     TextureManager textureManager;
     unsigned int VAO, VBO;
-private:    
+
+private:
     glm::vec3 pos;
-    
-    
 };
 
 #endif // OBJECT_H

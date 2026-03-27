@@ -4,29 +4,23 @@ Application::Application() : window(nullptr), camera(nullptr), deltaTime(0.0f), 
 
 Application::~Application()
 {
-    // Destroy GL objects while context is still active
     lightCube.reset();
     lightTargetCube.reset();
-    projectionShader.reset();
-    viewShader.reset();
     lightShader.reset();
     lightTargetShader.reset();
-    
-    // Delete camera
+
     if (camera != nullptr)
     {
         delete camera;
         camera = nullptr;
     }
-    
-    // Destroy window and context
+
     if (window != nullptr)
     {
         glfwDestroyWindow(window);
         window = nullptr;
     }
-    
-    // Terminate GLFW
+
     glfwTerminate();
 }
 
@@ -73,20 +67,22 @@ bool Application::init()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // create shaders
-    projectionShader = std::make_shared<Shader>("shaders/projection.vs", "shaders/projection.fs");
-    viewShader = std::make_shared<Shader>("shaders/view.vs", "shaders/view.fs");
     lightShader = std::make_shared<Shader>("shaders/lightSource.vs", "shaders/lightSource.fs");
     lightTargetShader =
         std::make_shared<Shader>("shaders/lightTarget.vs", "shaders/lightTarget.fs");
 
     // Create scene objects
     glm::vec3 lightPos(1.0f, 1.0f, -5.0f);
-    lightCube = std::make_shared<Object>("shaders/lightSource.vs", "shaders/lightSource.fs",
-                                         cubeVertices, lightPos);
+    lightCube = std::make_shared<Object>(lightShader,
+                                         cubeVertices,
+                                         lightPos,
+                                         Object::VertexLayout::PositionNormal);
 
     glm::vec3 lightTargetPos(3.0f, 2.0f, -7.0f);
-    lightTargetCube = std::make_shared<Object>("shaders/lightTarget.vs", "shaders/lightTarget.fs",
-                                               cubeVertices, lightTargetPos);
+    lightTargetCube = std::make_shared<Object>(lightTargetShader,
+                                               cubeVertices,
+                                               lightTargetPos,
+                                               Object::VertexLayout::PositionNormal);
 
     return true;
 }
@@ -118,18 +114,12 @@ void Application::renderFrame()
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // Set up projection matrix
-    projectionShader->use();
     glm::mat4 projection = glm::mat4(1.0f);
     projection = glm::perspective(glm::radians(camera->Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT,
                                   0.1f, 100.0f);
-    projectionShader->setMat4("projection", projection);
 
-    // Set up view matrix
-    viewShader->use();
     glm::mat4 view = glm::mat4(1.0f);
     view = camera->GetViewMatrix();
-    viewShader->setMat4("view", view);
 
     // move light source
     lightCube->setPosition(lightCube->getPosition() + (float)sin(glfwGetTime()) / 100);
