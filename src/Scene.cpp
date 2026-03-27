@@ -32,8 +32,8 @@ bool Scene::init()
     cubeVertexCount = assets.getMeshVertexCount("cube.obj");
     groundVertexCount = assets.getMeshVertexCount("ground.obj");
 
-    lightShader = assets.getShader("shaders/lightSource.vs", "shaders/lightSource.fs");
-    lightTargetShader = assets.getShader("shaders/lightTarget.vs", "shaders/lightTarget.fs");
+    lightShader = assets.getShader("assets/shaders/lightSource.vs", "assets/shaders/lightSource.fs");
+    lightTargetShader = assets.getShader("assets/shaders/lightTarget.vs", "assets/shaders/lightTarget.fs");
 
     const glm::vec3 lightPos(1.0f, 1.0f, -5.0f);
     lightCube = std::make_shared<Object>(
