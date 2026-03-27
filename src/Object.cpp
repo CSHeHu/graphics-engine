@@ -1,11 +1,13 @@
 #include "Object.h"
 
+#include <gtc/matrix_transform.hpp>
+
 Object::Object(std::shared_ptr<Shader> shaderProgram,
-               const std::vector<float> &vertices,
-               const glm::vec3 &position,
-               VertexLayout layout,
-               const std::vector<std::string> &texturePaths)
-    : shader(std::move(shaderProgram)), pos(position)
+			   const std::vector<float> &vertices,
+			   const glm::vec3 &position,
+			   VertexLayout layout,
+			   const std::vector<std::string> &texturePaths)
+	: shader(std::move(shaderProgram)), pos(position), rotationAngle(0.0f), rotationAxis(0.0f, 1.0f, 0.0f)
 {
 	// Generate vertex array object and buffers
 	glGenVertexArrays(1, &VAO);
@@ -64,4 +66,50 @@ glm::vec3 Object::getPosition() const
 void Object::setPosition(glm::vec3 position)
 {
 	pos = position;
+}
+
+float Object::getRotationAngle() const
+{
+	return rotationAngle;
+}
+
+glm::vec3 Object::getRotationAxis() const
+{
+	return rotationAxis;
+}
+
+void Object::setRotation(float angleRadians, const glm::vec3 &axis)
+{
+	rotationAngle = angleRadians;
+	if (glm::length(axis) > 0.0f)
+	{
+		rotationAxis = glm::normalize(axis);
+	}
+}
+
+void Object::rotate(float deltaAngleRadians, const glm::vec3 &axis)
+{
+	rotationAngle += deltaAngleRadians;
+	if (glm::length(axis) > 0.0f)
+	{
+		rotationAxis = glm::normalize(axis);
+	}
+}
+
+glm::mat4 Object::getModelMatrix() const
+{
+	glm::mat4 model = glm::mat4(1.0f);
+	model = glm::translate(model, pos);
+	model = glm::rotate(model, rotationAngle, rotationAxis);
+	return model;
+}
+
+unsigned int Object::getVAO() const
+{
+	return VAO;
+}
+
+unsigned int Object::getVBO() const
+{
+	return VBO;
 }

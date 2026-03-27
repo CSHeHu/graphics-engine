@@ -60,7 +60,7 @@ void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm:
     lightCube->shader->use();
     lightCube->shader->setMat4("projection", projection);
     lightCube->shader->setMat4("view", view);
-    glBindVertexArray(lightCube->VAO);
+    glBindVertexArray(lightCube->getVAO());
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model, lightCube->getPosition());
     lightCube->shader->setMat4("model", model);
@@ -73,7 +73,7 @@ void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm:
     lightTargetCube->shader->setVec3("lightPos", lightCube->getPosition());
     lightTargetCube->shader->setMat4("projection", projection);
     lightTargetCube->shader->setMat4("view", view);
-    glBindVertexArray(lightTargetCube->VAO);
+    glBindVertexArray(lightTargetCube->getVAO());
     model = glm::mat4(1.0f);
     model = glm::translate(model, lightTargetCube->getPosition());
     model = glm::rotate(model, glm::radians(45.0f) + elapsedTime,
@@ -88,7 +88,7 @@ void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm:
     ground->shader->setVec3("lightPos", lightCube->getPosition());
     ground->shader->setMat4("projection", projection);
     ground->shader->setMat4("view", view);
-    glBindVertexArray(ground->VAO);
+    glBindVertexArray(ground->getVAO());
     model = glm::mat4(1.0f);
     ground->shader->setMat4("model", model);
     glDrawArrays(GL_TRIANGLES, 0, 6);
