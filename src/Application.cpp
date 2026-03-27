@@ -16,6 +16,10 @@ Application::Application()
       camera(nullptr),
       deltaTime(0.0f),
       lastFrame(0.0f),
+      lastSceneSwitchTime(0.0f),
+      activeSceneIndex(0),
+      sceneCycleIndices(),
+      sceneCyclePosition(0),
       scene(nullptr),
       assetManager(nullptr),
       currentFrame(0.0f)
@@ -73,9 +77,20 @@ bool Application::init()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+    // Define scene playback order here. Add more ids to extend the cycle.
+    sceneCycleIndices = {0, 1, 1, 0};
+    sceneCyclePosition = 0;
+
     assetManager = std::make_unique<AssetManager>();
-    scene = std::make_unique<Scene>(*assetManager, createBasicSceneDefinition());
-    if (!scene->init())
+    if (sceneCycleIndices.empty())
+    {
+        std::cout << "No scenes configured for scene cycle" << std::endl;
+        return false;
+    }
+
+    activeSceneIndex = sceneCycleIndices[sceneCyclePosition];
+    lastSceneSwitchTime = 0.0f;
+    if (!loadSceneByIndex(activeSceneIndex))
     {
         std::cout << "Failed to initialize scene" << std::endl;
         return false;
@@ -93,6 +108,23 @@ void Application::run()
         currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
+
+        // Switch to next configured scene index; wraps at end of cycle.
+        if (currentFrame - lastSceneSwitchTime >= 5.0f)
+        {
+            const std::size_t nextCyclePosition = (sceneCyclePosition + 1) % sceneCycleIndices.size();
+            const int nextSceneIndex = sceneCycleIndices[nextCyclePosition];
+            if (loadSceneByIndex(nextSceneIndex))
+            {
+                sceneCyclePosition = nextCyclePosition;
+                activeSceneIndex = nextSceneIndex;
+                lastSceneSwitchTime = currentFrame;
+            }
+            else
+            {
+                std::cout << "Failed to switch scene" << std::endl;
+            }
+        }
 
         // input
         InputManager::processInput(window.get(), deltaTime);
@@ -120,4 +152,37 @@ void Application::renderFrame()
 
     scene->update(deltaTime);
     scene->render(*camera, projection, view);
+}
+
+bool Application::loadSceneByIndex(int index)
+{
+    if (!assetManager)
+    {
+        return false;
+    }
+
+    SceneDefinition definition;
+    if (index == 0)
+    {
+        // id 0 -> basic scene
+        definition = createBasicSceneDefinition();
+    }
+    else if (index == 1)
+    {
+        // id 1 -> alternate scene
+        definition = createAlternateSceneDefinition();
+    }
+    else
+    {
+        return false;
+    }
+
+    std::unique_ptr<Scene> nextScene = std::make_unique<Scene>(*assetManager, definition);
+    if (!nextScene->init())
+    {
+        return false;
+    }
+
+    scene = std::move(nextScene);
+    return true;
 }

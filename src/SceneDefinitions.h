@@ -4,5 +4,6 @@
 #include "SceneDefinition.h"
 
 SceneDefinition createBasicSceneDefinition();
+SceneDefinition createAlternateSceneDefinition();
 
 #endif // SCENEDEFINITIONS_H

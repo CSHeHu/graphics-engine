@@ -3,7 +3,9 @@
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
+#include <cstddef>
 #include <memory>
+#include <vector>
 
 class Camera;
 class Scene;
@@ -33,12 +35,21 @@ private:
     float currentFrame;
     float deltaTime;
     float lastFrame;
+    float lastSceneSwitchTime;
+    int activeSceneIndex;
+    // Scene cycle instructions:
+    // 1) Add scene ids to sceneCycleIndices in init().
+    // 2) Provide matching ids in loadSceneByIndex().
+    // 3) The loop wraps automatically when the end is reached.
+    std::vector<int> sceneCycleIndices;
+    std::size_t sceneCyclePosition;
 
     // Scene
     std::unique_ptr<Scene> scene;
     std::unique_ptr<AssetManager> assetManager;
 
     // Helper
+    bool loadSceneByIndex(int index);
     void renderFrame();
 };
 
