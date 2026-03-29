@@ -8,6 +8,7 @@
 #include <memory>
 #include <vector>
 
+#include "Config.h"
 #include "SceneDefinitions.h"
 #include "SceneDefinition.h"
 
@@ -29,8 +30,6 @@ private:
 
     // Window and GL context
     WindowHandle window;
-    static const unsigned int SCR_WIDTH = 1920;
-    static const unsigned int SCR_HEIGHT = 1080;
 
     // Camera
     std::unique_ptr<Camera> camera;

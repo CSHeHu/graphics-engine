@@ -223,7 +223,7 @@ void SceneDefinitions::ensureLoaded()
     std::ifstream file = openAssetFile("assets/scenes/scene_config.json");
     if (!file.is_open())
     {
-        throw std::runtime_error("Failed to open assets/scenes/scene_config.json");
+        throw std::runtime_error(std::string("Failed to open ") + SCENE_CONFIG_FILE);
     }
 
     nlohmann::json root;

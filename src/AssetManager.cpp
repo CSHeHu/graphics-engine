@@ -6,6 +6,7 @@
 #include <sstream>
 #include <stdexcept>
 
+#include "Config.h"
 #include "Shader.h"
 
 namespace
@@ -81,9 +82,8 @@ const std::vector<float> &AssetManager::getMeshVertices(const std::string &meshN
 
 std::size_t AssetManager::getMeshVertexCount(const std::string &meshName)
 {
-    constexpr std::size_t kPositionNormalStride = 6;
     const std::vector<float> &vertices = getMeshVertices(meshName);
-    return vertices.size() / kPositionNormalStride;
+    return vertices.size() / POSITION_NORMAL_STRIDE;
 }
 
 std::shared_ptr<Shader> AssetManager::getShader(const std::string &vertexPath,

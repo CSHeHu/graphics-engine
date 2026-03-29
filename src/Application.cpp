@@ -42,12 +42,12 @@ bool Application::init()
 {
     // glfw: initialize and configure
     glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, GL_CONTEXT_VERSION_MAJOR);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, GL_CONTEXT_VERSION_MINOR);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     // glfw window creation
-    window.reset(glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL));
+    window.reset(glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, WINDOW_TITLE, NULL, NULL));
     if (window == nullptr)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -57,7 +57,7 @@ bool Application::init()
     glfwMakeContextCurrent(window.get());
 
     // Create and set up camera
-    camera = std::make_unique<Camera>(glm::vec3(0.0f, 5.0f, 3.0f));
+    camera = std::make_unique<Camera>(glm::vec3(CAMERA_DEFAULT_X, CAMERA_DEFAULT_Y, CAMERA_DEFAULT_Z));
     InputManager::setCamera(camera.get());
     InputManager::setCameraControlEnabled(true);
     InputManager::setCameraModeToggleCallback([this]() { this->toggleCameraMode(); });
@@ -159,8 +159,8 @@ void Application::renderFrame()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glm::mat4 projection = glm::mat4(1.0f);
-    projection = glm::perspective(glm::radians(camera->Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT,
-                                  0.1f, 100.0f);
+    projection = glm::perspective(glm::radians(camera->Zoom), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT,
+                                  NEAR_PLANE, FAR_PLANE);
 
     glm::mat4 view = glm::mat4(1.0f);
     view = camera->GetViewMatrix();

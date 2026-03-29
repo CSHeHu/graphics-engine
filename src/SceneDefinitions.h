@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "Config.h"
 #include "SceneDefinition.h"
 
 enum class SceneId
