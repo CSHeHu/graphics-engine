@@ -2,27 +2,17 @@
   "name": "alternate",
   "camera": {
     "mode": "Scripted",
-    "loop": true,
+    "loop": false,
     "keyframes": [
       {
         "t": 0.0,
-        "position": [0.0, 2.0, 6.0],
-        "lookAt": [0.0, 0.5, -6.0]
-      },
-      {
-        "t": 10.0,
-        "position": [5.0, 3.0, 0.0],
-        "lookAt": [0.0, 0.5, -6.0]
+        "position": [-20.0, 5.0, -2.0],
+        "lookAt": [-30.0, 2.0, -10.0]
       },
       {
         "t": 20.0,
-        "position": [0.0, 2.5, -10.0],
-        "lookAt": [0.0, 1.0, -6.0]
-      },
-      {
-        "t": 30.0,
-        "position": [-5.0, 3.0, 0.0],
-        "lookAt": [0.0, 0.5, -6.0]
+        "position": [20.0, 5.0, -2.0],
+        "lookAt": [30.0, 2.0, -10.0]
       }
     ]
   },
@@ -50,6 +40,14 @@
       "geometryShaderPath": "",
       "renderMode": "Lit",
       "objectColor": [0.5, 0.45, 0.25]
+    },
+    {
+      "id": "litAirplaneMaterial",
+      "vertexShaderPath": "assets/shaders/lightTarget.vs",
+      "fragmentShaderPath": "assets/shaders/lightTarget.fs",
+      "geometryShaderPath": "",
+      "renderMode": "Lit",
+      "objectColor": [0.9, 0.1, 0.1]
     }
   ],
   "objects": [
@@ -87,6 +85,19 @@
       "behavior": "None",
       "behaviorSpeed": 0.0,
       "behaviorAxis": [0.0, 1.0, 0.0],
+      "behaviorAmplitude": 0.0
+    },
+    {
+      "id": "airplane",
+      "role": "LightTarget",
+      "meshName": "airplane.obj",
+      "layout": "PositionNormal",
+      "position": [-30.0, 2.0, -10.0],
+      "scale": [0.005, 0.005, 0.005],
+      "materialId": "litAirplaneMaterial",
+      "behavior": "Fly",
+      "behaviorSpeed": 3.0,
+      "behaviorAxis": [1.0, 0.0, 0.0],
       "behaviorAmplitude": 0.0
     }
   ]

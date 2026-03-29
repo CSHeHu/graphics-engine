@@ -118,6 +118,13 @@ void Scene::update(float deltaTime)
         {
             object->rotate(runtimeObject.behaviorSpeed * deltaTime, runtimeObject.behaviorAxis);
         }
+        else if (runtimeObject.behavior == BehaviorType::Fly)
+        {
+            // Move along the direction specified by behaviorAxis at speed behaviorSpeed
+            const glm::vec3 direction = glm::normalize(runtimeObject.behaviorAxis);
+            const glm::vec3 displacement = direction * (runtimeObject.behaviorSpeed * deltaTime);
+            object->setPosition(object->getPosition() + displacement);
+        }
     }
 }
 

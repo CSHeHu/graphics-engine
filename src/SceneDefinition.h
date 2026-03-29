@@ -26,6 +26,7 @@ enum class BehaviorType
     None,
     Oscillate,
     Spin,
+    Fly,
 };
 
 enum class CameraMode

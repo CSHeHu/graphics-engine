@@ -33,6 +33,7 @@ const std::unordered_map<std::string, BehaviorType> SceneDefinitions::behaviorTy
     {"None", BehaviorType::None},
     {"Oscillate", BehaviorType::Oscillate},
     {"Spin", BehaviorType::Spin},
+    {"Fly", BehaviorType::Fly},
 };
 
 const std::unordered_map<std::string, CameraMode> SceneDefinitions::cameraModeMap = {

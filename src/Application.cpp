@@ -60,7 +60,8 @@ bool Application::init()
     camera = std::make_unique<Camera>(glm::vec3(CAMERA_DEFAULT_X, CAMERA_DEFAULT_Y, CAMERA_DEFAULT_Z));
     InputManager::setCamera(camera.get());
     InputManager::setCameraControlEnabled(true);
-    InputManager::setCameraModeToggleCallback([this]() { this->toggleCameraMode(); });
+    InputManager::setCameraModeToggleCallback([this]()
+                                              { this->toggleCameraMode(); });
 
     // callbacks for window resize, mouse movement and scroll movement
     glfwSetFramebufferSizeCallback(window.get(), InputManager::framebufferSizeCallback);
