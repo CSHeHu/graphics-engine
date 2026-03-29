@@ -28,6 +28,26 @@ enum class BehaviorType
     Spin,
 };
 
+enum class CameraMode
+{
+    Manual,
+    Scripted,
+};
+
+struct CameraKeyframe
+{
+    float timeSeconds;
+    glm::vec3 position;
+    glm::vec3 lookAt;
+};
+
+struct CameraRouteDefinition
+{
+    CameraMode mode = CameraMode::Manual;
+    bool loop = true;
+    std::vector<CameraKeyframe> keyframes;
+};
+
 struct MaterialDefinition
 {
     std::string id;
@@ -57,6 +77,7 @@ struct SceneObjectDefinition
 struct SceneDefinition
 {
     std::string name;
+    CameraRouteDefinition camera;
     std::vector<MaterialDefinition> materials;
     std::vector<SceneObjectDefinition> objects;
 };

@@ -37,6 +37,7 @@ private:
     static RenderMode parseRenderMode(const std::string &value);
     static SceneRole parseSceneRole(const std::string &value);
     static BehaviorType parseBehaviorType(const std::string &value);
+    static CameraMode parseCameraMode(const std::string &value);
     static Object::VertexLayout parseVertexLayout(const std::string &value);
     static glm::vec3 parseVec3(float x, float y, float z);
     static SceneDefinition parseSceneDefinition(const std::string &sceneFilePath);
@@ -50,6 +51,7 @@ private:
     static const std::unordered_map<std::string, RenderMode> renderModeMap;
     static const std::unordered_map<std::string, SceneRole> sceneRoleMap;
     static const std::unordered_map<std::string, BehaviorType> behaviorTypeMap;
+    static const std::unordered_map<std::string, CameraMode> cameraModeMap;
     static const std::unordered_map<std::string, Object::VertexLayout> vertexLayoutMap;
 };
 

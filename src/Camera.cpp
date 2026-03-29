@@ -1,5 +1,8 @@
 #include "Camera.h"
 
+#include <algorithm>
+#include <cmath>
+
 glm::mat4 Camera::GetViewMatrix()
 {
     return glm::lookAt(Position, Position + Front, Up);
@@ -52,6 +55,22 @@ void Camera::ProcessMouseScroll(float yoffset)
         Zoom = 45.0f;
 }
 
+void Camera::SetPoseLookAt(const glm::vec3 &position, const glm::vec3 &lookAtTarget)
+{
+    Position = position;
+
+    const glm::vec3 direction = lookAtTarget - position;
+    if (glm::length(direction) <= 0.0001f)
+    {
+        return;
+    }
+
+    const glm::vec3 normalized = glm::normalize(direction);
+    Yaw = glm::degrees(std::atan2(normalized.z, normalized.x));
+    Pitch = glm::degrees(std::asin(std::clamp(normalized.y, -1.0f, 1.0f)));
+    updateCameraVectors();
+}
+
 void Camera::updateCameraVectors()
 {
     // calculate the new Front vector
@@ -61,6 +80,6 @@ void Camera::updateCameraVectors()
     front.z = sin(glm::radians(Yaw)) * cos(glm::radians(Pitch));
     Front = glm::normalize(front);
     // also re-calculate the Right and Up vector
-    Right = glm::normalize(glm::cross(Front, WorldUp));  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
+    Right = glm::normalize(glm::cross(Front, WorldUp)); // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
     Up = glm::normalize(glm::cross(Right, Front));
 }

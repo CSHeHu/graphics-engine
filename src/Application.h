@@ -4,10 +4,12 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <cstddef>
+#include <glm.hpp>
 #include <memory>
 #include <vector>
 
 #include "SceneDefinitions.h"
+#include "SceneDefinition.h"
 
 class Camera;
 class Scene;
@@ -32,6 +34,9 @@ private:
 
     // Camera
     std::unique_ptr<Camera> camera;
+    bool scriptedCameraEnabled;
+    bool cameraModeToggleLatch;
+    SceneDefinition activeSceneDefinition;
 
     // Timing
     float currentFrame;
@@ -51,6 +56,9 @@ private:
     // Helper
     bool loadSceneById(SceneId id);
     void renderFrame();
+    void applyScriptedCamera(float sceneElapsedTimeSeconds);
+    void refreshCameraControlMode();
+    static glm::vec3 lerpVec3(const glm::vec3 &a, const glm::vec3 &b, float t);
 };
 
 #endif // APPLICATION_H

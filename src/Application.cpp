@@ -3,6 +3,7 @@
 #include <glad/glad.h>
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
+#include <cmath>
 #include <iostream>
 
 #include "AssetManager.h"
@@ -14,6 +15,9 @@
 Application::Application()
     : window(nullptr, glfwDestroyWindow),
       camera(nullptr),
+      scriptedCameraEnabled(false),
+      cameraModeToggleLatch(false),
+      activeSceneDefinition(),
       deltaTime(0.0f),
       lastFrame(0.0f),
       lastSceneSwitchTime(0.0f),
@@ -56,6 +60,7 @@ bool Application::init()
     // Create and set up camera
     camera = std::make_unique<Camera>(glm::vec3(0.0f, 5.0f, 3.0f));
     InputManager::setCamera(camera.get());
+    InputManager::setCameraControlEnabled(true);
 
     // callbacks for window resize, mouse movement and scroll movement
     glfwSetFramebufferSizeCallback(window.get(), InputManager::framebufferSizeCallback);
@@ -132,6 +137,20 @@ void Application::run()
         }
 
         // input
+        const bool togglePressed = glfwGetKey(window.get(), GLFW_KEY_C) == GLFW_PRESS;
+        if (togglePressed && !cameraModeToggleLatch && !activeSceneDefinition.camera.keyframes.empty())
+        {
+            scriptedCameraEnabled = !scriptedCameraEnabled;
+            refreshCameraControlMode();
+        }
+        cameraModeToggleLatch = togglePressed;
+
+        if (scriptedCameraEnabled)
+        {
+            const float sceneElapsed = currentFrame - lastSceneSwitchTime;
+            applyScriptedCamera(sceneElapsed);
+        }
+
         InputManager::processInput(window.get(), deltaTime);
 
         // render
@@ -172,6 +191,15 @@ bool Application::loadSceneById(SceneId id)
         return false;
     }
 
+    activeSceneDefinition = definition;
+    scriptedCameraEnabled = activeSceneDefinition.camera.mode == CameraMode::Scripted && !activeSceneDefinition.camera.keyframes.empty();
+    refreshCameraControlMode();
+    if (scriptedCameraEnabled && !activeSceneDefinition.camera.keyframes.empty())
+    {
+        const CameraKeyframe &startKeyframe = activeSceneDefinition.camera.keyframes.front();
+        camera->SetPoseLookAt(startKeyframe.position, startKeyframe.lookAt);
+    }
+
     std::unique_ptr<Scene> nextScene = std::make_unique<Scene>(*assetManager, definition);
     if (!nextScene->init())
     {
@@ -180,4 +208,64 @@ bool Application::loadSceneById(SceneId id)
 
     scene = std::move(nextScene);
     return true;
+}
+
+void Application::applyScriptedCamera(float sceneElapsedTimeSeconds)
+{
+    const std::vector<CameraKeyframe> &keyframes = activeSceneDefinition.camera.keyframes;
+    if (keyframes.empty())
+    {
+        return;
+    }
+
+    if (keyframes.size() == 1)
+    {
+        camera->SetPoseLookAt(keyframes.front().position, keyframes.front().lookAt);
+        return;
+    }
+
+    const float routeEnd = keyframes.back().timeSeconds;
+    if (routeEnd <= 0.0f)
+    {
+        camera->SetPoseLookAt(keyframes.back().position, keyframes.back().lookAt);
+        return;
+    }
+
+    float routeTime = sceneElapsedTimeSeconds;
+    if (activeSceneDefinition.camera.loop)
+    {
+        routeTime = std::fmod(routeTime, routeEnd);
+    }
+    else if (routeTime >= routeEnd)
+    {
+        camera->SetPoseLookAt(keyframes.back().position, keyframes.back().lookAt);
+        return;
+    }
+
+    for (std::size_t i = 0; i + 1 < keyframes.size(); ++i)
+    {
+        const CameraKeyframe &a = keyframes[i];
+        const CameraKeyframe &b = keyframes[i + 1];
+        if (routeTime >= a.timeSeconds && routeTime <= b.timeSeconds)
+        {
+            const float segmentDuration = b.timeSeconds - a.timeSeconds;
+            const float t = segmentDuration > 0.0f ? (routeTime - a.timeSeconds) / segmentDuration : 0.0f;
+            const glm::vec3 position = lerpVec3(a.position, b.position, t);
+            const glm::vec3 lookAt = lerpVec3(a.lookAt, b.lookAt, t);
+            camera->SetPoseLookAt(position, lookAt);
+            return;
+        }
+    }
+
+    camera->SetPoseLookAt(keyframes.back().position, keyframes.back().lookAt);
+}
+
+void Application::refreshCameraControlMode()
+{
+    InputManager::setCameraControlEnabled(!scriptedCameraEnabled);
+}
+
+glm::vec3 Application::lerpVec3(const glm::vec3 &a, const glm::vec3 &b, float t)
+{
+    return a + (b - a) * t;
 }

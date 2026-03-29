@@ -1,5 +1,31 @@
 {
   "name": "basic",
+  "camera": {
+    "mode": "Scripted",
+    "loop": true,
+    "keyframes": [
+      {
+        "t": 0.0,
+        "position": [0.0, 2.0, 6.0],
+        "lookAt": [0.0, 0.5, -6.0]
+      },
+      {
+        "t": 10.0,
+        "position": [5.0, 3.0, 0.0],
+        "lookAt": [0.0, 0.5, -6.0]
+      },
+      {
+        "t": 20.0,
+        "position": [0.0, 2.5, -10.0],
+        "lookAt": [0.0, 1.0, -6.0]
+      },
+      {
+        "t": 30.0,
+        "position": [-5.0, 3.0, 0.0],
+        "lookAt": [0.0, 0.5, -6.0]
+      }
+    ]
+  },
   "materials": [
     {
       "id": "lightSourceMaterial",

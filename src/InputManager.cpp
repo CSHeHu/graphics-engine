@@ -4,13 +4,16 @@
 float InputManager::lastX = 1920 / 2.0f;
 float InputManager::lastY = 1080 / 2.0f;
 bool InputManager::firstMouse = true;
-Camera* InputManager::camera = nullptr;
+bool InputManager::cameraControlEnabled = true;
+Camera *InputManager::camera = nullptr;
 
-
-void InputManager::processInput(GLFWwindow* window, float deltaTime)
+void InputManager::processInput(GLFWwindow *window, float deltaTime)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+
+    if (!InputManager::cameraControlEnabled || InputManager::camera == nullptr)
+        return;
 
     // Camera movement
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
@@ -27,15 +30,20 @@ void InputManager::processInput(GLFWwindow* window, float deltaTime)
         InputManager::camera->ProcessKeyboard(DOWN, deltaTime);
 }
 
-void InputManager::framebufferSizeCallback(GLFWwindow* window, int width, int height)
+void InputManager::framebufferSizeCallback(GLFWwindow *window, int width, int height)
 {
-    // make sure the viewport matches the new window dimensions; note that width and 
+    // make sure the viewport matches the new window dimensions; note that width and
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
 }
 
-void InputManager::mouseCallback(GLFWwindow* window, double xposIn, double yposIn)
+void InputManager::mouseCallback(GLFWwindow *window, double xposIn, double yposIn)
 {
+    if (!cameraControlEnabled || camera == nullptr)
+    {
+        return;
+    }
+
     float xpos = static_cast<float>(xposIn);
     float ypos = static_cast<float>(yposIn);
 
@@ -55,12 +63,23 @@ void InputManager::mouseCallback(GLFWwindow* window, double xposIn, double yposI
     camera->ProcessMouseMovement(xoffset, yoffset);
 }
 
-void InputManager::setCamera(Camera* cameraPtr)
+void InputManager::setCamera(Camera *cameraPtr)
 {
     camera = cameraPtr;
 }
 
-void InputManager::scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+void InputManager::setCameraControlEnabled(bool enabled)
 {
+    cameraControlEnabled = enabled;
+    firstMouse = true;
+}
+
+void InputManager::scrollCallback(GLFWwindow *window, double xoffset, double yoffset)
+{
+    if (!cameraControlEnabled || camera == nullptr)
+    {
+        return;
+    }
+
     InputManager::camera->ProcessMouseScroll(static_cast<float>(yoffset));
 }

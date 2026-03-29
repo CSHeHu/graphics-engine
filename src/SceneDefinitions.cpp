@@ -1,6 +1,7 @@
 #include "SceneDefinitions.h"
 
 #include <fstream>
+#include <algorithm>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -32,6 +33,11 @@ const std::unordered_map<std::string, BehaviorType> SceneDefinitions::behaviorTy
     {"None", BehaviorType::None},
     {"Oscillate", BehaviorType::Oscillate},
     {"Spin", BehaviorType::Spin},
+};
+
+const std::unordered_map<std::string, CameraMode> SceneDefinitions::cameraModeMap = {
+    {"Manual", CameraMode::Manual},
+    {"Scripted", CameraMode::Scripted},
 };
 
 const std::unordered_map<std::string, Object::VertexLayout> SceneDefinitions::vertexLayoutMap = {
@@ -86,6 +92,11 @@ BehaviorType SceneDefinitions::parseBehaviorType(const std::string &value)
     return parseEnumValue(value, behaviorTypeMap, "BehaviorType");
 }
 
+CameraMode SceneDefinitions::parseCameraMode(const std::string &value)
+{
+    return parseEnumValue(value, cameraModeMap, "CameraMode");
+}
+
 Object::VertexLayout SceneDefinitions::parseVertexLayout(const std::string &value)
 {
     return parseEnumValue(value, vertexLayoutMap, "vertex layout");
@@ -109,6 +120,44 @@ SceneDefinition SceneDefinitions::parseSceneDefinition(const std::string &sceneF
 
     SceneDefinition definition;
     definition.name = root.at("name").get<std::string>();
+
+    if (root.contains("camera"))
+    {
+        const nlohmann::json &cameraJson = root.at("camera");
+        definition.camera.mode = parseCameraMode(cameraJson.value("mode", "Manual"));
+        definition.camera.loop = cameraJson.value("loop", true);
+
+        if (cameraJson.contains("keyframes"))
+        {
+            for (const nlohmann::json &keyframeJson : cameraJson.at("keyframes"))
+            {
+                CameraKeyframe keyframe;
+                keyframe.timeSeconds = keyframeJson.at("t").get<float>();
+
+                const nlohmann::json &position = keyframeJson.at("position");
+                if (!position.is_array() || position.size() != 3)
+                {
+                    throw std::runtime_error("Expected vec3 array for field: camera.keyframes.position");
+                }
+                keyframe.position = parseVec3(position[0].get<float>(), position[1].get<float>(), position[2].get<float>());
+
+                const nlohmann::json &lookAt = keyframeJson.at("lookAt");
+                if (!lookAt.is_array() || lookAt.size() != 3)
+                {
+                    throw std::runtime_error("Expected vec3 array for field: camera.keyframes.lookAt");
+                }
+                keyframe.lookAt = parseVec3(lookAt[0].get<float>(), lookAt[1].get<float>(), lookAt[2].get<float>());
+
+                definition.camera.keyframes.push_back(keyframe);
+            }
+
+            std::sort(definition.camera.keyframes.begin(), definition.camera.keyframes.end(),
+                      [](const CameraKeyframe &a, const CameraKeyframe &b)
+                      {
+                          return a.timeSeconds < b.timeSeconds;
+                      });
+        }
+    }
 
     for (const nlohmann::json &materialJson : root.at("materials"))
     {

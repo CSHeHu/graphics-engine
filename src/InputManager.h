@@ -6,26 +6,23 @@
 
 #include "Camera.h"
 
-
-
 class InputManager
 {
 public:
-	static void setCamera(Camera* cameraPtr);
-	static void processInput(GLFWwindow* window, float deltaTime);
-	
-	
-	static void framebufferSizeCallback(GLFWwindow* window, int width, int height);
-	static void mouseCallback(GLFWwindow* window, double xposIn, double yposIn);
-	static void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+	static void setCamera(Camera *cameraPtr);
+	static void setCameraControlEnabled(bool enabled);
+	static void processInput(GLFWwindow *window, float deltaTime);
+
+	static void framebufferSizeCallback(GLFWwindow *window, int width, int height);
+	static void mouseCallback(GLFWwindow *window, double xposIn, double yposIn);
+	static void scrollCallback(GLFWwindow *window, double xoffset, double yoffset);
 
 private:
 	static float lastX;
 	static float lastY;
 	static bool firstMouse;
-	static Camera* camera;
+	static bool cameraControlEnabled;
+	static Camera *camera;
 };
-
-
 
 #endif
