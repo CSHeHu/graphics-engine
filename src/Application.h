@@ -39,10 +39,8 @@ private:
     float lastFrame;
     float lastSceneSwitchTime;
     SceneId activeSceneId;
-    // Scene cycle instructions:
-    // 1) Add scene ids and durations to sceneCycle in SceneDefinitions.cpp.
-    // 2) Register scenes in SceneDefinitions.cpp registry.
-    // 3) Switching stops at the end of the cycle.
+    // Scene cycle comes from assets/scenes/scene_config.json.
+    // Switching stops at the end of the configured cycle.
     std::vector<SceneCycleEntry> sceneCycle;
     std::size_t sceneCyclePosition;
 

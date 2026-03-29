@@ -7,7 +7,6 @@
 
 #include <nlohmann/json.hpp>
 
-std::vector<SceneRegistryEntry> SceneDefinitions::sceneRegistry;
 std::vector<SceneCycleEntry> SceneDefinitions::sceneCycle;
 std::unordered_map<int, SceneDefinition> SceneDefinitions::sceneDefinitions;
 bool SceneDefinitions::loaded = false;
@@ -173,7 +172,6 @@ void SceneDefinitions::ensureLoaded()
     nlohmann::json root;
     file >> root;
 
-    sceneRegistry.clear();
     sceneCycle.clear();
     sceneDefinitions.clear();
 
@@ -182,7 +180,6 @@ void SceneDefinitions::ensureLoaded()
         const SceneId id = parseSceneId(entryJson.at("id").get<std::string>());
         const std::string filePath = entryJson.at("file").get<std::string>();
 
-        sceneRegistry.push_back({id, filePath});
         sceneDefinitions[static_cast<int>(id)] = parseSceneDefinition(filePath);
     }
 
@@ -195,12 +192,6 @@ void SceneDefinitions::ensureLoaded()
     }
 
     loaded = true;
-}
-
-const std::vector<SceneRegistryEntry> &SceneDefinitions::getSceneRegistry()
-{
-    ensureLoaded();
-    return sceneRegistry;
 }
 
 const std::vector<SceneCycleEntry> &SceneDefinitions::getDefaultSceneCycle()

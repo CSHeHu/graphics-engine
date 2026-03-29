@@ -167,7 +167,6 @@ bool Application::loadSceneById(SceneId id)
     }
 
     SceneDefinition definition;
-    // Registry resolves scene id -> concrete scene factory.
     if (!SceneDefinitions::tryCreateSceneDefinition(id, definition))
     {
         return false;

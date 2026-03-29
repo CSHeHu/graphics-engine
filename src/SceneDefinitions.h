@@ -14,12 +14,6 @@ enum class SceneId
     Alternate,
 };
 
-struct SceneRegistryEntry
-{
-    SceneId id;
-    std::string filePath;
-};
-
 struct SceneCycleEntry
 {
     SceneId id;
@@ -29,7 +23,6 @@ struct SceneCycleEntry
 class SceneDefinitions
 {
 public:
-    static const std::vector<SceneRegistryEntry> &getSceneRegistry();
     static const std::vector<SceneCycleEntry> &getDefaultSceneCycle();
     static bool tryCreateSceneDefinition(SceneId id, SceneDefinition &outDefinition);
 
@@ -49,7 +42,6 @@ private:
     static SceneDefinition parseSceneDefinition(const std::string &sceneFilePath);
     static void ensureLoaded();
 
-    static std::vector<SceneRegistryEntry> sceneRegistry;
     static std::vector<SceneCycleEntry> sceneCycle;
     static std::unordered_map<int, SceneDefinition> sceneDefinitions;
     static bool loaded;
