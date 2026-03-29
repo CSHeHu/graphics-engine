@@ -32,8 +32,12 @@ link_directories(${GLFW_LIBRARY_DIRS} ${FREETYPE_LIBRARY_DIRS})
 file(GLOB SOURCES "src/*.cpp" "src/glad.c")
 add_executable(OpenGLEngine ${SOURCES})
 
-# Copy assets to the build directory
-file(COPY ${CMAKE_SOURCE_DIR}/assets DESTINATION ${CMAKE_BINARY_DIR})
+# Copy assets to the build directory after each build so JSON/shader edits are reflected at runtime.
+add_custom_command(TARGET OpenGLEngine POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+		${CMAKE_SOURCE_DIR}/assets
+		${CMAKE_BINARY_DIR}/assets
+)
 
 # Link libraries
 target_link_libraries(OpenGLEngine ${GLFW_LIBRARIES} ${FREETYPE_LIBRARIES} nlohmann_json::nlohmann_json GL m dl pthread)
