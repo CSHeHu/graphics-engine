@@ -24,6 +24,14 @@
       "geometryShaderPath": "",
       "renderMode": "Lit",
       "objectColor": [0.2, 0.7, 0.2]
+    },
+    {
+      "id": "litGrassMaterial",
+      "vertexShaderPath": "assets/shaders/lightTarget.vs",
+      "fragmentShaderPath": "assets/shaders/lightTarget.fs",
+      "geometryShaderPath": "",
+      "renderMode": "Lit",
+      "objectColor": [0.12, 0.65, 0.1]
     }
   ],
   "objects": [
@@ -58,6 +66,19 @@
       "layout": "PositionNormal",
       "position": [0.0, 0.0, 0.0],
       "materialId": "litGroundMaterial",
+      "behavior": "None",
+      "behaviorSpeed": 0.0,
+      "behaviorAxis": [0.0, 1.0, 0.0],
+      "behaviorAmplitude": 0.0
+    },
+    {
+      "id": "grass",
+      "role": "None",
+      "meshName": "grass.obj",
+      "layout": "PositionNormal",
+      "position": [-3.0, 0.01, -6.0],
+      "scale": [0.02, 0.02, 0.02],
+      "materialId": "litGrassMaterial",
       "behavior": "None",
       "behaviorSpeed": 0.0,
       "behaviorAxis": [0.0, 1.0, 0.0],

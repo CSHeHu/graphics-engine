@@ -140,6 +140,14 @@ SceneDefinition SceneDefinitions::parseSceneDefinition(const std::string &sceneF
             throw std::runtime_error("Expected vec3 array for field: objects.position");
         }
         object.position = parseVec3(position[0].get<float>(), position[1].get<float>(), position[2].get<float>());
+
+        const nlohmann::json scale = objectJson.value("scale", nlohmann::json::array({1.0f, 1.0f, 1.0f}));
+        if (!scale.is_array() || scale.size() != 3)
+        {
+            throw std::runtime_error("Expected vec3 array for field: objects.scale");
+        }
+        object.scale = parseVec3(scale[0].get<float>(), scale[1].get<float>(), scale[2].get<float>());
+
         object.materialId = objectJson.at("materialId").get<std::string>();
         object.behavior = parseBehaviorType(objectJson.at("behavior").get<std::string>());
         object.behaviorSpeed = objectJson.value("behaviorSpeed", 0.0f);

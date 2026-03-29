@@ -21,12 +21,15 @@ public:
     Object(std::shared_ptr<Shader> shaderProgram,
            const std::vector<float> &vertices,
            const glm::vec3 &position,
+            const glm::vec3 &scale,
            VertexLayout layout,
            const std::vector<std::string> &texturePaths = {});
     ~Object();
 
     glm::vec3 getPosition() const;
     void setPosition(glm::vec3 position);
+    glm::vec3 getScale() const;
+    void setScale(const glm::vec3 &scale);
     float getRotationAngle() const;
     glm::vec3 getRotationAxis() const;
     void setRotation(float angleRadians, const glm::vec3 &axis);
@@ -41,6 +44,7 @@ public:
 private:
     unsigned int VAO, VBO;
     glm::vec3 pos;
+    glm::vec3 size;
     float rotationAngle;
     glm::vec3 rotationAxis;
 };

@@ -5,9 +5,10 @@
 Object::Object(std::shared_ptr<Shader> shaderProgram,
 			   const std::vector<float> &vertices,
 			   const glm::vec3 &position,
+			   const glm::vec3 &scale,
 			   VertexLayout layout,
 			   const std::vector<std::string> &texturePaths)
-	: shader(std::move(shaderProgram)), pos(position), rotationAngle(0.0f), rotationAxis(0.0f, 1.0f, 0.0f)
+	: shader(std::move(shaderProgram)), pos(position), size(scale), rotationAngle(0.0f), rotationAxis(0.0f, 1.0f, 0.0f)
 {
 	// Generate vertex array object and buffers
 	glGenVertexArrays(1, &VAO);
@@ -68,6 +69,16 @@ void Object::setPosition(glm::vec3 position)
 	pos = position;
 }
 
+glm::vec3 Object::getScale() const
+{
+	return size;
+}
+
+void Object::setScale(const glm::vec3 &scale)
+{
+	size = scale;
+}
+
 float Object::getRotationAngle() const
 {
 	return rotationAngle;
@@ -101,6 +112,7 @@ glm::mat4 Object::getModelMatrix() const
 	glm::mat4 model = glm::mat4(1.0f);
 	model = glm::translate(model, pos);
 	model = glm::rotate(model, rotationAngle, rotationAxis);
+	model = glm::scale(model, size);
 	return model;
 }
 

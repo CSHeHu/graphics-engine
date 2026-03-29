@@ -62,6 +62,7 @@ bool Scene::init()
             material->shader,
             vertices,
             objectDef.position,
+            objectDef.scale,
             objectDef.layout);
 
         RuntimeSceneObject runtimeObject;

@@ -45,6 +45,7 @@ struct SceneObjectDefinition
     std::string meshName;
     Object::VertexLayout layout;
     glm::vec3 position;
+    glm::vec3 scale;
     std::string materialId;
 
     BehaviorType behavior;

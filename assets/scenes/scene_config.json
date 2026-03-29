@@ -12,7 +12,7 @@
   "cycle": [
     {
       "id": "Basic",
-      "durationSeconds": 5.0
+      "durationSeconds": 500.0
     },
     {
       "id": "Alternate",
