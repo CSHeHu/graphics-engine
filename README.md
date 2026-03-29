@@ -3,7 +3,7 @@
 <p>The program is an OpenGL engine based on the articles by <a href="https://twitter.com/JoeyDeVriez">Joey de Vries</a> in <a href="https://learnopengl.com/">https://learnopengl.com/</a> under the terms of the <a href="https://creativecommons.org/licenses/by/4.0/">CC BY-NC 4.0</a>.</p>
 <p>It is used for my personal experimentations on computer graphics, shaders and rendering.</p>
 
-![kuva](https://github.com/heissendo/OpenGLFramework/assets/47637198/488f8810-5440-488a-9b59-d3961d8ec598)
+<img width="1973" height="1387" alt="image" src="https://github.com/user-attachments/assets/b95bdfb5-4795-4956-8aff-a6208cdd4803" />
 
 ## Features
 
