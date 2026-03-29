@@ -1,0 +1,67 @@
+{
+  "name": "basic",
+  "materials": [
+    {
+      "id": "lightSourceMaterial",
+      "vertexShaderPath": "assets/shaders/lightSource.vs",
+      "fragmentShaderPath": "assets/shaders/lightSource.fs",
+      "geometryShaderPath": "",
+      "renderMode": "LightSource",
+      "objectColor": [1.0, 1.0, 1.0]
+    },
+    {
+      "id": "litOrangeMaterial",
+      "vertexShaderPath": "assets/shaders/lightTarget.vs",
+      "fragmentShaderPath": "assets/shaders/lightTarget.fs",
+      "geometryShaderPath": "",
+      "renderMode": "Lit",
+      "objectColor": [1.0, 0.5, 0.31]
+    },
+    {
+      "id": "litGroundMaterial",
+      "vertexShaderPath": "assets/shaders/lightTarget.vs",
+      "fragmentShaderPath": "assets/shaders/lightTarget.fs",
+      "geometryShaderPath": "",
+      "renderMode": "Lit",
+      "objectColor": [0.2, 0.7, 0.2]
+    }
+  ],
+  "objects": [
+    {
+      "id": "lightCube",
+      "role": "LightSource",
+      "meshName": "cube.obj",
+      "layout": "PositionNormal",
+      "position": [1.0, 1.0, -5.0],
+      "materialId": "lightSourceMaterial",
+      "behavior": "Oscillate",
+      "behaviorSpeed": 1.0,
+      "behaviorAxis": [1.0, 1.0, 1.0],
+      "behaviorAmplitude": 0.01
+    },
+    {
+      "id": "lightTargetCube",
+      "role": "LightTarget",
+      "meshName": "cube.obj",
+      "layout": "PositionNormal",
+      "position": [3.0, 2.0, -7.0],
+      "materialId": "litOrangeMaterial",
+      "behavior": "Spin",
+      "behaviorSpeed": 0.34906585,
+      "behaviorAxis": [1.0, 0.0, 1.0],
+      "behaviorAmplitude": 0.0
+    },
+    {
+      "id": "ground",
+      "role": "Ground",
+      "meshName": "ground.obj",
+      "layout": "PositionNormal",
+      "position": [0.0, 0.0, 0.0],
+      "materialId": "litGroundMaterial",
+      "behavior": "None",
+      "behaviorSpeed": 0.0,
+      "behaviorAxis": [0.0, 1.0, 0.0],
+      "behaviorAmplitude": 0.0
+    }
+  ]
+}

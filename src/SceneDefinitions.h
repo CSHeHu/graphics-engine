@@ -14,7 +14,7 @@ enum class SceneId
 struct SceneRegistryEntry
 {
     SceneId id;
-    SceneDefinition (*factory)();
+    std::string filePath;
 };
 
 struct SceneCycleEntry
@@ -22,9 +22,6 @@ struct SceneCycleEntry
     SceneId id;
     float durationSeconds;
 };
-
-SceneDefinition createBasicSceneDefinition();
-SceneDefinition createAlternateSceneDefinition();
 
 const std::vector<SceneRegistryEntry> &getSceneRegistry();
 const std::vector<SceneCycleEntry> &getDefaultSceneCycle();

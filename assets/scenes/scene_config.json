@@ -1,0 +1,30 @@
+{
+  "registry": [
+    {
+      "id": "Basic",
+      "file": "assets/scenes/basic.scene.json"
+    },
+    {
+      "id": "Alternate",
+      "file": "assets/scenes/alternate.scene.json"
+    }
+  ],
+  "cycle": [
+    {
+      "id": "Basic",
+      "durationSeconds": 5.0
+    },
+    {
+      "id": "Alternate",
+      "durationSeconds": 3.0
+    },
+    {
+      "id": "Alternate",
+      "durationSeconds": 7.0
+    },
+    {
+      "id": "Basic",
+      "durationSeconds": 4.0
+    }
+  ]
+}

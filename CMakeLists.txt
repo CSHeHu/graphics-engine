@@ -5,10 +5,22 @@ project(OpenGLEngine)
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
 
+include(FetchContent)
+
 # Find required packages
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GLFW REQUIRED glfw3)
 pkg_check_modules(FREETYPE REQUIRED freetype2)
+find_package(nlohmann_json QUIET)
+
+if(NOT nlohmann_json_FOUND)
+	message(STATUS "nlohmann_json not found, fetching it with FetchContent")
+	FetchContent_Declare(
+		nlohmann_json
+		URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
+	)
+	FetchContent_MakeAvailable(nlohmann_json)
+endif()
 
 # Include directories
 include_directories(${GLFW_INCLUDE_DIRS} ${FREETYPE_INCLUDE_DIRS} /usr/include/glm ${CMAKE_SOURCE_DIR}/include)
@@ -24,5 +36,5 @@ add_executable(OpenGLEngine ${SOURCES})
 file(COPY ${CMAKE_SOURCE_DIR}/assets DESTINATION ${CMAKE_BINARY_DIR})
 
 # Link libraries
-target_link_libraries(OpenGLEngine ${GLFW_LIBRARIES} ${FREETYPE_LIBRARIES} GL m dl pthread)
+target_link_libraries(OpenGLEngine ${GLFW_LIBRARIES} ${FREETYPE_LIBRARIES} nlohmann_json::nlohmann_json GL m dl pthread)
 
