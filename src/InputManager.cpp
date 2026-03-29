@@ -5,12 +5,22 @@ float InputManager::lastX = 1920 / 2.0f;
 float InputManager::lastY = 1080 / 2.0f;
 bool InputManager::firstMouse = true;
 bool InputManager::cameraControlEnabled = true;
+bool InputManager::cameraModeToggleLatch = false;
 Camera *InputManager::camera = nullptr;
+InputManager::CameraModeToggleCallback InputManager::cameraModeToggleCallback = nullptr;
 
 void InputManager::processInput(GLFWwindow *window, float deltaTime)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+
+    // Handle camera mode toggle (always available, not gated by camera control)
+    const bool togglePressed = glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS;
+    if (togglePressed && !cameraModeToggleLatch && cameraModeToggleCallback)
+    {
+        cameraModeToggleCallback();
+    }
+    cameraModeToggleLatch = togglePressed;
 
     if (!InputManager::cameraControlEnabled || InputManager::camera == nullptr)
         return;
@@ -72,6 +82,11 @@ void InputManager::setCameraControlEnabled(bool enabled)
 {
     cameraControlEnabled = enabled;
     firstMouse = true;
+}
+
+void InputManager::setCameraModeToggleCallback(CameraModeToggleCallback callback)
+{
+    cameraModeToggleCallback = callback;
 }
 
 void InputManager::scrollCallback(GLFWwindow *window, double xoffset, double yoffset)

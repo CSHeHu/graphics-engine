@@ -16,7 +16,6 @@ Application::Application()
     : window(nullptr, glfwDestroyWindow),
       camera(nullptr),
       scriptedCameraEnabled(false),
-      cameraModeToggleLatch(false),
       activeSceneDefinition(),
       deltaTime(0.0f),
       lastFrame(0.0f),
@@ -61,6 +60,7 @@ bool Application::init()
     camera = std::make_unique<Camera>(glm::vec3(0.0f, 5.0f, 3.0f));
     InputManager::setCamera(camera.get());
     InputManager::setCameraControlEnabled(true);
+    InputManager::setCameraModeToggleCallback([this]() { this->toggleCameraMode(); });
 
     // callbacks for window resize, mouse movement and scroll movement
     glfwSetFramebufferSizeCallback(window.get(), InputManager::framebufferSizeCallback);
@@ -135,15 +135,6 @@ void Application::run()
                 }
             }
         }
-
-        // input
-        const bool togglePressed = glfwGetKey(window.get(), GLFW_KEY_C) == GLFW_PRESS;
-        if (togglePressed && !cameraModeToggleLatch && !activeSceneDefinition.camera.keyframes.empty())
-        {
-            scriptedCameraEnabled = !scriptedCameraEnabled;
-            refreshCameraControlMode();
-        }
-        cameraModeToggleLatch = togglePressed;
 
         if (scriptedCameraEnabled)
         {
@@ -263,6 +254,15 @@ void Application::applyScriptedCamera(float sceneElapsedTimeSeconds)
 void Application::refreshCameraControlMode()
 {
     InputManager::setCameraControlEnabled(!scriptedCameraEnabled);
+}
+
+void Application::toggleCameraMode()
+{
+    if (!activeSceneDefinition.camera.keyframes.empty())
+    {
+        scriptedCameraEnabled = !scriptedCameraEnabled;
+        refreshCameraControlMode();
+    }
 }
 
 glm::vec3 Application::lerpVec3(const glm::vec3 &a, const glm::vec3 &b, float t)

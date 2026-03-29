@@ -35,8 +35,8 @@ private:
     // Camera
     std::unique_ptr<Camera> camera;
     bool scriptedCameraEnabled;
-    bool cameraModeToggleLatch;
     SceneDefinition activeSceneDefinition;
+    void toggleCameraMode();
 
     // Timing
     float currentFrame;
