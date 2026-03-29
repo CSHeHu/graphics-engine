@@ -154,6 +154,7 @@ void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm:
         material->shader->use();
         material->shader->setMat4("projection", projection);
         material->shader->setMat4("view", view);
+        material->shader->setFloat("uTime", elapsedTime);
 
         if (material->renderMode == RenderMode::Lit)
         {

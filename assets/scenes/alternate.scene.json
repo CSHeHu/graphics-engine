@@ -35,8 +35,8 @@
     },
     {
       "id": "litGroundMaterial",
-      "vertexShaderPath": "assets/shaders/lightTarget.vs",
-      "fragmentShaderPath": "assets/shaders/lightTarget.fs",
+      "vertexShaderPath": "assets/shaders/wildMath.vs",
+      "fragmentShaderPath": "assets/shaders/wildMath.fs",
       "geometryShaderPath": "",
       "renderMode": "Lit",
       "objectColor": [0.5, 0.45, 0.25]
