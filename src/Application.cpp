@@ -78,7 +78,7 @@ bool Application::init()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Scene order comes from content config instead of app lifecycle code.
-    sceneCycle = getDefaultSceneCycle();
+    sceneCycle = SceneDefinitions::getDefaultSceneCycle();
     sceneCyclePosition = 0;
 
     assetManager = std::make_unique<AssetManager>();
@@ -168,7 +168,7 @@ bool Application::loadSceneById(SceneId id)
 
     SceneDefinition definition;
     // Registry resolves scene id -> concrete scene factory.
-    if (!tryCreateSceneDefinition(id, definition))
+    if (!SceneDefinitions::tryCreateSceneDefinition(id, definition))
     {
         return false;
     }

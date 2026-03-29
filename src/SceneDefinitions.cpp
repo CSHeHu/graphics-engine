@@ -7,222 +7,214 @@
 
 #include <nlohmann/json.hpp>
 
-namespace
+std::vector<SceneRegistryEntry> SceneDefinitions::sceneRegistry;
+std::vector<SceneCycleEntry> SceneDefinitions::sceneCycle;
+std::unordered_map<int, SceneDefinition> SceneDefinitions::sceneDefinitions;
+bool SceneDefinitions::loaded = false;
+
+const std::unordered_map<std::string, SceneId> SceneDefinitions::sceneIdMap = {
+    {"Basic", SceneId::Basic},
+    {"Alternate", SceneId::Alternate},
+};
+
+const std::unordered_map<std::string, RenderMode> SceneDefinitions::renderModeMap = {
+    {"LightSource", RenderMode::LightSource},
+    {"Lit", RenderMode::Lit},
+};
+
+const std::unordered_map<std::string, SceneRole> SceneDefinitions::sceneRoleMap = {
+    {"None", SceneRole::None},
+    {"LightSource", SceneRole::LightSource},
+    {"LightTarget", SceneRole::LightTarget},
+    {"Ground", SceneRole::Ground},
+};
+
+const std::unordered_map<std::string, BehaviorType> SceneDefinitions::behaviorTypeMap = {
+    {"None", BehaviorType::None},
+    {"Oscillate", BehaviorType::Oscillate},
+    {"Spin", BehaviorType::Spin},
+};
+
+const std::unordered_map<std::string, Object::VertexLayout> SceneDefinitions::vertexLayoutMap = {
+    {"PositionUV", Object::VertexLayout::PositionUV},
+    {"PositionNormal", Object::VertexLayout::PositionNormal},
+};
+
+template <typename T>
+T SceneDefinitions::parseEnumValue(const std::string &value,
+                                   const std::unordered_map<std::string, T> &mapping,
+                                   const char *typeName)
 {
-    std::vector<SceneRegistryEntry> gSceneRegistry;
-    std::vector<SceneCycleEntry> gSceneCycle;
-    std::unordered_map<int, SceneDefinition> gSceneDefinitions;
-    bool gLoaded = false;
-
-    std::ifstream openAssetFile(const std::string &path)
+    const auto it = mapping.find(value);
+    if (it == mapping.end())
     {
-        std::ifstream file(path);
-        if (file.is_open())
-        {
-            return file;
-        }
+        throw std::runtime_error(std::string("Unsupported ") + typeName + " value: " + value);
+    }
 
-        file.clear();
-        file.open("../" + path);
+    return it->second;
+}
+
+std::ifstream SceneDefinitions::openAssetFile(const std::string &path)
+{
+    std::ifstream file(path);
+    if (file.is_open())
+    {
         return file;
     }
 
-    SceneId parseSceneId(const std::string &value)
-    {
-        if (value == "Basic")
-        {
-            return SceneId::Basic;
-        }
-        if (value == "Alternate")
-        {
-            return SceneId::Alternate;
-        }
-
-        throw std::runtime_error("Unsupported SceneId value: " + value);
-    }
-
-    RenderMode parseRenderMode(const std::string &value)
-    {
-        if (value == "LightSource")
-        {
-            return RenderMode::LightSource;
-        }
-        if (value == "Lit")
-        {
-            return RenderMode::Lit;
-        }
-
-        throw std::runtime_error("Unsupported RenderMode value: " + value);
-    }
-
-    SceneRole parseSceneRole(const std::string &value)
-    {
-        if (value == "None")
-        {
-            return SceneRole::None;
-        }
-        if (value == "LightSource")
-        {
-            return SceneRole::LightSource;
-        }
-        if (value == "LightTarget")
-        {
-            return SceneRole::LightTarget;
-        }
-        if (value == "Ground")
-        {
-            return SceneRole::Ground;
-        }
-
-        throw std::runtime_error("Unsupported SceneRole value: " + value);
-    }
-
-    BehaviorType parseBehaviorType(const std::string &value)
-    {
-        if (value == "None")
-        {
-            return BehaviorType::None;
-        }
-        if (value == "Oscillate")
-        {
-            return BehaviorType::Oscillate;
-        }
-        if (value == "Spin")
-        {
-            return BehaviorType::Spin;
-        }
-
-        throw std::runtime_error("Unsupported BehaviorType value: " + value);
-    }
-
-    Object::VertexLayout parseVertexLayout(const std::string &value)
-    {
-        if (value == "PositionUV")
-        {
-            return Object::VertexLayout::PositionUV;
-        }
-        if (value == "PositionNormal")
-        {
-            return Object::VertexLayout::PositionNormal;
-        }
-
-        throw std::runtime_error("Unsupported vertex layout value: " + value);
-    }
-
-    glm::vec3 parseVec3(const nlohmann::json &value, const std::string &fieldName)
-    {
-        if (!value.is_array() || value.size() != 3)
-        {
-            throw std::runtime_error("Expected vec3 array for field: " + fieldName);
-        }
-
-        return glm::vec3(value[0].get<float>(), value[1].get<float>(), value[2].get<float>());
-    }
-
-    SceneDefinition parseSceneDefinition(const std::string &sceneFilePath)
-    {
-        std::ifstream file = openAssetFile(sceneFilePath);
-        if (!file.is_open())
-        {
-            throw std::runtime_error("Failed to open scene file: " + sceneFilePath);
-        }
-
-        nlohmann::json root;
-        file >> root;
-
-        SceneDefinition definition;
-        definition.name = root.at("name").get<std::string>();
-
-        for (const nlohmann::json &materialJson : root.at("materials"))
-        {
-            MaterialDefinition material;
-            material.id = materialJson.at("id").get<std::string>();
-            material.vertexShaderPath = materialJson.at("vertexShaderPath").get<std::string>();
-            material.fragmentShaderPath = materialJson.at("fragmentShaderPath").get<std::string>();
-            material.geometryShaderPath = materialJson.value("geometryShaderPath", "");
-            material.renderMode = parseRenderMode(materialJson.at("renderMode").get<std::string>());
-            material.objectColor = parseVec3(materialJson.at("objectColor"), "materials.objectColor");
-            definition.materials.push_back(material);
-        }
-
-        for (const nlohmann::json &objectJson : root.at("objects"))
-        {
-            SceneObjectDefinition object;
-            object.id = objectJson.at("id").get<std::string>();
-            object.role = parseSceneRole(objectJson.at("role").get<std::string>());
-            object.meshName = objectJson.at("meshName").get<std::string>();
-            object.layout = parseVertexLayout(objectJson.at("layout").get<std::string>());
-            object.position = parseVec3(objectJson.at("position"), "objects.position");
-            object.materialId = objectJson.at("materialId").get<std::string>();
-            object.behavior = parseBehaviorType(objectJson.at("behavior").get<std::string>());
-            object.behaviorSpeed = objectJson.value("behaviorSpeed", 0.0f);
-            object.behaviorAxis = parseVec3(objectJson.at("behaviorAxis"), "objects.behaviorAxis");
-            object.behaviorAmplitude = objectJson.value("behaviorAmplitude", 0.0f);
-            definition.objects.push_back(object);
-        }
-
-        return definition;
-    }
-
-    void ensureLoaded()
-    {
-        if (gLoaded)
-        {
-            return;
-        }
-
-        std::ifstream file = openAssetFile("assets/scenes/scene_config.json");
-        if (!file.is_open())
-        {
-            throw std::runtime_error("Failed to open assets/scenes/scene_config.json");
-        }
-
-        nlohmann::json root;
-        file >> root;
-
-        gSceneRegistry.clear();
-        gSceneCycle.clear();
-        gSceneDefinitions.clear();
-
-        for (const nlohmann::json &entryJson : root.at("registry"))
-        {
-            const SceneId id = parseSceneId(entryJson.at("id").get<std::string>());
-            const std::string filePath = entryJson.at("file").get<std::string>();
-
-            gSceneRegistry.push_back({id, filePath});
-            gSceneDefinitions[static_cast<int>(id)] = parseSceneDefinition(filePath);
-        }
-
-        for (const nlohmann::json &cycleJson : root.at("cycle"))
-        {
-            SceneCycleEntry entry;
-            entry.id = parseSceneId(cycleJson.at("id").get<std::string>());
-            entry.durationSeconds = cycleJson.at("durationSeconds").get<float>();
-            gSceneCycle.push_back(entry);
-        }
-
-        gLoaded = true;
-    }
-} // namespace
-
-const std::vector<SceneRegistryEntry> &getSceneRegistry()
-{
-    ensureLoaded();
-    return gSceneRegistry;
+    file.clear();
+    file.open("../" + path);
+    return file;
 }
 
-const std::vector<SceneCycleEntry> &getDefaultSceneCycle()
+SceneId SceneDefinitions::parseSceneId(const std::string &value)
 {
-    ensureLoaded();
-    return gSceneCycle;
+    return parseEnumValue(value, sceneIdMap, "SceneId");
 }
 
-bool tryCreateSceneDefinition(SceneId id, SceneDefinition &outDefinition)
+RenderMode SceneDefinitions::parseRenderMode(const std::string &value)
+{
+    return parseEnumValue(value, renderModeMap, "RenderMode");
+}
+
+SceneRole SceneDefinitions::parseSceneRole(const std::string &value)
+{
+    return parseEnumValue(value, sceneRoleMap, "SceneRole");
+}
+
+BehaviorType SceneDefinitions::parseBehaviorType(const std::string &value)
+{
+    return parseEnumValue(value, behaviorTypeMap, "BehaviorType");
+}
+
+Object::VertexLayout SceneDefinitions::parseVertexLayout(const std::string &value)
+{
+    return parseEnumValue(value, vertexLayoutMap, "vertex layout");
+}
+
+glm::vec3 SceneDefinitions::parseVec3(float x, float y, float z)
+{
+    return glm::vec3(x, y, z);
+}
+
+SceneDefinition SceneDefinitions::parseSceneDefinition(const std::string &sceneFilePath)
+{
+    std::ifstream file = openAssetFile(sceneFilePath);
+    if (!file.is_open())
+    {
+        throw std::runtime_error("Failed to open scene file: " + sceneFilePath);
+    }
+
+    nlohmann::json root;
+    file >> root;
+
+    SceneDefinition definition;
+    definition.name = root.at("name").get<std::string>();
+
+    for (const nlohmann::json &materialJson : root.at("materials"))
+    {
+        MaterialDefinition material;
+        material.id = materialJson.at("id").get<std::string>();
+        material.vertexShaderPath = materialJson.at("vertexShaderPath").get<std::string>();
+        material.fragmentShaderPath = materialJson.at("fragmentShaderPath").get<std::string>();
+        material.geometryShaderPath = materialJson.value("geometryShaderPath", "");
+        material.renderMode = parseRenderMode(materialJson.at("renderMode").get<std::string>());
+        const nlohmann::json &objectColor = materialJson.at("objectColor");
+        if (!objectColor.is_array() || objectColor.size() != 3)
+        {
+            throw std::runtime_error("Expected vec3 array for field: materials.objectColor");
+        }
+        material.objectColor = parseVec3(objectColor[0].get<float>(), objectColor[1].get<float>(), objectColor[2].get<float>());
+        definition.materials.push_back(material);
+    }
+
+    for (const nlohmann::json &objectJson : root.at("objects"))
+    {
+        SceneObjectDefinition object;
+        object.id = objectJson.at("id").get<std::string>();
+        object.role = parseSceneRole(objectJson.at("role").get<std::string>());
+        object.meshName = objectJson.at("meshName").get<std::string>();
+        object.layout = parseVertexLayout(objectJson.at("layout").get<std::string>());
+        const nlohmann::json &position = objectJson.at("position");
+        if (!position.is_array() || position.size() != 3)
+        {
+            throw std::runtime_error("Expected vec3 array for field: objects.position");
+        }
+        object.position = parseVec3(position[0].get<float>(), position[1].get<float>(), position[2].get<float>());
+        object.materialId = objectJson.at("materialId").get<std::string>();
+        object.behavior = parseBehaviorType(objectJson.at("behavior").get<std::string>());
+        object.behaviorSpeed = objectJson.value("behaviorSpeed", 0.0f);
+        const nlohmann::json &behaviorAxis = objectJson.at("behaviorAxis");
+        if (!behaviorAxis.is_array() || behaviorAxis.size() != 3)
+        {
+            throw std::runtime_error("Expected vec3 array for field: objects.behaviorAxis");
+        }
+        object.behaviorAxis = parseVec3(behaviorAxis[0].get<float>(), behaviorAxis[1].get<float>(), behaviorAxis[2].get<float>());
+        object.behaviorAmplitude = objectJson.value("behaviorAmplitude", 0.0f);
+        definition.objects.push_back(object);
+    }
+
+    return definition;
+}
+
+void SceneDefinitions::ensureLoaded()
+{
+    if (loaded)
+    {
+        return;
+    }
+
+    std::ifstream file = openAssetFile("assets/scenes/scene_config.json");
+    if (!file.is_open())
+    {
+        throw std::runtime_error("Failed to open assets/scenes/scene_config.json");
+    }
+
+    nlohmann::json root;
+    file >> root;
+
+    sceneRegistry.clear();
+    sceneCycle.clear();
+    sceneDefinitions.clear();
+
+    for (const nlohmann::json &entryJson : root.at("registry"))
+    {
+        const SceneId id = parseSceneId(entryJson.at("id").get<std::string>());
+        const std::string filePath = entryJson.at("file").get<std::string>();
+
+        sceneRegistry.push_back({id, filePath});
+        sceneDefinitions[static_cast<int>(id)] = parseSceneDefinition(filePath);
+    }
+
+    for (const nlohmann::json &cycleJson : root.at("cycle"))
+    {
+        SceneCycleEntry entry;
+        entry.id = parseSceneId(cycleJson.at("id").get<std::string>());
+        entry.durationSeconds = cycleJson.at("durationSeconds").get<float>();
+        sceneCycle.push_back(entry);
+    }
+
+    loaded = true;
+}
+
+const std::vector<SceneRegistryEntry> &SceneDefinitions::getSceneRegistry()
+{
+    ensureLoaded();
+    return sceneRegistry;
+}
+
+const std::vector<SceneCycleEntry> &SceneDefinitions::getDefaultSceneCycle()
+{
+    ensureLoaded();
+    return sceneCycle;
+}
+
+bool SceneDefinitions::tryCreateSceneDefinition(SceneId id, SceneDefinition &outDefinition)
 {
     ensureLoaded();
 
-    const auto it = gSceneDefinitions.find(static_cast<int>(id));
-    if (it == gSceneDefinitions.end())
+    const auto it = sceneDefinitions.find(static_cast<int>(id));
+    if (it == sceneDefinitions.end())
     {
         return false;
     }
