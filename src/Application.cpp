@@ -18,7 +18,7 @@ Application::Application()
       lastFrame(0.0f),
       lastSceneSwitchTime(0.0f),
       activeSceneId(SceneId::Basic),
-      sceneCycleIds(),
+      sceneCycle(),
       sceneCyclePosition(0),
       scene(nullptr),
       assetManager(nullptr),
@@ -78,17 +78,17 @@ bool Application::init()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Scene order comes from content config instead of app lifecycle code.
-    sceneCycleIds = getDefaultSceneCycle();
+    sceneCycle = getDefaultSceneCycle();
     sceneCyclePosition = 0;
 
     assetManager = std::make_unique<AssetManager>();
-    if (sceneCycleIds.empty())
+    if (sceneCycle.empty())
     {
         std::cout << "No scenes configured for scene cycle" << std::endl;
         return false;
     }
 
-    activeSceneId = sceneCycleIds[sceneCyclePosition];
+    activeSceneId = sceneCycle[sceneCyclePosition].id;
     lastSceneSwitchTime = 0.0f;
     if (!loadSceneById(activeSceneId))
     {
@@ -109,13 +109,15 @@ void Application::run()
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        // Move forward in the configured scene sequence and stop at the end.
-        if (currentFrame - lastSceneSwitchTime >= 5.0f)
+        const float sceneDurationSeconds = sceneCycle[sceneCyclePosition].durationSeconds;
+
+        // Move forward in the configured scene sequence using per-entry duration.
+        if (sceneDurationSeconds > 0.0f && currentFrame - lastSceneSwitchTime >= sceneDurationSeconds)
         {
-            if (sceneCyclePosition + 1 < sceneCycleIds.size())
+            if (sceneCyclePosition + 1 < sceneCycle.size())
             {
                 const std::size_t nextCyclePosition = sceneCyclePosition + 1;
-                const SceneId nextSceneId = sceneCycleIds[nextCyclePosition];
+                const SceneId nextSceneId = sceneCycle[nextCyclePosition].id;
                 if (loadSceneById(nextSceneId))
                 {
                     sceneCyclePosition = nextCyclePosition;

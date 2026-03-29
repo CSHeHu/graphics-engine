@@ -7,11 +7,11 @@ namespace
         {SceneId::Alternate, createAlternateSceneDefinition},
     };
 
-    const std::vector<SceneId> kDefaultSceneCycle = {
-        SceneId::Basic,
-        SceneId::Alternate,
-        SceneId::Alternate,
-        SceneId::Basic,
+    const std::vector<SceneCycleEntry> kDefaultSceneCycle = {
+        {SceneId::Basic, 5.0f},
+        {SceneId::Alternate, 3.0f},
+        {SceneId::Alternate, 7.0f},
+        {SceneId::Basic, 4.0f},
     };
 } // namespace
 
@@ -126,7 +126,7 @@ const std::vector<SceneRegistryEntry> &getSceneRegistry()
     return kSceneRegistry;
 }
 
-const std::vector<SceneId> &getDefaultSceneCycle()
+const std::vector<SceneCycleEntry> &getDefaultSceneCycle()
 {
     return kDefaultSceneCycle;
 }
