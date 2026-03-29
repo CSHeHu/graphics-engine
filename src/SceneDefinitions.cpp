@@ -21,9 +21,9 @@ SceneDefinition createBasicSceneDefinition()
     definition.name = "basic";
 
     definition.materials = {
-        {"lightSourceMaterial", ShaderProgram::LightSource, RenderMode::LightSource, glm::vec3(1.0f, 1.0f, 1.0f)},
-        {"litOrangeMaterial", ShaderProgram::LightTarget, RenderMode::Lit, glm::vec3(1.0f, 0.5f, 0.31f)},
-        {"litGroundMaterial", ShaderProgram::LightTarget, RenderMode::Lit, glm::vec3(0.2f, 0.7f, 0.2f)},
+        {"lightSourceMaterial", "assets/shaders/lightSource.vs", "assets/shaders/lightSource.fs", "", RenderMode::LightSource, glm::vec3(1.0f, 1.0f, 1.0f)},
+        {"litOrangeMaterial", "assets/shaders/lightTarget.vs", "assets/shaders/lightTarget.fs", "", RenderMode::Lit, glm::vec3(1.0f, 0.5f, 0.31f)},
+        {"litGroundMaterial", "assets/shaders/lightTarget.vs", "assets/shaders/lightTarget.fs", "", RenderMode::Lit, glm::vec3(0.2f, 0.7f, 0.2f)},
     };
 
     definition.objects = {
@@ -74,9 +74,9 @@ SceneDefinition createAlternateSceneDefinition()
     definition.name = "alternate";
 
     definition.materials = {
-        {"lightSourceMaterial", ShaderProgram::LightSource, RenderMode::LightSource, glm::vec3(1.0f, 1.0f, 1.0f)},
-        {"litBlueMaterial", ShaderProgram::LightTarget, RenderMode::Lit, glm::vec3(0.2f, 0.6f, 1.0f)},
-        {"litGroundMaterial", ShaderProgram::LightTarget, RenderMode::Lit, glm::vec3(0.5f, 0.45f, 0.25f)},
+        {"lightSourceMaterial", "assets/shaders/lightSource.vs", "assets/shaders/lightSource.fs", "", RenderMode::LightSource, glm::vec3(1.0f, 1.0f, 1.0f)},
+        {"litBlueMaterial", "assets/shaders/lightTarget.vs", "assets/shaders/lightTarget.fs", "", RenderMode::Lit, glm::vec3(0.2f, 0.6f, 1.0f)},
+        {"litGroundMaterial", "assets/shaders/lightTarget.vs", "assets/shaders/lightTarget.fs", "", RenderMode::Lit, glm::vec3(0.5f, 0.45f, 0.25f)},
     };
 
     definition.objects = {

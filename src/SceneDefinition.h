@@ -15,12 +15,6 @@ enum class SceneRole
     Ground,
 };
 
-enum class ShaderProgram
-{
-    LightSource,
-    LightTarget,
-};
-
 enum class RenderMode
 {
     LightSource,
@@ -37,7 +31,9 @@ enum class BehaviorType
 struct MaterialDefinition
 {
     std::string id;
-    ShaderProgram shaderProgram;
+    std::string vertexShaderPath;
+    std::string fragmentShaderPath;
+    std::string geometryShaderPath;
     RenderMode renderMode;
     glm::vec3 objectColor;
 };

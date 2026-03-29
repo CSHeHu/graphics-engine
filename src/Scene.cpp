@@ -14,20 +14,6 @@
 #include "SceneDefinition.h"
 #include "Shader.h"
 
-namespace
-{
-    // Map shader program enum to concrete cached shader assets.
-    std::shared_ptr<Shader> getShaderForProgram(AssetManager &assets, ShaderProgram program)
-    {
-        if (program == ShaderProgram::LightSource)
-        {
-            return assets.getShader("assets/shaders/lightSource.vs", "assets/shaders/lightSource.fs");
-        }
-
-        return assets.getShader("assets/shaders/lightTarget.vs", "assets/shaders/lightTarget.fs");
-    }
-} // namespace
-
 Scene::Scene(AssetManager &assetManager, SceneDefinition definitionValue)
     : assets(assetManager), definition(std::move(definitionValue)), elapsedTime(0.0f)
 {
@@ -48,7 +34,10 @@ bool Scene::init()
     for (const MaterialDefinition &materialDef : definition.materials)
     {
         std::shared_ptr<RuntimeMaterial> material = std::make_shared<RuntimeMaterial>();
-        material->shader = getShaderForProgram(assets, materialDef.shaderProgram);
+        material->shader = assets.getShader(
+            materialDef.vertexShaderPath,
+            materialDef.fragmentShaderPath,
+            materialDef.geometryShaderPath);
         material->renderMode = materialDef.renderMode;
         material->objectColor = materialDef.objectColor;
 
