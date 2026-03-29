@@ -17,8 +17,8 @@ Application::Application()
       deltaTime(0.0f),
       lastFrame(0.0f),
       lastSceneSwitchTime(0.0f),
-      activeSceneIndex(0),
-      sceneCycleIndices(),
+      activeSceneId(SceneId::Basic),
+      sceneCycleIds(),
       sceneCyclePosition(0),
       scene(nullptr),
       assetManager(nullptr),
@@ -77,20 +77,20 @@ bool Application::init()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // Define scene playback order here. Add more ids to extend the cycle.
-    sceneCycleIndices = {0, 1, 1, 0};
+    // Define scene playback order here. Add more ids from SceneId to extend the cycle.
+    sceneCycleIds = {SceneId::Basic, SceneId::Alternate, SceneId::Alternate, SceneId::Basic};
     sceneCyclePosition = 0;
 
     assetManager = std::make_unique<AssetManager>();
-    if (sceneCycleIndices.empty())
+    if (sceneCycleIds.empty())
     {
         std::cout << "No scenes configured for scene cycle" << std::endl;
         return false;
     }
 
-    activeSceneIndex = sceneCycleIndices[sceneCyclePosition];
+    activeSceneId = sceneCycleIds[sceneCyclePosition];
     lastSceneSwitchTime = 0.0f;
-    if (!loadSceneByIndex(activeSceneIndex))
+    if (!loadSceneById(activeSceneId))
     {
         std::cout << "Failed to initialize scene" << std::endl;
         return false;
@@ -112,14 +112,14 @@ void Application::run()
         // Switch to next configured scene index; stop switching when cycle ends.
         if (currentFrame - lastSceneSwitchTime >= 5.0f)
         {
-            if (sceneCyclePosition + 1 < sceneCycleIndices.size())
+            if (sceneCyclePosition + 1 < sceneCycleIds.size())
             {
                 const std::size_t nextCyclePosition = sceneCyclePosition + 1;
-                const int nextSceneIndex = sceneCycleIndices[nextCyclePosition];
-                if (loadSceneByIndex(nextSceneIndex))
+                const SceneId nextSceneId = sceneCycleIds[nextCyclePosition];
+                if (loadSceneById(nextSceneId))
                 {
                     sceneCyclePosition = nextCyclePosition;
-                    activeSceneIndex = nextSceneIndex;
+                    activeSceneId = nextSceneId;
                     lastSceneSwitchTime = currentFrame;
                 }
                 else
@@ -157,7 +157,7 @@ void Application::renderFrame()
     scene->render(*camera, projection, view);
 }
 
-bool Application::loadSceneByIndex(int index)
+bool Application::loadSceneById(SceneId id)
 {
     if (!assetManager)
     {
@@ -165,17 +165,7 @@ bool Application::loadSceneByIndex(int index)
     }
 
     SceneDefinition definition;
-    if (index == 0)
-    {
-        // id 0 -> basic scene
-        definition = createBasicSceneDefinition();
-    }
-    else if (index == 1)
-    {
-        // id 1 -> alternate scene
-        definition = createAlternateSceneDefinition();
-    }
-    else
+    if (!tryCreateSceneDefinition(id, definition))
     {
         return false;
     }

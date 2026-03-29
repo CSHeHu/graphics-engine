@@ -1,5 +1,13 @@
 #include "SceneDefinitions.h"
 
+namespace
+{
+    const std::vector<SceneRegistryEntry> kSceneRegistry = {
+        {SceneId::Basic, createBasicSceneDefinition},
+        {SceneId::Alternate, createAlternateSceneDefinition},
+    };
+} // namespace
+
 SceneDefinition createBasicSceneDefinition()
 {
     SceneDefinition definition;
@@ -104,4 +112,23 @@ SceneDefinition createAlternateSceneDefinition()
     };
 
     return definition;
+}
+
+const std::vector<SceneRegistryEntry> &getSceneRegistry()
+{
+    return kSceneRegistry;
+}
+
+bool tryCreateSceneDefinition(SceneId id, SceneDefinition &outDefinition)
+{
+    for (const SceneRegistryEntry &entry : kSceneRegistry)
+    {
+        if (entry.id == id)
+        {
+            outDefinition = entry.factory();
+            return true;
+        }
+    }
+
+    return false;
 }

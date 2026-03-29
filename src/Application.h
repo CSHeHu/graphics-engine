@@ -7,6 +7,8 @@
 #include <memory>
 #include <vector>
 
+#include "SceneDefinitions.h"
+
 class Camera;
 class Scene;
 class AssetManager;
@@ -36,12 +38,12 @@ private:
     float deltaTime;
     float lastFrame;
     float lastSceneSwitchTime;
-    int activeSceneIndex;
+    SceneId activeSceneId;
     // Scene cycle instructions:
-    // 1) Add scene ids to sceneCycleIndices in init().
-    // 2) Provide matching ids in loadSceneByIndex().
-    // 3) The loop wraps automatically when the end is reached.
-    std::vector<int> sceneCycleIndices;
+    // 1) Add scene ids to sceneCycleIds in init().
+    // 2) Register scenes in SceneDefinitions.cpp registry.
+    // 3) Switching stops at the end of the cycle.
+    std::vector<SceneId> sceneCycleIds;
     std::size_t sceneCyclePosition;
 
     // Scene
@@ -49,7 +51,7 @@ private:
     std::unique_ptr<AssetManager> assetManager;
 
     // Helper
-    bool loadSceneByIndex(int index);
+    bool loadSceneById(SceneId id);
     void renderFrame();
 };
 
