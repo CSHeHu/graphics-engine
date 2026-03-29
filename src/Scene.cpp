@@ -35,34 +35,51 @@ Scene::Scene(AssetManager &assetManager, SceneDefinition definitionValue)
 
 Scene::~Scene()
 {
+    runtimeMaterials.clear();
     runtimeObjects.clear();
     activeLightSource.reset();
 }
 
 bool Scene::init()
 {
+    runtimeMaterials.clear();
     runtimeObjects.clear();
+
+    for (const MaterialDefinition &materialDef : definition.materials)
+    {
+        std::shared_ptr<RuntimeMaterial> material = std::make_shared<RuntimeMaterial>();
+        material->shader = getShaderForProgram(assets, materialDef.shaderProgram);
+        material->renderMode = materialDef.renderMode;
+        material->objectColor = materialDef.objectColor;
+
+        runtimeMaterials[materialDef.id] = material;
+    }
 
     // Build runtime objects from scene definition data.
     for (const SceneObjectDefinition &objectDef : definition.objects)
     {
+        const auto materialIt = runtimeMaterials.find(objectDef.materialId);
+        if (materialIt == runtimeMaterials.end())
+        {
+            std::cout << "Scene object references unknown material id for object: " << objectDef.id << std::endl;
+            return false;
+        }
+
         const std::vector<float> &vertices = assets.getMeshVertices(objectDef.meshName);
         const std::size_t vertexCount = assets.getMeshVertexCount(objectDef.meshName);
-
-        std::shared_ptr<Shader> shader = getShaderForProgram(assets, objectDef.shaderProgram);
+        std::shared_ptr<RuntimeMaterial> material = materialIt->second;
 
         std::shared_ptr<Object> object = std::make_shared<Object>(
-            shader,
+            material->shader,
             vertices,
             objectDef.position,
             objectDef.layout);
 
         RuntimeSceneObject runtimeObject;
         runtimeObject.object = object;
+        runtimeObject.material = material;
         runtimeObject.vertexCount = vertexCount;
         runtimeObject.role = objectDef.role;
-        runtimeObject.renderMode = objectDef.renderMode;
-        runtimeObject.objectColor = objectDef.objectColor;
         runtimeObject.behavior = objectDef.behavior;
         runtimeObject.behaviorSpeed = objectDef.behaviorSpeed;
         runtimeObject.behaviorAxis = objectDef.behaviorAxis;
@@ -122,21 +139,22 @@ void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm:
         const RuntimeSceneObject &runtimeObject = entry.second;
         std::shared_ptr<Object> object = runtimeObject.object;
 
-        object->shader->use();
-        object->shader->setMat4("projection", projection);
-        object->shader->setMat4("view", view);
+        std::shared_ptr<RuntimeMaterial> material = runtimeObject.material;
+        material->shader->use();
+        material->shader->setMat4("projection", projection);
+        material->shader->setMat4("view", view);
 
-        if (runtimeObject.renderMode == RenderMode::Lit)
+        if (material->renderMode == RenderMode::Lit)
         {
-            object->shader->setVec3("objectColor", runtimeObject.objectColor);
-            object->shader->setVec3("lightColor", 1.0f, 1.0f, 1.0f);
-            object->shader->setVec3("viewPos", camera.Position);
-            object->shader->setVec3("lightPos", activeLightSource->getPosition());
+            material->shader->setVec3("objectColor", material->objectColor);
+            material->shader->setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+            material->shader->setVec3("viewPos", camera.Position);
+            material->shader->setVec3("lightPos", activeLightSource->getPosition());
         }
 
         glBindVertexArray(object->getVAO());
         glm::mat4 model = object->getModelMatrix();
-        object->shader->setMat4("model", model);
+        material->shader->setMat4("model", model);
         glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(runtimeObject.vertexCount));
     }
 }

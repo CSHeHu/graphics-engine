@@ -14,13 +14,19 @@ class Object;
 class Shader;
 class AssetManager;
 
+struct RuntimeMaterial
+{
+    std::shared_ptr<Shader> shader;
+    RenderMode renderMode;
+    glm::vec3 objectColor;
+};
+
 struct RuntimeSceneObject
 {
     std::shared_ptr<Object> object;
+    std::shared_ptr<RuntimeMaterial> material;
     std::size_t vertexCount;
     SceneRole role;
-    RenderMode renderMode;
-    glm::vec3 objectColor;
     BehaviorType behavior;
     float behaviorSpeed;
     glm::vec3 behaviorAxis;
@@ -42,6 +48,7 @@ private:
     SceneDefinition definition;
     float elapsedTime;
 
+    std::unordered_map<std::string, std::shared_ptr<RuntimeMaterial>> runtimeMaterials;
     std::unordered_map<std::string, RuntimeSceneObject> runtimeObjects;
     std::shared_ptr<Object> activeLightSource;
 };

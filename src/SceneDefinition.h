@@ -34,6 +34,14 @@ enum class BehaviorType
     Spin,
 };
 
+struct MaterialDefinition
+{
+    std::string id;
+    ShaderProgram shaderProgram;
+    RenderMode renderMode;
+    glm::vec3 objectColor;
+};
+
 struct SceneObjectDefinition
 {
     std::string id;
@@ -41,11 +49,7 @@ struct SceneObjectDefinition
     std::string meshName;
     Object::VertexLayout layout;
     glm::vec3 position;
-
-    ShaderProgram shaderProgram;
-
-    RenderMode renderMode;
-    glm::vec3 objectColor;
+    std::string materialId;
 
     BehaviorType behavior;
     float behaviorSpeed;
@@ -56,6 +60,7 @@ struct SceneObjectDefinition
 struct SceneDefinition
 {
     std::string name;
+    std::vector<MaterialDefinition> materials;
     std::vector<SceneObjectDefinition> objects;
 };
 
