@@ -77,8 +77,8 @@ bool Application::init()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // Define scene playback order here. Add more ids from SceneId to extend the cycle.
-    sceneCycleIds = {SceneId::Basic, SceneId::Alternate, SceneId::Alternate, SceneId::Basic};
+    // Scene order comes from content config instead of app lifecycle code.
+    sceneCycleIds = getDefaultSceneCycle();
     sceneCyclePosition = 0;
 
     assetManager = std::make_unique<AssetManager>();
@@ -109,7 +109,7 @@ void Application::run()
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        // Switch to next configured scene index; stop switching when cycle ends.
+        // Move forward in the configured scene sequence and stop at the end.
         if (currentFrame - lastSceneSwitchTime >= 5.0f)
         {
             if (sceneCyclePosition + 1 < sceneCycleIds.size())
@@ -165,6 +165,7 @@ bool Application::loadSceneById(SceneId id)
     }
 
     SceneDefinition definition;
+    // Registry resolves scene id -> concrete scene factory.
     if (!tryCreateSceneDefinition(id, definition))
     {
         return false;

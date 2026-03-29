@@ -21,6 +21,7 @@ SceneDefinition createBasicSceneDefinition();
 SceneDefinition createAlternateSceneDefinition();
 
 const std::vector<SceneRegistryEntry> &getSceneRegistry();
+const std::vector<SceneId> &getDefaultSceneCycle();
 bool tryCreateSceneDefinition(SceneId id, SceneDefinition &outDefinition);
 
 #endif // SCENEDEFINITIONS_H

@@ -16,6 +16,7 @@
 
 namespace
 {
+    // Map shader program enum to concrete cached shader assets.
     std::shared_ptr<Shader> getShaderForProgram(AssetManager &assets, ShaderProgram program)
     {
         if (program == ShaderProgram::LightSource)
@@ -42,6 +43,7 @@ bool Scene::init()
 {
     runtimeObjects.clear();
 
+    // Build runtime objects from scene definition data.
     for (const SceneObjectDefinition &objectDef : definition.objects)
     {
         const std::vector<float> &vertices = assets.getMeshVertices(objectDef.meshName);
@@ -69,6 +71,7 @@ bool Scene::init()
         runtimeObjects[objectDef.id] = runtimeObject;
     }
 
+    // Resolve the active light provider once for lit-object uniforms.
     activeLightSource.reset();
     for (const auto &entry : runtimeObjects)
     {
@@ -93,6 +96,7 @@ void Scene::update(float deltaTime)
 {
     elapsedTime += deltaTime;
 
+    // Apply per-object behavior declared by scene definition.
     for (auto &entry : runtimeObjects)
     {
         RuntimeSceneObject &runtimeObject = entry.second;
@@ -112,6 +116,7 @@ void Scene::update(float deltaTime)
 
 void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm::mat4 &view)
 {
+    // Render all objects with shared camera matrices and mode-specific uniforms.
     for (const auto &entry : runtimeObjects)
     {
         const RuntimeSceneObject &runtimeObject = entry.second;
