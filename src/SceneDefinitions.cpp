@@ -191,6 +191,13 @@ SceneDefinition SceneDefinitions::parseSceneDefinition(const std::string &sceneF
         }
         object.position = parseVec3(position[0].get<float>(), position[1].get<float>(), position[2].get<float>());
 
+        const nlohmann::json rotation = objectJson.value("rotation", nlohmann::json::array({0.0f, 0.0f, 0.0f}));
+        if (!rotation.is_array() || rotation.size() != 3)
+        {
+            throw std::runtime_error("Expected vec3 array for field: objects.rotation");
+        }
+        object.rotation = parseVec3(rotation[0].get<float>(), rotation[1].get<float>(), rotation[2].get<float>());
+
         const nlohmann::json scale = objectJson.value("scale", nlohmann::json::array({1.0f, 1.0f, 1.0f}));
         if (!scale.is_array() || scale.size() != 3)
         {

@@ -65,6 +65,20 @@ bool Scene::init()
             objectDef.scale,
             objectDef.layout);
 
+        // Apply initial rotations (pitch, yaw, roll)
+        if (objectDef.rotation.y != 0.0f)
+        {
+            object->setRotation(objectDef.rotation.y, glm::vec3(0.0f, 1.0f, 0.0f));
+        }
+        if (objectDef.rotation.x != 0.0f)
+        {
+            object->rotate(objectDef.rotation.x, glm::vec3(1.0f, 0.0f, 0.0f));
+        }
+        if (objectDef.rotation.z != 0.0f)
+        {
+            object->rotate(objectDef.rotation.z, glm::vec3(0.0f, 0.0f, 1.0f));
+        }
+
         RuntimeSceneObject runtimeObject;
         runtimeObject.object = object;
         runtimeObject.material = material;

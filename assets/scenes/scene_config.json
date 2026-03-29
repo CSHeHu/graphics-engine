@@ -11,11 +11,11 @@
   ],
   "cycle": [
     {
-      "id": "Basic",
+      "id": "Alternate",
       "durationSeconds": 30.0
     },
     {
-      "id": "Alternate",
+      "id": "Basic",
       "durationSeconds": 30.0
     }
   ]
