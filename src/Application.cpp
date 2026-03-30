@@ -11,6 +11,7 @@
 #include "InputManager.h"
 #include "Scene.h"
 #include "SceneDefinitions.h"
+#include "TextManager.h"
 
 Application::Application()
     : window(nullptr, glfwDestroyWindow),
@@ -25,7 +26,9 @@ Application::Application()
       sceneCyclePosition(0),
       scene(nullptr),
       assetManager(nullptr),
-      currentFrame(0.0f)
+      currentFrame(0.0f),
+      textManager(nullptr),
+      infoOverlayEnabled(true)
 {
 }
 
@@ -62,6 +65,8 @@ bool Application::init()
     InputManager::setCameraControlEnabled(true);
     InputManager::setCameraModeToggleCallback([this]()
                                               { this->toggleCameraMode(); });
+    InputManager::setInfoOverlayToggleCallback([this]()
+                                               { this->infoOverlayEnabled = !this->infoOverlayEnabled; });
 
     // callbacks for window resize, mouse movement and scroll movement
     glfwSetFramebufferSizeCallback(window.get(), InputManager::framebufferSizeCallback);
@@ -78,6 +83,9 @@ bool Application::init()
         return false;
     }
 
+    // Disable VSync to test uncapped FPS
+    glfwSwapInterval(0);
+
     // configure global opengl state
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
@@ -91,6 +99,15 @@ bool Application::init()
     if (sceneCycle.empty())
     {
         std::cout << "No scenes configured for scene cycle" << std::endl;
+        return false;
+    }
+
+    // Initialize text manager with config
+    const UIOverlayConfig &uiConfig = SceneDefinitions::getUIOverlayConfig();
+    textManager = std::make_unique<TextManager>();
+    if (!textManager->init(uiConfig.fontPath, uiConfig.vertexShaderPath, uiConfig.fragmentShaderPath))
+    {
+        std::cout << "Failed to initialize text manager" << std::endl;
         return false;
     }
 
@@ -166,8 +183,10 @@ void Application::renderFrame()
     glm::mat4 view = glm::mat4(1.0f);
     view = camera->GetViewMatrix();
 
+    float fps = (deltaTime > 0.0f) ? 1.0f / deltaTime : 0.0f;
+
     scene->update(deltaTime);
-    scene->render(*camera, projection, view);
+    scene->render(*camera, projection, view, fps, infoOverlayEnabled);
 }
 
 bool Application::loadSceneById(SceneId id)
@@ -192,7 +211,7 @@ bool Application::loadSceneById(SceneId id)
         camera->SetPoseLookAt(startKeyframe.position, startKeyframe.lookAt);
     }
 
-    std::unique_ptr<Scene> nextScene = std::make_unique<Scene>(*assetManager, definition);
+    std::unique_ptr<Scene> nextScene = std::make_unique<Scene>(*assetManager, definition, textManager.get());
     if (!nextScene->init())
     {
         return false;

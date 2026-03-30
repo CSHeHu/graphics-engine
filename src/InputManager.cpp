@@ -6,8 +6,10 @@ float InputManager::lastY = 1080 / 2.0f;
 bool InputManager::firstMouse = true;
 bool InputManager::cameraControlEnabled = true;
 bool InputManager::cameraModeToggleLatch = false;
+bool InputManager::infoOverlayToggleLatch = false;
 Camera *InputManager::camera = nullptr;
 InputManager::CameraModeToggleCallback InputManager::cameraModeToggleCallback = nullptr;
+InputManager::InfoOverlayToggleCallback InputManager::infoOverlayToggleCallback = nullptr;
 
 void InputManager::processInput(GLFWwindow *window, float deltaTime)
 {
@@ -21,6 +23,14 @@ void InputManager::processInput(GLFWwindow *window, float deltaTime)
         cameraModeToggleCallback();
     }
     cameraModeToggleLatch = togglePressed;
+
+    // Handle info overlay toggle (always available)
+    const bool overlayTogglePressed = glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS;
+    if (overlayTogglePressed && !infoOverlayToggleLatch && infoOverlayToggleCallback)
+    {
+        infoOverlayToggleCallback();
+    }
+    infoOverlayToggleLatch = overlayTogglePressed;
 
     if (!InputManager::cameraControlEnabled || InputManager::camera == nullptr)
         return;
@@ -87,6 +97,11 @@ void InputManager::setCameraControlEnabled(bool enabled)
 void InputManager::setCameraModeToggleCallback(CameraModeToggleCallback callback)
 {
     cameraModeToggleCallback = callback;
+}
+
+void InputManager::setInfoOverlayToggleCallback(InfoOverlayToggleCallback callback)
+{
+    infoOverlayToggleCallback = callback;
 }
 
 void InputManager::scrollCallback(GLFWwindow *window, double xoffset, double yoffset)

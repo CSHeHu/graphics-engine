@@ -10,6 +10,7 @@
 
 std::vector<SceneCycleEntry> SceneDefinitions::sceneCycle;
 std::unordered_map<int, SceneDefinition> SceneDefinitions::sceneDefinitions;
+UIOverlayConfig SceneDefinitions::uiOverlayConfig;
 bool SceneDefinitions::loaded = false;
 
 const std::unordered_map<std::string, SceneId> SceneDefinitions::sceneIdMap = {
@@ -218,7 +219,42 @@ SceneDefinition SceneDefinitions::parseSceneDefinition(const std::string &sceneF
         definition.objects.push_back(object);
     }
 
+    // Parse text overlays
+    if (root.contains("texts"))
+    {
+        for (const nlohmann::json &textJson : root.at("texts"))
+        {
+            TextDefinition text;
+            text.text = textJson.at("text").get<std::string>();
+            text.x = textJson.at("x").get<float>();
+            text.y = textJson.at("y").get<float>();
+            text.scale = textJson.at("scale").get<float>();
+            const nlohmann::json &color = textJson.at("color");
+            if (!color.is_array() || color.size() != 3)
+            {
+                throw std::runtime_error("Expected vec3 array for field: texts.color");
+            }
+            text.color = parseVec3(color[0].get<float>(), color[1].get<float>(), color[2].get<float>());
+            definition.texts.push_back(text);
+        }
+    }
+
     return definition;
+}
+
+UIOverlayConfig SceneDefinitions::parseUIOverlayConfig(const nlohmann::json &json)
+{
+    UIOverlayConfig config;
+    config.enabled = json.at("enabled").get<bool>();
+    config.fontPath = json.at("fontPath").get<std::string>();
+    config.vertexShaderPath = json.at("vertexShaderPath").get<std::string>();
+    config.fragmentShaderPath = json.at("fragmentShaderPath").get<std::string>();
+    config.fpsX = json.at("fpsX").get<float>();
+    config.fpsY = json.at("fpsY").get<float>();
+    config.sceneNameX = json.at("sceneNameX").get<float>();
+    config.sceneNameY = json.at("sceneNameY").get<float>();
+    config.scale = json.at("scale").get<float>();
+    return config;
 }
 
 void SceneDefinitions::ensureLoaded()
@@ -239,6 +275,12 @@ void SceneDefinitions::ensureLoaded()
 
     sceneCycle.clear();
     sceneDefinitions.clear();
+
+    // Parse UI overlay config
+    if (root.contains("ui") && root.at("ui").contains("infoOverlay"))
+    {
+        uiOverlayConfig = parseUIOverlayConfig(root.at("ui").at("infoOverlay"));
+    }
 
     for (const nlohmann::json &entryJson : root.at("registry"))
     {
@@ -277,4 +319,10 @@ bool SceneDefinitions::tryCreateSceneDefinition(SceneId id, SceneDefinition &out
 
     outDefinition = it->second;
     return true;
+}
+
+const UIOverlayConfig &SceneDefinitions::getUIOverlayConfig()
+{
+    ensureLoaded();
+    return uiOverlayConfig;
 }

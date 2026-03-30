@@ -12,10 +12,12 @@
 #include "Camera.h"
 #include "Object.h"
 #include "SceneDefinition.h"
+#include "SceneDefinitions.h"
 #include "Shader.h"
+#include "TextManager.h"
 
-Scene::Scene(AssetManager &assetManager, SceneDefinition definitionValue)
-    : assets(assetManager), definition(std::move(definitionValue)), elapsedTime(0.0f)
+Scene::Scene(AssetManager &assetManager, SceneDefinition definitionValue, TextManager *textManager)
+    : assets(assetManager), textRenderer(textManager), definition(std::move(definitionValue)), elapsedTime(0.0f)
 {
 }
 
@@ -142,7 +144,7 @@ void Scene::update(float deltaTime)
     }
 }
 
-void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm::mat4 &view)
+void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm::mat4 &view, float fps, bool infoOverlayEnabled)
 {
     // Render all objects with shared camera matrices and mode-specific uniforms.
     for (const auto &entry : runtimeObjects)
@@ -168,5 +170,29 @@ void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm:
         glm::mat4 model = object->getModelMatrix();
         material->shader->setMat4("model", model);
         glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(runtimeObject.vertexCount));
+    }
+
+    // Render scene text overlays
+    if (textRenderer)
+    {
+        for (const TextDefinition &text : definition.texts)
+        {
+            textRenderer->renderText(text.text, text.x, text.y, text.scale, text.color);
+        }
+
+        // Render info overlay with FPS if enabled
+        if (infoOverlayEnabled)
+        {
+            const UIOverlayConfig &overlayConfig = SceneDefinitions::getUIOverlayConfig();
+            if (overlayConfig.enabled)
+            {
+                std::string fpsText = "FPS: " + std::to_string(static_cast<int>(fps));
+                std::string sceneName = "Scene: " + definition.name;
+
+                glm::vec3 overlayColor(1.0f, 1.0f, 1.0f);
+                textRenderer->renderText(fpsText, overlayConfig.fpsX, overlayConfig.fpsY, overlayConfig.scale, overlayColor);
+                textRenderer->renderText(sceneName, overlayConfig.sceneNameX, overlayConfig.sceneNameY, overlayConfig.scale, overlayColor);
+            }
+        }
     }
 }

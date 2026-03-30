@@ -13,6 +13,7 @@ class Camera;
 class Object;
 class Shader;
 class AssetManager;
+class TextManager;
 
 struct RuntimeMaterial
 {
@@ -36,15 +37,16 @@ struct RuntimeSceneObject
 class Scene
 {
 public:
-    Scene(AssetManager &assetManager, SceneDefinition definition);
+    Scene(AssetManager &assetManager, SceneDefinition definition, TextManager *textManager);
     ~Scene();
 
     bool init();
     void update(float deltaTime);
-    void render(const Camera &camera, const glm::mat4 &projection, const glm::mat4 &view);
+    void render(const Camera &camera, const glm::mat4 &projection, const glm::mat4 &view, float fps, bool infoOverlayEnabled);
 
 private:
     AssetManager &assets;
+    TextManager *textRenderer;
     SceneDefinition definition;
     float elapsedTime;
 

@@ -6,6 +6,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include <nlohmann/json.hpp>
+
 #include "Config.h"
 #include "SceneDefinition.h"
 
@@ -26,6 +28,7 @@ class SceneDefinitions
 public:
     static const std::vector<SceneCycleEntry> &getDefaultSceneCycle();
     static bool tryCreateSceneDefinition(SceneId id, SceneDefinition &outDefinition);
+    static const UIOverlayConfig &getUIOverlayConfig();
 
 private:
     template <typename T>
@@ -42,10 +45,12 @@ private:
     static Object::VertexLayout parseVertexLayout(const std::string &value);
     static glm::vec3 parseVec3(float x, float y, float z);
     static SceneDefinition parseSceneDefinition(const std::string &sceneFilePath);
+    static UIOverlayConfig parseUIOverlayConfig(const nlohmann::json &json);
     static void ensureLoaded();
 
     static std::vector<SceneCycleEntry> sceneCycle;
     static std::unordered_map<int, SceneDefinition> sceneDefinitions;
+    static UIOverlayConfig uiOverlayConfig;
     static bool loaded;
 
     static const std::unordered_map<std::string, SceneId> sceneIdMap;

@@ -18,5 +18,18 @@
       "id": "Basic",
       "durationSeconds": 30.0
     }
-  ]
+  ],
+  "ui": {
+    "infoOverlay": {
+      "enabled": true,
+      "fontPath": "assets/fonts/Arial.ttf",
+      "vertexShaderPath": "assets/shaders/text.vs",
+      "fragmentShaderPath": "assets/shaders/text.fs",
+      "fpsX": 10.0,
+      "fpsY": 700.0,
+      "sceneNameX": 10.0,
+      "sceneNameY": 680.0,
+      "scale": 0.3
+    }
+  }
 }

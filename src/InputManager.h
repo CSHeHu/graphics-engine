@@ -11,10 +11,12 @@ class InputManager
 {
 public:
 	using CameraModeToggleCallback = std::function<void()>;
+	using InfoOverlayToggleCallback = std::function<void()>;
 
 	static void setCamera(Camera *cameraPtr);
 	static void setCameraControlEnabled(bool enabled);
 	static void setCameraModeToggleCallback(CameraModeToggleCallback callback);
+	static void setInfoOverlayToggleCallback(InfoOverlayToggleCallback callback);
 	static void processInput(GLFWwindow *window, float deltaTime);
 
 	static void framebufferSizeCallback(GLFWwindow *window, int width, int height);
@@ -27,8 +29,10 @@ private:
 	static bool firstMouse;
 	static bool cameraControlEnabled;
 	static bool cameraModeToggleLatch;
+	static bool infoOverlayToggleLatch;
 	static Camera *camera;
 	static CameraModeToggleCallback cameraModeToggleCallback;
+	static InfoOverlayToggleCallback infoOverlayToggleCallback;
 };
 
 #endif

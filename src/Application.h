@@ -15,6 +15,7 @@
 class Camera;
 class Scene;
 class AssetManager;
+class TextManager;
 
 class Application
 {
@@ -51,6 +52,8 @@ private:
     // Scene
     std::unique_ptr<Scene> scene;
     std::unique_ptr<AssetManager> assetManager;
+    std::unique_ptr<TextManager> textManager;
+    bool infoOverlayEnabled;
 
     // Helper
     bool loadSceneById(SceneId id);
