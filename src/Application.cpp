@@ -28,7 +28,7 @@ Application::Application()
       assetManager(nullptr),
       currentFrame(0.0f),
       textManager(nullptr),
-      infoOverlayEnabled(true)
+      infoOverlayEnabled(false)
 {
 }
 
@@ -36,6 +36,7 @@ Application::~Application()
 {
     scene.reset();
     assetManager.reset();
+    textManager.reset();
     camera.reset();
     window.reset();
     glfwTerminate();
@@ -49,8 +50,29 @@ bool Application::init()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, GL_CONTEXT_VERSION_MINOR);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
+    const WindowConfig &windowConfig = SceneDefinitions::getWindowConfig();
+
+    GLFWmonitor *targetMonitor = nullptr;
+    int targetWidth = windowConfig.width;
+    int targetHeight = windowConfig.height;
+
+    if (windowConfig.mode == WindowMode::Fullscreen)
+    {
+        targetMonitor = glfwGetPrimaryMonitor();
+        const GLFWvidmode *videoMode = glfwGetVideoMode(targetMonitor);
+        if (targetMonitor == nullptr || videoMode == nullptr)
+        {
+            std::cout << "Failed to query primary monitor for fullscreen mode" << std::endl;
+            glfwTerminate();
+            return false;
+        }
+
+        targetWidth = videoMode->width;
+        targetHeight = videoMode->height;
+    }
+
     // glfw window creation
-    window.reset(glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, WINDOW_TITLE, NULL, NULL));
+    window.reset(glfwCreateWindow(targetWidth, targetHeight, WINDOW_TITLE, targetMonitor, NULL));
     if (window == nullptr)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -176,9 +198,16 @@ void Application::renderFrame()
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    int framebufferWidth = 0;
+    int framebufferHeight = 0;
+    glfwGetFramebufferSize(window.get(), &framebufferWidth, &framebufferHeight);
+
+    const float aspectRatio = (framebufferHeight > 0)
+                                  ? static_cast<float>(framebufferWidth) / static_cast<float>(framebufferHeight)
+                                  : static_cast<float>(SCREEN_WIDTH) / static_cast<float>(SCREEN_HEIGHT);
+
     glm::mat4 projection = glm::mat4(1.0f);
-    projection = glm::perspective(glm::radians(camera->Zoom), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT,
-                                  NEAR_PLANE, FAR_PLANE);
+    projection = glm::perspective(glm::radians(camera->Zoom), aspectRatio, NEAR_PLANE, FAR_PLANE);
 
     glm::mat4 view = glm::mat4(1.0f);
     view = camera->GetViewMatrix();

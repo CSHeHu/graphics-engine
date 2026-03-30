@@ -29,6 +29,7 @@ public:
     static const std::vector<SceneCycleEntry> &getDefaultSceneCycle();
     static bool tryCreateSceneDefinition(SceneId id, SceneDefinition &outDefinition);
     static const UIOverlayConfig &getUIOverlayConfig();
+    static const WindowConfig &getWindowConfig();
 
 private:
     template <typename T>
@@ -42,15 +43,18 @@ private:
     static SceneRole parseSceneRole(const std::string &value);
     static BehaviorType parseBehaviorType(const std::string &value);
     static CameraMode parseCameraMode(const std::string &value);
+    static WindowMode parseWindowMode(const std::string &value);
     static Object::VertexLayout parseVertexLayout(const std::string &value);
     static glm::vec3 parseVec3(float x, float y, float z);
     static SceneDefinition parseSceneDefinition(const std::string &sceneFilePath);
     static UIOverlayConfig parseUIOverlayConfig(const nlohmann::json &json);
+    static WindowConfig parseWindowConfig(const nlohmann::json &json);
     static void ensureLoaded();
 
     static std::vector<SceneCycleEntry> sceneCycle;
     static std::unordered_map<int, SceneDefinition> sceneDefinitions;
     static UIOverlayConfig uiOverlayConfig;
+    static WindowConfig windowConfig;
     static bool loaded;
 
     static const std::unordered_map<std::string, SceneId> sceneIdMap;
@@ -58,6 +62,7 @@ private:
     static const std::unordered_map<std::string, SceneRole> sceneRoleMap;
     static const std::unordered_map<std::string, BehaviorType> behaviorTypeMap;
     static const std::unordered_map<std::string, CameraMode> cameraModeMap;
+    static const std::unordered_map<std::string, WindowMode> windowModeMap;
     static const std::unordered_map<std::string, Object::VertexLayout> vertexLayoutMap;
 };
 

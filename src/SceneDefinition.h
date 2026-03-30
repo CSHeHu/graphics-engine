@@ -35,6 +35,12 @@ enum class CameraMode
     Scripted,
 };
 
+enum class WindowMode
+{
+    Windowed,
+    Fullscreen,
+};
+
 struct CameraKeyframe
 {
     float timeSeconds;
@@ -96,6 +102,13 @@ struct UIOverlayConfig
     float scale;
     float lineSpacing;
     std::vector<std::string> stats;
+};
+
+struct WindowConfig
+{
+    WindowMode mode;
+    int width;
+    int height;
 };
 
 struct SceneDefinition

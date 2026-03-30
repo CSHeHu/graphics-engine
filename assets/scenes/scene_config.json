@@ -12,7 +12,7 @@
   "cycle": [
     {
       "id": "Basic",
-      "durationSeconds": 30.0
+      "durationSeconds": 13.5
     },
     {
       "id": "Alternate",
@@ -20,6 +20,11 @@
     }
   ],
   "ui": {
+    "window": {
+      "mode": "Windowed",
+      "width": 1920,
+      "height": 1080
+    },
     "infoOverlay": {
       "enabled": true,
       "fontPath": "assets/fonts/Arial.ttf",
@@ -27,8 +32,8 @@
       "fragmentShaderPath": "assets/shaders/text.fs",
       "x": 10.0,
       "y": 700.0,
-      "scale": 0.3,
-      "lineSpacing": 20.0,
+      "scale": 0.2,
+      "lineSpacing": 10.0,
       "stats": ["fps", "sceneName", "time", "objects", "shaders"]
     }
   }

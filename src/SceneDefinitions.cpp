@@ -11,6 +11,7 @@
 std::vector<SceneCycleEntry> SceneDefinitions::sceneCycle;
 std::unordered_map<int, SceneDefinition> SceneDefinitions::sceneDefinitions;
 UIOverlayConfig SceneDefinitions::uiOverlayConfig;
+WindowConfig SceneDefinitions::windowConfig;
 bool SceneDefinitions::loaded = false;
 
 const std::unordered_map<std::string, SceneId> SceneDefinitions::sceneIdMap = {
@@ -40,6 +41,11 @@ const std::unordered_map<std::string, BehaviorType> SceneDefinitions::behaviorTy
 const std::unordered_map<std::string, CameraMode> SceneDefinitions::cameraModeMap = {
     {"Manual", CameraMode::Manual},
     {"Scripted", CameraMode::Scripted},
+};
+
+const std::unordered_map<std::string, WindowMode> SceneDefinitions::windowModeMap = {
+    {"Windowed", WindowMode::Windowed},
+    {"Fullscreen", WindowMode::Fullscreen},
 };
 
 const std::unordered_map<std::string, Object::VertexLayout> SceneDefinitions::vertexLayoutMap = {
@@ -97,6 +103,11 @@ BehaviorType SceneDefinitions::parseBehaviorType(const std::string &value)
 CameraMode SceneDefinitions::parseCameraMode(const std::string &value)
 {
     return parseEnumValue(value, cameraModeMap, "CameraMode");
+}
+
+WindowMode SceneDefinitions::parseWindowMode(const std::string &value)
+{
+    return parseEnumValue(value, windowModeMap, "WindowMode");
 }
 
 Object::VertexLayout SceneDefinitions::parseVertexLayout(const std::string &value)
@@ -253,7 +264,7 @@ UIOverlayConfig SceneDefinitions::parseUIOverlayConfig(const nlohmann::json &jso
     config.y = json.at("y").get<float>();
     config.scale = json.at("scale").get<float>();
     config.lineSpacing = json.at("lineSpacing").get<float>();
-    
+
     if (json.contains("stats"))
     {
         for (const auto &stat : json.at("stats"))
@@ -261,7 +272,16 @@ UIOverlayConfig SceneDefinitions::parseUIOverlayConfig(const nlohmann::json &jso
             config.stats.push_back(stat.get<std::string>());
         }
     }
-    
+
+    return config;
+}
+
+WindowConfig SceneDefinitions::parseWindowConfig(const nlohmann::json &json)
+{
+    WindowConfig config;
+    config.mode = parseWindowMode(json.at("mode").get<std::string>());
+    config.width = json.at("width").get<int>();
+    config.height = json.at("height").get<int>();
     return config;
 }
 
@@ -288,6 +308,17 @@ void SceneDefinitions::ensureLoaded()
     if (root.contains("ui") && root.at("ui").contains("infoOverlay"))
     {
         uiOverlayConfig = parseUIOverlayConfig(root.at("ui").at("infoOverlay"));
+    }
+
+    if (root.contains("ui") && root.at("ui").contains("window"))
+    {
+        windowConfig = parseWindowConfig(root.at("ui").at("window"));
+    }
+    else
+    {
+        windowConfig.mode = WindowMode::Windowed;
+        windowConfig.width = static_cast<int>(SCREEN_WIDTH);
+        windowConfig.height = static_cast<int>(SCREEN_HEIGHT);
     }
 
     for (const nlohmann::json &entryJson : root.at("registry"))
@@ -333,4 +364,10 @@ const UIOverlayConfig &SceneDefinitions::getUIOverlayConfig()
 {
     ensureLoaded();
     return uiOverlayConfig;
+}
+
+const WindowConfig &SceneDefinitions::getWindowConfig()
+{
+    ensureLoaded();
+    return windowConfig;
 }

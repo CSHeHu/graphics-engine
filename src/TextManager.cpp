@@ -1,6 +1,7 @@
 #include "TextManager.h"
 
 #include <glad/glad.h>
+#include <GLFW/glfw3.h>
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
 #include <ft2build.h>
@@ -15,10 +16,13 @@ TextManager::TextManager() : vao(0), vbo(0), initialized(false)
 
 TextManager::~TextManager()
 {
-    if (vao != 0)
-        glDeleteVertexArrays(1, &vao);
-    if (vbo != 0)
-        glDeleteBuffers(1, &vbo);
+    if (glfwGetCurrentContext() != nullptr)
+    {
+        if (vao != 0)
+            glDeleteVertexArrays(1, &vao);
+        if (vbo != 0)
+            glDeleteBuffers(1, &vbo);
+    }
     shader.reset();
 }
 
