@@ -69,9 +69,9 @@
       "position": [1.0, 1.0, -5.0],
       "materialId": "lightSourceMaterial",
       "behavior": "Oscillate",
-      "behaviorSpeed": 1.0,
+      "behaviorSpeed": 0.5,
       "behaviorAxis": [1.0, 1.0, 1.0],
-      "behaviorAmplitude": 0.01
+      "behaviorAmplitude": 2.5
     },
     {
       "id": "lightTargetCube",

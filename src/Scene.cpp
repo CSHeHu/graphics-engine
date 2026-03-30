@@ -90,6 +90,7 @@ bool Scene::init()
         runtimeObject.behaviorSpeed = objectDef.behaviorSpeed;
         runtimeObject.behaviorAxis = objectDef.behaviorAxis;
         runtimeObject.behaviorAmplitude = objectDef.behaviorAmplitude;
+        runtimeObject.initialPosition = objectDef.position;
 
         runtimeObjects[objectDef.id] = runtimeObject;
     }
@@ -128,7 +129,7 @@ void Scene::update(float deltaTime)
         if (runtimeObject.behavior == BehaviorType::Oscillate)
         {
             const float delta = std::sin(elapsedTime * runtimeObject.behaviorSpeed) * runtimeObject.behaviorAmplitude;
-            object->setPosition(object->getPosition() + delta);
+            object->setPosition(runtimeObject.initialPosition + runtimeObject.behaviorAxis * delta);
         }
         else if (runtimeObject.behavior == BehaviorType::Spin)
         {
