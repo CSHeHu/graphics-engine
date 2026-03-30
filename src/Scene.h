@@ -33,6 +33,7 @@ struct RuntimeSceneObject
     glm::vec3 behaviorAxis;
     float behaviorAmplitude;
     glm::vec3 initialPosition;
+    float initialRotationAngle;
 };
 
 class Scene

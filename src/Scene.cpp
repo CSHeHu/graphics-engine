@@ -92,6 +92,7 @@ bool Scene::init()
         runtimeObject.behaviorAxis = objectDef.behaviorAxis;
         runtimeObject.behaviorAmplitude = objectDef.behaviorAmplitude;
         runtimeObject.initialPosition = objectDef.position;
+        runtimeObject.initialRotationAngle = object->getRotationAngle();
 
         runtimeObjects[objectDef.id] = runtimeObject;
     }
@@ -132,14 +133,14 @@ void Scene::update(float deltaTime, float sceneElapsedTime)
         }
         else if (runtimeObject.behavior == BehaviorType::Spin)
         {
-            object->rotate(runtimeObject.behaviorSpeed * deltaTime, runtimeObject.behaviorAxis);
+            object->setRotation(runtimeObject.initialRotationAngle + runtimeObject.behaviorSpeed * sceneElapsedTime,
+                                runtimeObject.behaviorAxis);
         }
         else if (runtimeObject.behavior == BehaviorType::Fly)
         {
-            // Move along the direction specified by behaviorAxis at speed behaviorSpeed
             const glm::vec3 direction = glm::normalize(runtimeObject.behaviorAxis);
-            const glm::vec3 displacement = direction * (runtimeObject.behaviorSpeed * deltaTime);
-            object->setPosition(object->getPosition() + displacement);
+            const glm::vec3 displacement = direction * (runtimeObject.behaviorSpeed * sceneElapsedTime);
+            object->setPosition(runtimeObject.initialPosition + displacement);
         }
     }
 }
