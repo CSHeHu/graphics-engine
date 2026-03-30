@@ -2,6 +2,7 @@
 
 #include <glad/glad.h>
 #include <cmath>
+#include <cstdio>
 #include <iostream>
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
@@ -145,7 +146,7 @@ void Scene::update(float deltaTime)
     }
 }
 
-void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm::mat4 &view, float fps, bool infoOverlayEnabled)
+void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm::mat4 &view, float fps, float sceneElapsedTime, const UIOverlayConfig &overlayConfig, bool infoOverlayEnabled)
 {
     // Render all objects with shared camera matrices and mode-specific uniforms.
     for (const auto &entry : runtimeObjects)
@@ -182,17 +183,46 @@ void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm:
         }
 
         // Render info overlay with FPS if enabled
-        if (infoOverlayEnabled)
+        if (infoOverlayEnabled && overlayConfig.enabled)
         {
-            const UIOverlayConfig &overlayConfig = SceneDefinitions::getUIOverlayConfig();
-            if (overlayConfig.enabled)
-            {
-                std::string fpsText = "FPS: " + std::to_string(static_cast<int>(fps));
-                std::string sceneName = "Scene: " + definition.name;
+            glm::vec3 overlayColor(1.0f, 1.0f, 1.0f);
+            float yOffset = overlayConfig.y;
 
-                glm::vec3 overlayColor(1.0f, 1.0f, 1.0f);
-                textRenderer->renderText(fpsText, overlayConfig.fpsX, overlayConfig.fpsY, overlayConfig.scale, overlayColor);
-                textRenderer->renderText(sceneName, overlayConfig.sceneNameX, overlayConfig.sceneNameY, overlayConfig.scale, overlayColor);
+            // Dynamically render stats based on config
+            for (const std::string &stat : overlayConfig.stats)
+            {
+                std::string statLine;
+
+                if (stat == "fps")
+                {
+                    statLine = "FPS: " + std::to_string(static_cast<int>(fps));
+                }
+                else if (stat == "sceneName")
+                {
+                    statLine = "Scene: " + definition.name;
+                }
+                else if (stat == "time")
+                {
+                    int minutes = static_cast<int>(sceneElapsedTime) / 60;
+                    int seconds = static_cast<int>(sceneElapsedTime) % 60;
+                    char timeBuffer[32];
+                    snprintf(timeBuffer, sizeof(timeBuffer), "Time: %d:%02d", minutes, seconds);
+                    statLine = timeBuffer;
+                }
+                else if (stat == "objects")
+                {
+                    statLine = "Objects: " + std::to_string(definition.objects.size());
+                }
+                else if (stat == "shaders")
+                {
+                    statLine = "Shaders: " + std::to_string(definition.materials.size());
+                }
+
+                if (!statLine.empty())
+                {
+                    textRenderer->renderText(statLine, overlayConfig.x, yOffset, overlayConfig.scale, overlayColor);
+                    yOffset -= overlayConfig.lineSpacing;
+                }
             }
         }
     }

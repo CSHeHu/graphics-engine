@@ -249,11 +249,19 @@ UIOverlayConfig SceneDefinitions::parseUIOverlayConfig(const nlohmann::json &jso
     config.fontPath = json.at("fontPath").get<std::string>();
     config.vertexShaderPath = json.at("vertexShaderPath").get<std::string>();
     config.fragmentShaderPath = json.at("fragmentShaderPath").get<std::string>();
-    config.fpsX = json.at("fpsX").get<float>();
-    config.fpsY = json.at("fpsY").get<float>();
-    config.sceneNameX = json.at("sceneNameX").get<float>();
-    config.sceneNameY = json.at("sceneNameY").get<float>();
+    config.x = json.at("x").get<float>();
+    config.y = json.at("y").get<float>();
     config.scale = json.at("scale").get<float>();
+    config.lineSpacing = json.at("lineSpacing").get<float>();
+    
+    if (json.contains("stats"))
+    {
+        for (const auto &stat : json.at("stats"))
+        {
+            config.stats.push_back(stat.get<std::string>());
+        }
+    }
+    
     return config;
 }
 

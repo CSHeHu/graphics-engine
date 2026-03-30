@@ -91,11 +91,11 @@ struct UIOverlayConfig
     std::string fontPath;
     std::string vertexShaderPath;
     std::string fragmentShaderPath;
-    float fpsX;
-    float fpsY;
-    float sceneNameX;
-    float sceneNameY;
+    float x;
+    float y;
     float scale;
+    float lineSpacing;
+    std::vector<std::string> stats;
 };
 
 struct SceneDefinition

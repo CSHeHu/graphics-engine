@@ -184,9 +184,11 @@ void Application::renderFrame()
     view = camera->GetViewMatrix();
 
     float fps = (deltaTime > 0.0f) ? 1.0f / deltaTime : 0.0f;
+    float sceneElapsedTime = currentFrame - lastSceneSwitchTime;
+    const UIOverlayConfig &overlayConfig = SceneDefinitions::getUIOverlayConfig();
 
     scene->update(deltaTime);
-    scene->render(*camera, projection, view, fps, infoOverlayEnabled);
+    scene->render(*camera, projection, view, fps, sceneElapsedTime, overlayConfig, infoOverlayEnabled);
 }
 
 bool Application::loadSceneById(SceneId id)

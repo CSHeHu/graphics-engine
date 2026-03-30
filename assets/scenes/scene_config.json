@@ -25,11 +25,11 @@
       "fontPath": "assets/fonts/Arial.ttf",
       "vertexShaderPath": "assets/shaders/text.vs",
       "fragmentShaderPath": "assets/shaders/text.fs",
-      "fpsX": 10.0,
-      "fpsY": 700.0,
-      "sceneNameX": 10.0,
-      "sceneNameY": 680.0,
-      "scale": 0.3
+      "x": 10.0,
+      "y": 700.0,
+      "scale": 0.3,
+      "lineSpacing": 20.0,
+      "stats": ["fps", "sceneName", "time", "objects", "shaders"]
     }
   }
 }

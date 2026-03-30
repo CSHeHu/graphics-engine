@@ -43,7 +43,7 @@ public:
 
     bool init();
     void update(float deltaTime);
-    void render(const Camera &camera, const glm::mat4 &projection, const glm::mat4 &view, float fps, bool infoOverlayEnabled);
+    void render(const Camera &camera, const glm::mat4 &projection, const glm::mat4 &view, float fps, float sceneElapsedTime, const UIOverlayConfig &overlayConfig, bool infoOverlayEnabled);
 
 private:
     AssetManager &assets;
