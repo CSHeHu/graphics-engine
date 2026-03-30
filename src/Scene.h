@@ -42,14 +42,13 @@ public:
     ~Scene();
 
     bool init();
-    void update(float deltaTime);
+    void update(float deltaTime, float sceneElapsedTime);
     void render(const Camera &camera, const glm::mat4 &projection, const glm::mat4 &view, float fps, float sceneElapsedTime, const UIOverlayConfig &overlayConfig, bool infoOverlayEnabled);
 
 private:
     AssetManager &assets;
     TextManager *textRenderer;
     SceneDefinition definition;
-    float elapsedTime;
 
     std::unordered_map<std::string, std::shared_ptr<RuntimeMaterial>> runtimeMaterials;
     std::unordered_map<std::string, RuntimeSceneObject> runtimeObjects;

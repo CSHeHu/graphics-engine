@@ -18,7 +18,7 @@
 #include "TextManager.h"
 
 Scene::Scene(AssetManager &assetManager, SceneDefinition definitionValue, TextManager *textManager)
-    : assets(assetManager), textRenderer(textManager), definition(std::move(definitionValue)), elapsedTime(0.0f)
+    : assets(assetManager), textRenderer(textManager), definition(std::move(definitionValue))
 {
 }
 
@@ -117,10 +117,8 @@ bool Scene::init()
     return true;
 }
 
-void Scene::update(float deltaTime)
+void Scene::update(float deltaTime, float sceneElapsedTime)
 {
-    elapsedTime += deltaTime;
-
     // Apply per-object behavior declared by scene definition.
     for (auto &entry : runtimeObjects)
     {
@@ -129,7 +127,7 @@ void Scene::update(float deltaTime)
 
         if (runtimeObject.behavior == BehaviorType::Oscillate)
         {
-            const float delta = std::sin(elapsedTime * runtimeObject.behaviorSpeed) * runtimeObject.behaviorAmplitude;
+            const float delta = std::sin(sceneElapsedTime * runtimeObject.behaviorSpeed) * runtimeObject.behaviorAmplitude;
             object->setPosition(runtimeObject.initialPosition + runtimeObject.behaviorAxis * delta);
         }
         else if (runtimeObject.behavior == BehaviorType::Spin)
@@ -158,7 +156,7 @@ void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm:
         material->shader->use();
         material->shader->setMat4("projection", projection);
         material->shader->setMat4("view", view);
-        material->shader->setFloat("uTime", elapsedTime);
+        material->shader->setFloat("uTime", sceneElapsedTime);
 
         if (material->renderMode == RenderMode::Lit)
         {
