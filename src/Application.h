@@ -42,9 +42,9 @@ private:
     bool scriptedCameraEnabled;
     SceneDefinition activeSceneDefinition;
 
-    float currentFrame;
+    float currentTimeSeconds;
     float deltaTime;
-    float lastFrame;
+    float lastTimeSeconds;
     float lastSceneSwitchTime;
     SceneId activeSceneId;
     /** Ordered scene playback plan loaded from scene configuration. */

@@ -145,7 +145,7 @@ void Scene::update(float deltaTime, float sceneElapsedTime)
     }
 }
 
-void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm::mat4 &view, float fps, float sceneElapsedTime, const UIOverlayConfig &overlayConfig, bool infoOverlayEnabled)
+void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm::mat4 &view, float fps, float sceneElapsedTime, const UIOverlayConfig &overlayConfig, bool infoOverlayEnabled, float currentTimeSeconds)
 {
     // Render all objects with shared camera matrices and mode-specific uniforms.
     for (const auto &entry : runtimeObjects)
@@ -202,19 +202,33 @@ void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm:
                 }
                 else if (stat == "time")
                 {
-                    int minutes = static_cast<int>(sceneElapsedTime) / 60;
-                    int seconds = static_cast<int>(sceneElapsedTime) % 60;
-                    char timeBuffer[32];
-                    snprintf(timeBuffer, sizeof(timeBuffer), "Time: %d:%02d", minutes, seconds);
-                    statLine = timeBuffer;
+                    int totalMinutes = static_cast<int>(currentTimeSeconds) / 60;
+                    int totalSeconds = static_cast<int>(currentTimeSeconds) % 60;
+                    char totalTimeBuffer[32];
+                    snprintf(totalTimeBuffer, sizeof(totalTimeBuffer), "Total: %d:%02d", totalMinutes, totalSeconds);
+
+                    int sceneMinutes = static_cast<int>(sceneElapsedTime) / 60;
+                    int sceneSeconds = static_cast<int>(sceneElapsedTime) % 60;
+                    char sceneTimeBuffer[32];
+                    snprintf(sceneTimeBuffer, sizeof(sceneTimeBuffer), "Scene: %d:%02d", sceneMinutes, sceneSeconds);
+
+                    statLine = std::string(totalTimeBuffer) + " | " + std::string(sceneTimeBuffer);
                 }
                 else if (stat == "objects")
                 {
-                    statLine = "Objects: " + std::to_string(definition.objects.size());
+                    statLine = "Objects:";
+                    for (const SceneObjectDefinition &object : definition.objects)
+                    {
+                        statLine += " " + object.id;
+                    }
                 }
                 else if (stat == "shaders")
                 {
-                    statLine = "Shaders: " + std::to_string(definition.materials.size());
+                    statLine = "Shaders:";
+                    for (const MaterialDefinition &objectDef : definition.materials)
+                    {
+                        statLine += " " + objectDef.id;
+                    }
                 }
 
                 if (!statLine.empty())

@@ -54,7 +54,7 @@ public:
     /** @brief Update behavior-driven transforms for the current frame. */
     void update(float deltaTime, float sceneElapsedTime);
     /** @brief Render scene geometry and optional text overlay. */
-    void render(const Camera &camera, const glm::mat4 &projection, const glm::mat4 &view, float fps, float sceneElapsedTime, const UIOverlayConfig &overlayConfig, bool infoOverlayEnabled);
+    void render(const Camera &camera, const glm::mat4 &projection, const glm::mat4 &view, float fps, float sceneElapsedTime, const UIOverlayConfig &overlayConfig, bool infoOverlayEnabled, float currentTimeSeconds);
 
 private:
     AssetManager &assets;

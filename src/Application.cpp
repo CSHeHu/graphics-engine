@@ -19,14 +19,14 @@ Application::Application()
       scriptedCameraEnabled(false),
       activeSceneDefinition(),
       deltaTime(0.0f),
-      lastFrame(0.0f),
+      lastTimeSeconds(0.0f),
       lastSceneSwitchTime(0.0f),
       activeSceneId(SceneId::Basic),
       sceneCycle(),
       sceneCyclePosition(0),
       scene(nullptr),
       assetManager(nullptr),
-      currentFrame(0.0f),
+      currentTimeSeconds(0.0f),
       textManager(nullptr),
       infoOverlayEnabled(false)
 {
@@ -150,14 +150,14 @@ void Application::run()
     while (!glfwWindowShouldClose(window.get()))
     {
         // per-frame time logic
-        currentFrame = static_cast<float>(glfwGetTime());
-        deltaTime = currentFrame - lastFrame;
-        lastFrame = currentFrame;
+        currentTimeSeconds = static_cast<float>(glfwGetTime());
+        deltaTime = currentTimeSeconds - lastTimeSeconds;
+        lastTimeSeconds = currentTimeSeconds;
 
         const float sceneDurationSeconds = sceneCycle[sceneCyclePosition].durationSeconds;
 
         // Move forward in the configured scene sequence using per-entry duration.
-        if (sceneDurationSeconds > 0.0f && currentFrame - lastSceneSwitchTime >= sceneDurationSeconds)
+        if (sceneDurationSeconds > 0.0f && currentTimeSeconds - lastSceneSwitchTime >= sceneDurationSeconds)
         {
             if (sceneCyclePosition + 1 < sceneCycle.size())
             {
@@ -167,7 +167,7 @@ void Application::run()
                 {
                     sceneCyclePosition = nextCyclePosition;
                     activeSceneId = nextSceneId;
-                    lastSceneSwitchTime = currentFrame;
+                    lastSceneSwitchTime = currentTimeSeconds;
                 }
                 else
                 {
@@ -178,7 +178,7 @@ void Application::run()
 
         if (scriptedCameraEnabled)
         {
-            const float sceneElapsed = currentFrame - lastSceneSwitchTime;
+            const float sceneElapsed = currentTimeSeconds - lastSceneSwitchTime;
             applyScriptedCamera(sceneElapsed);
         }
 
@@ -213,11 +213,11 @@ void Application::renderFrame()
     view = camera->GetViewMatrix();
 
     float fps = (deltaTime > 0.0f) ? 1.0f / deltaTime : 0.0f;
-    float sceneElapsedTime = currentFrame - lastSceneSwitchTime;
+    float sceneElapsedTime = currentTimeSeconds - lastSceneSwitchTime;
     const UIOverlayConfig &overlayConfig = SceneDefinitions::getUIOverlayConfig();
 
     scene->update(deltaTime, sceneElapsedTime);
-    scene->render(*camera, projection, view, fps, sceneElapsedTime, overlayConfig, infoOverlayEnabled);
+    scene->render(*camera, projection, view, fps, sceneElapsedTime, overlayConfig, infoOverlayEnabled, currentTimeSeconds);
 }
 
 bool Application::loadSceneById(SceneId id)
