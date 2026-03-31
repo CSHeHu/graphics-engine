@@ -55,23 +55,23 @@ public:
         updateCameraVectors();
     }
 
-    // returns the view matrix calculated using Euler Angles and the LookAt Matrix
+    /** @brief Build the current view matrix. */
     glm::mat4 GetViewMatrix();
 
-    // processes input received from any keyboard-like input system. Accepts input parameter in the form of camera defined ENUM (to abstract it from windowing systems)
+    /** @brief Move camera using keyboard direction and frame delta time. */
     void ProcessKeyboard(Camera_Movement direction, float deltaTime);
 
-    // processes input received from a mouse input system. Expects the offset value in both the x and y direction.
+    /** @brief Rotate camera from mouse movement deltas. */
     void ProcessMouseMovement(float xoffset, float yoffset, GLboolean constrainPitch = true);
 
-    // processes input received from a mouse scroll-wheel event. Only requires input on the vertical wheel-axis
+    /** @brief Update camera zoom from mouse wheel delta. */
     void ProcessMouseScroll(float yoffset);
 
-    // sets camera position and orientation so Front points to lookAtTarget.
+    /** @brief Set camera position and orient it to look at a target point. */
     void SetPoseLookAt(const glm::vec3 &position, const glm::vec3 &lookAtTarget);
 
 private:
-    // calculates the front vector from the Camera's (updated) Euler Angles
+    /** @brief Recompute direction vectors from Euler angles. */
     void updateCameraVectors();
 };
 #endif

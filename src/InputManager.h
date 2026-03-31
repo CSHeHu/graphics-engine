@@ -13,14 +13,22 @@ public:
 	using CameraModeToggleCallback = std::function<void()>;
 	using InfoOverlayToggleCallback = std::function<void()>;
 
+	/** @brief Set camera instance for input-driven movement and rotation. */
 	static void setCamera(Camera *cameraPtr);
+	/** @brief Enable or disable camera controls (WASD + mouse look). */
 	static void setCameraControlEnabled(bool enabled);
+	/** @brief Register callback for camera mode toggle key. */
 	static void setCameraModeToggleCallback(CameraModeToggleCallback callback);
+	/** @brief Register callback for info overlay toggle key. */
 	static void setInfoOverlayToggleCallback(InfoOverlayToggleCallback callback);
+	/** @brief Process per-frame keyboard input. */
 	static void processInput(GLFWwindow *window, float deltaTime);
 
+	/** @brief Resize callback that updates OpenGL viewport. */
 	static void framebufferSizeCallback(GLFWwindow *window, int width, int height);
+	/** @brief Mouse-move callback for camera look updates. */
 	static void mouseCallback(GLFWwindow *window, double xposIn, double yposIn);
+	/** @brief Mouse-wheel callback for camera zoom updates. */
 	static void scrollCallback(GLFWwindow *window, double xoffset, double yoffset);
 
 private:

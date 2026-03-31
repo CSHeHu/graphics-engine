@@ -4,14 +4,18 @@
 #include <string>
 #include <vector>
 
-class TextureManager {
+class TextureManager
+{
 public:
+    /** @brief Construct empty texture manager. */
     TextureManager();
-    void loadTexture(const std::string& path);
+    /** @brief Load texture from disk and store its OpenGL texture id. */
+    void loadTexture(const std::string &path);
+    /** @brief Bind all loaded textures to consecutive texture units. */
     void bindTextures() const;
-    
 
 private:
+    /** Texture handles owned by this manager. */
     std::vector<unsigned int> m_TextureIDs;
 };
 

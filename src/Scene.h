@@ -15,6 +15,7 @@ class Shader;
 class AssetManager;
 class TextManager;
 
+/** @brief Runtime material state resolved from scene configuration. */
 struct RuntimeMaterial
 {
     std::shared_ptr<Shader> shader;
@@ -22,6 +23,7 @@ struct RuntimeMaterial
     glm::vec3 objectColor;
 };
 
+/** @brief Runtime object state used for rendering and behavior updates. */
 struct RuntimeSceneObject
 {
     std::shared_ptr<Object> object;
@@ -36,14 +38,22 @@ struct RuntimeSceneObject
     float initialRotationAngle;
 };
 
+/**
+ * @brief Runtime scene container that updates behaviors and renders scene content.
+ */
 class Scene
 {
 public:
+    /** @brief Construct scene runtime from parsed definition and shared managers. */
     Scene(AssetManager &assetManager, SceneDefinition definition, TextManager *textManager);
+    /** @brief Destroy scene runtime resources. */
     ~Scene();
 
+    /** @brief Initialize runtime materials and objects for the active definition. */
     bool init();
+    /** @brief Update behavior-driven transforms for the current frame. */
     void update(float deltaTime, float sceneElapsedTime);
+    /** @brief Render scene geometry and optional text overlay. */
     void render(const Camera &camera, const glm::mat4 &projection, const glm::mat4 &view, float fps, float sceneElapsedTime, const UIOverlayConfig &overlayConfig, bool infoOverlayEnabled);
 
 private:
@@ -51,7 +61,9 @@ private:
     TextManager *textRenderer;
     SceneDefinition definition;
 
+    /** Runtime material map keyed by material id. */
     std::unordered_map<std::string, std::shared_ptr<RuntimeMaterial>> runtimeMaterials;
+    /** Runtime object map keyed by object id. */
     std::unordered_map<std::string, RuntimeSceneObject> runtimeObjects;
     std::shared_ptr<Object> activeLightSource;
 };

@@ -52,6 +52,7 @@ struct CameraRouteDefinition
 {
     CameraMode mode = CameraMode::Manual;
     bool loop = true;
+    /** Time-ordered camera keyframes for scripted mode. */
     std::vector<CameraKeyframe> keyframes;
 };
 
@@ -101,6 +102,7 @@ struct UIOverlayConfig
     float y;
     float scale;
     float lineSpacing;
+    /** Overlay stat identifiers to render in configured order. */
     std::vector<std::string> stats;
 };
 
@@ -115,8 +117,11 @@ struct SceneDefinition
 {
     std::string name;
     CameraRouteDefinition camera;
+    /** Material definitions referenced by scene objects. */
     std::vector<MaterialDefinition> materials;
+    /** Scene object definitions instantiated for runtime rendering. */
     std::vector<SceneObjectDefinition> objects;
+    /** Optional static text overlays rendered with scene. */
     std::vector<TextDefinition> texts;
 };
 

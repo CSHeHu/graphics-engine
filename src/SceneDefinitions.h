@@ -23,12 +23,19 @@ struct SceneCycleEntry
     float durationSeconds;
 };
 
+/**
+ * @brief Loader and cache for scene configuration JSON files.
+ */
 class SceneDefinitions
 {
 public:
+    /** @brief Get ordered default scene cycle from global config. */
     static const std::vector<SceneCycleEntry> &getDefaultSceneCycle();
+    /** @brief Build scene definition for scene id if available. */
     static bool tryCreateSceneDefinition(SceneId id, SceneDefinition &outDefinition);
+    /** @brief Get UI overlay configuration. */
     static const UIOverlayConfig &getUIOverlayConfig();
+    /** @brief Get window mode and size configuration. */
     static const WindowConfig &getWindowConfig();
 
 private:
@@ -51,7 +58,9 @@ private:
     static WindowConfig parseWindowConfig(const nlohmann::json &json);
     static void ensureLoaded();
 
+    /** Scene cycle entries parsed from scene_config.json. */
     static std::vector<SceneCycleEntry> sceneCycle;
+    /** Parsed per-scene definitions keyed by SceneId integer value. */
     static std::unordered_map<int, SceneDefinition> sceneDefinitions;
     static UIOverlayConfig uiOverlayConfig;
     static WindowConfig windowConfig;
