@@ -45,6 +45,7 @@ private:
     float currentTimeSeconds;
     float deltaTime;
     float lastTimeSeconds;
+    float lastRealTimeSeconds;
     float lastSceneSwitchTime;
     SceneId activeSceneId;
     /** Ordered scene playback plan loaded from scene configuration. */
@@ -55,6 +56,7 @@ private:
     std::unique_ptr<AssetManager> assetManager;
     std::unique_ptr<TextManager> textManager;
     bool infoOverlayEnabled;
+    bool paused;
 
     /** @brief Load and activate scene runtime objects for a scene id. */
     bool loadSceneById(SceneId id);

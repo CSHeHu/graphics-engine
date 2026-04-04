@@ -9,8 +9,14 @@ bool InputManager::firstMouse = true;
 bool InputManager::cameraControlEnabled = true;
 bool InputManager::cameraModeToggleLatch = false;
 bool InputManager::infoOverlayToggleLatch = false;
+bool InputManager::pauseToggleLatch = false;
+bool InputManager::stepForwardLatch = false;
+bool InputManager::stepBackwardLatch = false;
 bool InputManager::cameraModeToggleRequested = false;
 bool InputManager::infoOverlayToggleRequested = false;
+bool InputManager::pauseToggleRequested = false;
+bool InputManager::timeStepForwardRequested = false;
+bool InputManager::timeStepBackwardRequested = false;
 Camera *InputManager::camera = nullptr;
 
 void InputManager::processInput(GLFWwindow *window, float deltaTime)
@@ -31,6 +37,27 @@ void InputManager::processInput(GLFWwindow *window, float deltaTime)
         infoOverlayToggleRequested = true;
     }
     infoOverlayToggleLatch = infoOverlayTogglePressed;
+
+    const bool pauseTogglePressed = glfwGetKey(window, KEY_TOGGLE_PAUSE) == GLFW_PRESS;
+    if (pauseTogglePressed && !pauseToggleLatch)
+    {
+        pauseToggleRequested = true;
+    }
+    pauseToggleLatch = pauseTogglePressed;
+
+    const bool stepForwardPressed = glfwGetKey(window, KEY_STEP_TIME_FORWARD) == GLFW_PRESS;
+    if (stepForwardPressed && !stepForwardLatch)
+    {
+        timeStepForwardRequested = true;
+    }
+    stepForwardLatch = stepForwardPressed;
+
+    const bool stepBackwardPressed = glfwGetKey(window, KEY_STEP_TIME_BACKWARD) == GLFW_PRESS;
+    if (stepBackwardPressed && !stepBackwardLatch)
+    {
+        timeStepBackwardRequested = true;
+    }
+    stepBackwardLatch = stepBackwardPressed;
 
     if (!InputManager::cameraControlEnabled || InputManager::camera == nullptr)
         return;
@@ -105,6 +132,27 @@ bool InputManager::consumeInfoOverlayToggleRequest()
 {
     const bool wasRequested = infoOverlayToggleRequested;
     infoOverlayToggleRequested = false;
+    return wasRequested;
+}
+
+bool InputManager::consumePauseToggleRequest()
+{
+    const bool wasRequested = pauseToggleRequested;
+    pauseToggleRequested = false;
+    return wasRequested;
+}
+
+bool InputManager::consumeTimeStepForwardRequest()
+{
+    const bool wasRequested = timeStepForwardRequested;
+    timeStepForwardRequested = false;
+    return wasRequested;
+}
+
+bool InputManager::consumeTimeStepBackwardRequest()
+{
+    const bool wasRequested = timeStepBackwardRequested;
+    timeStepBackwardRequested = false;
     return wasRequested;
 }
 

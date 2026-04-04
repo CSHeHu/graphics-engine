@@ -13,6 +13,51 @@
 #include "SceneDefinitions.h"
 #include "TextManager.h"
 
+namespace
+{
+    struct SceneTimelinePosition
+    {
+        std::size_t index;
+        float sceneStartTime;
+    };
+
+    SceneTimelinePosition resolveSceneTimelinePosition(const std::vector<SceneCycleEntry> &cycle, float timelineTimeSeconds)
+    {
+        if (cycle.empty())
+        {
+            return {0, 0.0f};
+        }
+
+        float accumulatedStartTime = 0.0f;
+        for (std::size_t i = 0; i < cycle.size(); ++i)
+        {
+            const bool isLastScene = (i + 1 == cycle.size());
+            const float durationSeconds = cycle[i].durationSeconds;
+
+            if (isLastScene)
+            {
+                return {i, accumulatedStartTime};
+            }
+
+            // Non-positive duration means stay on this scene indefinitely.
+            if (durationSeconds <= 0.0f)
+            {
+                return {i, accumulatedStartTime};
+            }
+
+            const float nextSceneStartTime = accumulatedStartTime + durationSeconds;
+            if (timelineTimeSeconds < nextSceneStartTime)
+            {
+                return {i, accumulatedStartTime};
+            }
+
+            accumulatedStartTime = nextSceneStartTime;
+        }
+
+        return {cycle.size() - 1, accumulatedStartTime};
+    }
+} // namespace
+
 Application::Application()
     : window(nullptr, glfwDestroyWindow),
       camera(nullptr),
@@ -20,6 +65,7 @@ Application::Application()
       activeSceneDefinition(),
       deltaTime(0.0f),
       lastTimeSeconds(0.0f),
+      lastRealTimeSeconds(0.0f),
       lastSceneSwitchTime(0.0f),
       activeSceneId(SceneId::Basic),
       sceneCycle(),
@@ -28,7 +74,8 @@ Application::Application()
       assetManager(nullptr),
       currentTimeSeconds(0.0f),
       textManager(nullptr),
-      infoOverlayEnabled(false)
+      infoOverlayEnabled(false),
+      paused(false)
 {
 }
 
@@ -131,6 +178,7 @@ bool Application::init()
 
     activeSceneId = sceneCycle[sceneCyclePosition].id;
     lastSceneSwitchTime = 0.0f;
+    lastRealTimeSeconds = static_cast<float>(glfwGetTime());
     if (!loadSceneById(activeSceneId))
     {
         std::cout << "Failed to initialize scene" << std::endl;
@@ -142,43 +190,20 @@ bool Application::init()
 
 void Application::run()
 {
+    constexpr float TIME_STEP_SECONDS = 0.25f;
+
     // render loop
     while (!glfwWindowShouldClose(window.get()))
     {
-        // per-frame time logic
-        currentTimeSeconds = static_cast<float>(glfwGetTime());
-        deltaTime = currentTimeSeconds - lastTimeSeconds;
-        lastTimeSeconds = currentTimeSeconds;
-
-        const float sceneDurationSeconds = sceneCycle[sceneCyclePosition].durationSeconds;
-
-        // Move forward in the configured scene sequence using per-entry duration.
-        if (sceneDurationSeconds > 0.0f && currentTimeSeconds - lastSceneSwitchTime >= sceneDurationSeconds)
+        const float nowRealSeconds = static_cast<float>(glfwGetTime());
+        float realDeltaSeconds = nowRealSeconds - lastRealTimeSeconds;
+        if (realDeltaSeconds < 0.0f)
         {
-            if (sceneCyclePosition + 1 < sceneCycle.size())
-            {
-                const std::size_t nextCyclePosition = sceneCyclePosition + 1;
-                const SceneId nextSceneId = sceneCycle[nextCyclePosition].id;
-                if (loadSceneById(nextSceneId))
-                {
-                    sceneCyclePosition = nextCyclePosition;
-                    activeSceneId = nextSceneId;
-                    lastSceneSwitchTime = currentTimeSeconds;
-                }
-                else
-                {
-                    std::cout << "Failed to switch scene" << std::endl;
-                }
-            }
+            realDeltaSeconds = 0.0f;
         }
+        lastRealTimeSeconds = nowRealSeconds;
 
-        if (scriptedCameraEnabled)
-        {
-            const float sceneElapsed = currentTimeSeconds - lastSceneSwitchTime;
-            applyScriptedCamera(sceneElapsed);
-        }
-
-        InputManager::processInput(window.get(), deltaTime);
+        InputManager::processInput(window.get(), realDeltaSeconds);
 
         if (InputManager::consumeCameraModeToggleRequest())
         {
@@ -188,6 +213,63 @@ void Application::run()
         if (InputManager::consumeInfoOverlayToggleRequest())
         {
             infoOverlayEnabled = !infoOverlayEnabled;
+        }
+
+        if (InputManager::consumePauseToggleRequest())
+        {
+            paused = !paused;
+        }
+
+        if (InputManager::consumeTimeStepForwardRequest())
+        {
+            currentTimeSeconds += TIME_STEP_SECONDS;
+        }
+
+        if (InputManager::consumeTimeStepBackwardRequest())
+        {
+            currentTimeSeconds -= TIME_STEP_SECONDS;
+            if (currentTimeSeconds < 0.0f)
+            {
+                currentTimeSeconds = 0.0f;
+            }
+        }
+
+        if (!paused)
+        {
+            currentTimeSeconds += realDeltaSeconds;
+            deltaTime = realDeltaSeconds;
+        }
+        else
+        {
+            deltaTime = 0.0f;
+        }
+
+        lastTimeSeconds = currentTimeSeconds;
+
+        const SceneTimelinePosition timelinePosition = resolveSceneTimelinePosition(sceneCycle, currentTimeSeconds);
+        if (timelinePosition.index != sceneCyclePosition)
+        {
+            const SceneId targetSceneId = sceneCycle[timelinePosition.index].id;
+            if (loadSceneById(targetSceneId))
+            {
+                sceneCyclePosition = timelinePosition.index;
+                activeSceneId = targetSceneId;
+                lastSceneSwitchTime = timelinePosition.sceneStartTime;
+            }
+            else
+            {
+                std::cout << "Failed to switch scene" << std::endl;
+            }
+        }
+        else
+        {
+            lastSceneSwitchTime = timelinePosition.sceneStartTime;
+        }
+
+        if (scriptedCameraEnabled)
+        {
+            const float sceneElapsed = currentTimeSeconds - lastSceneSwitchTime;
+            applyScriptedCamera(sceneElapsed);
         }
 
         // render

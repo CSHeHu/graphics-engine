@@ -48,6 +48,9 @@ constexpr int KEY_MOVE_UP = 'E';
 constexpr int KEY_MOVE_DOWN = 'Q';
 constexpr int KEY_TOGGLE_CAMERA_MODE = 'C';
 constexpr int KEY_TOGGLE_INFO_OVERLAY = 'I';
+constexpr int KEY_TOGGLE_PAUSE = 'P';
+constexpr int KEY_STEP_TIME_BACKWARD = 263; // GLFW_KEY_LEFT
+constexpr int KEY_STEP_TIME_FORWARD = 262;  // GLFW_KEY_RIGHT
 
 // ============================================================================
 // Rendering Configuration
