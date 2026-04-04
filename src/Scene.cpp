@@ -176,66 +176,71 @@ void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm:
     // Render scene text overlays
     if (textRenderer)
     {
-        for (const TextDefinition &text : definition.texts)
-        {
-            textRenderer->renderText(text.text, text.x, text.y, text.scale, text.color);
-        }
+        renderTextOverlay(overlayConfig, infoOverlayEnabled, fps, sceneElapsedTime, currentTimeSeconds);
+    }
+}
 
-        // Render info overlay with FPS if enabled
-        if (infoOverlayEnabled && overlayConfig.enabled)
-        {
-            glm::vec3 overlayColor(1.0f, 1.0f, 1.0f);
-            float yOffset = overlayConfig.y;
+void Scene::renderTextOverlay(const UIOverlayConfig &overlayConfig, bool infoOverlayEnabled, float fps, float sceneElapsedTime, float currentTimeSeconds)
+{
+    for (const TextDefinition &text : definition.texts)
+    {
+        textRenderer->renderText(text.text, text.x, text.y, text.scale, text.color);
+    }
 
-            // Dynamically render stats based on config
-            for (const std::string &stat : overlayConfig.stats)
+    // Render info overlay with FPS if enabled
+    if (infoOverlayEnabled && overlayConfig.enabled)
+    {
+        glm::vec3 overlayColor(1.0f, 1.0f, 1.0f);
+        float yOffset = overlayConfig.y;
+
+        // Dynamically render stats based on config
+        for (const std::string &stat : overlayConfig.stats)
+        {
+            std::string statLine;
+
+            if (stat == "fps")
             {
-                std::string statLine;
+                statLine = "FPS: " + std::to_string(static_cast<int>(fps));
+            }
+            else if (stat == "sceneName")
+            {
+                statLine = "Scene: " + definition.name;
+            }
+            else if (stat == "time")
+            {
+                int totalMinutes = static_cast<int>(currentTimeSeconds) / 60;
+                int totalSeconds = static_cast<int>(currentTimeSeconds) % 60;
+                char totalTimeBuffer[32];
+                snprintf(totalTimeBuffer, sizeof(totalTimeBuffer), "Total: %d:%02d", totalMinutes, totalSeconds);
 
-                if (stat == "fps")
-                {
-                    statLine = "FPS: " + std::to_string(static_cast<int>(fps));
-                }
-                else if (stat == "sceneName")
-                {
-                    statLine = "Scene: " + definition.name;
-                }
-                else if (stat == "time")
-                {
-                    int totalMinutes = static_cast<int>(currentTimeSeconds) / 60;
-                    int totalSeconds = static_cast<int>(currentTimeSeconds) % 60;
-                    char totalTimeBuffer[32];
-                    snprintf(totalTimeBuffer, sizeof(totalTimeBuffer), "Total: %d:%02d", totalMinutes, totalSeconds);
+                int sceneMinutes = static_cast<int>(sceneElapsedTime) / 60;
+                int sceneSeconds = static_cast<int>(sceneElapsedTime) % 60;
+                char sceneTimeBuffer[32];
+                snprintf(sceneTimeBuffer, sizeof(sceneTimeBuffer), "Scene: %d:%02d", sceneMinutes, sceneSeconds);
 
-                    int sceneMinutes = static_cast<int>(sceneElapsedTime) / 60;
-                    int sceneSeconds = static_cast<int>(sceneElapsedTime) % 60;
-                    char sceneTimeBuffer[32];
-                    snprintf(sceneTimeBuffer, sizeof(sceneTimeBuffer), "Scene: %d:%02d", sceneMinutes, sceneSeconds);
+                statLine = std::string(totalTimeBuffer) + " | " + std::string(sceneTimeBuffer);
+            }
+            else if (stat == "objects")
+            {
+                statLine = "Objects:";
+                for (const SceneObjectDefinition &object : definition.objects)
+                {
+                    statLine += " " + object.id;
+                }
+            }
+            else if (stat == "shaders")
+            {
+                statLine = "Shaders:";
+                for (const MaterialDefinition &objectDef : definition.materials)
+                {
+                    statLine += " " + objectDef.id;
+                }
+            }
 
-                    statLine = std::string(totalTimeBuffer) + " | " + std::string(sceneTimeBuffer);
-                }
-                else if (stat == "objects")
-                {
-                    statLine = "Objects:";
-                    for (const SceneObjectDefinition &object : definition.objects)
-                    {
-                        statLine += " " + object.id;
-                    }
-                }
-                else if (stat == "shaders")
-                {
-                    statLine = "Shaders:";
-                    for (const MaterialDefinition &objectDef : definition.materials)
-                    {
-                        statLine += " " + objectDef.id;
-                    }
-                }
-
-                if (!statLine.empty())
-                {
-                    textRenderer->renderText(statLine, overlayConfig.x, yOffset, overlayConfig.scale, overlayColor);
-                    yOffset -= overlayConfig.lineSpacing;
-                }
+            if (!statLine.empty())
+            {
+                textRenderer->renderText(statLine, overlayConfig.x, yOffset, overlayConfig.scale, overlayColor);
+                yOffset -= overlayConfig.lineSpacing;
             }
         }
     }

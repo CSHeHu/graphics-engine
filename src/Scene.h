@@ -66,6 +66,8 @@ private:
     /** Runtime object map keyed by object id. */
     std::unordered_map<std::string, RuntimeSceneObject> runtimeObjects;
     std::shared_ptr<Object> activeLightSource;
+
+    void renderTextOverlay(const UIOverlayConfig &overlayConfig, bool infoOverlayEnabled, float fps, float sceneElapsedTime, float currentTimeSeconds);
 };
 
 #endif // SCENE_H
