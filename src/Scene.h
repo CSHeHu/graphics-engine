@@ -51,8 +51,8 @@ public:
 
     /** @brief Initialize runtime materials and objects for the active definition. */
     bool init();
-    /** @brief Update behavior-driven transforms for the current frame. */
-    void update(float deltaTime, float sceneElapsedTime);
+    /** @brief Update behavior-driven transforms for the current scene time. */
+    void update(float sceneElapsedTime);
     /** @brief Render scene geometry and optional text overlay. */
     void render(const Camera &camera, const glm::mat4 &projection, const glm::mat4 &view, float fps, float sceneElapsedTime, const UIOverlayConfig &overlayConfig, bool infoOverlayEnabled, float currentTimeSeconds);
 

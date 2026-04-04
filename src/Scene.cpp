@@ -118,7 +118,7 @@ bool Scene::init()
     return true;
 }
 
-void Scene::update(float deltaTime, float sceneElapsedTime)
+void Scene::update(float sceneElapsedTime)
 {
     // Apply per-object behavior declared by scene definition.
     for (auto &entry : runtimeObjects)

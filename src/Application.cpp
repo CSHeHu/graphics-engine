@@ -216,7 +216,7 @@ void Application::renderFrame()
     float sceneElapsedTime = currentTimeSeconds - lastSceneSwitchTime;
     const UIOverlayConfig &overlayConfig = SceneDefinitions::getUIOverlayConfig();
 
-    scene->update(deltaTime, sceneElapsedTime);
+    scene->update(sceneElapsedTime);
     scene->render(*camera, projection, view, fps, sceneElapsedTime, overlayConfig, infoOverlayEnabled, currentTimeSeconds);
 }
 
