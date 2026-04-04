@@ -1,52 +1,52 @@
 
 #include "InputManager.h"
 
-float InputManager::lastX = 1920 / 2.0f;
-float InputManager::lastY = 1080 / 2.0f;
+#include "Config.h"
+
+float InputManager::lastX = static_cast<float>(SCREEN_WIDTH) / 2.0f;
+float InputManager::lastY = static_cast<float>(SCREEN_HEIGHT) / 2.0f;
 bool InputManager::firstMouse = true;
 bool InputManager::cameraControlEnabled = true;
 bool InputManager::cameraModeToggleLatch = false;
 bool InputManager::infoOverlayToggleLatch = false;
+bool InputManager::cameraModeToggleRequested = false;
+bool InputManager::infoOverlayToggleRequested = false;
 Camera *InputManager::camera = nullptr;
-InputManager::CameraModeToggleCallback InputManager::cameraModeToggleCallback = nullptr;
-InputManager::InfoOverlayToggleCallback InputManager::infoOverlayToggleCallback = nullptr;
 
 void InputManager::processInput(GLFWwindow *window, float deltaTime)
 {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    if (glfwGetKey(window, KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
-    // Handle camera mode toggle (always available, not gated by camera control)
-    const bool togglePressed = glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS;
-    if (togglePressed && !cameraModeToggleLatch && cameraModeToggleCallback)
+    const bool cameraTogglePressed = glfwGetKey(window, KEY_TOGGLE_CAMERA_MODE) == GLFW_PRESS;
+    if (cameraTogglePressed && !cameraModeToggleLatch)
     {
-        cameraModeToggleCallback();
+        cameraModeToggleRequested = true;
     }
-    cameraModeToggleLatch = togglePressed;
+    cameraModeToggleLatch = cameraTogglePressed;
 
-    // Handle info overlay toggle (always available)
-    const bool overlayTogglePressed = glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS;
-    if (overlayTogglePressed && !infoOverlayToggleLatch && infoOverlayToggleCallback)
+    const bool infoOverlayTogglePressed = glfwGetKey(window, KEY_TOGGLE_INFO_OVERLAY) == GLFW_PRESS;
+    if (infoOverlayTogglePressed && !infoOverlayToggleLatch)
     {
-        infoOverlayToggleCallback();
+        infoOverlayToggleRequested = true;
     }
-    infoOverlayToggleLatch = overlayTogglePressed;
+    infoOverlayToggleLatch = infoOverlayTogglePressed;
 
     if (!InputManager::cameraControlEnabled || InputManager::camera == nullptr)
         return;
 
     // Camera movement
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    if (glfwGetKey(window, KEY_MOVE_FORWARD) == GLFW_PRESS)
         InputManager::camera->ProcessKeyboard(FORWARD, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    if (glfwGetKey(window, KEY_MOVE_BACKWARD) == GLFW_PRESS)
         InputManager::camera->ProcessKeyboard(BACKWARD, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    if (glfwGetKey(window, KEY_MOVE_LEFT) == GLFW_PRESS)
         InputManager::camera->ProcessKeyboard(LEFT, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    if (glfwGetKey(window, KEY_MOVE_RIGHT) == GLFW_PRESS)
         InputManager::camera->ProcessKeyboard(RIGHT, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+    if (glfwGetKey(window, KEY_MOVE_UP) == GLFW_PRESS)
         InputManager::camera->ProcessKeyboard(UP, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+    if (glfwGetKey(window, KEY_MOVE_DOWN) == GLFW_PRESS)
         InputManager::camera->ProcessKeyboard(DOWN, deltaTime);
 }
 
@@ -94,14 +94,18 @@ void InputManager::setCameraControlEnabled(bool enabled)
     firstMouse = true;
 }
 
-void InputManager::setCameraModeToggleCallback(CameraModeToggleCallback callback)
+bool InputManager::consumeCameraModeToggleRequest()
 {
-    cameraModeToggleCallback = callback;
+    const bool wasRequested = cameraModeToggleRequested;
+    cameraModeToggleRequested = false;
+    return wasRequested;
 }
 
-void InputManager::setInfoOverlayToggleCallback(InfoOverlayToggleCallback callback)
+bool InputManager::consumeInfoOverlayToggleRequest()
 {
-    infoOverlayToggleCallback = callback;
+    const bool wasRequested = infoOverlayToggleRequested;
+    infoOverlayToggleRequested = false;
+    return wasRequested;
 }
 
 void InputManager::scrollCallback(GLFWwindow *window, double xoffset, double yoffset)

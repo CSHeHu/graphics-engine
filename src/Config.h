@@ -6,7 +6,7 @@
 // ============================================================================
 constexpr unsigned int SCREEN_WIDTH = 1920;
 constexpr unsigned int SCREEN_HEIGHT = 1080;
-constexpr const char* WINDOW_TITLE = "LearnOpenGL";
+constexpr const char *WINDOW_TITLE = "LearnOpenGL";
 
 // ============================================================================
 // OpenGL Configuration
@@ -30,22 +30,29 @@ constexpr float CAMERA_DEFAULT_Z = 3.0f;
 // ============================================================================
 // Asset Paths
 // ============================================================================
-constexpr const char* ASSETS_BASE_PATH = "assets";
-constexpr const char* SCENES_PATH = "assets/scenes";
-constexpr const char* MESHES_PATH = "assets/meshes";
-constexpr const char* SHADERS_PATH = "assets/shaders";
-constexpr const char* SCENE_CONFIG_FILE = "assets/scenes/scene_config.json";
+constexpr const char *ASSETS_BASE_PATH = "assets";
+constexpr const char *SCENES_PATH = "assets/scenes";
+constexpr const char *MESHES_PATH = "assets/meshes";
+constexpr const char *SHADERS_PATH = "assets/shaders";
+constexpr const char *SCENE_CONFIG_FILE = "assets/scenes/scene_config.json";
 
 // ============================================================================
 // Input Configuration
 // ============================================================================
-// Camera mode toggle key is GLFW_KEY_C (defined as 67 in GLFW)
-// This is handled in InputManager.cpp with glfwGetKey(window, GLFW_KEY_C)
+constexpr int KEY_ESCAPE = 256;
+constexpr int KEY_MOVE_FORWARD = 'W';
+constexpr int KEY_MOVE_BACKWARD = 'S';
+constexpr int KEY_MOVE_LEFT = 'A';
+constexpr int KEY_MOVE_RIGHT = 'D';
+constexpr int KEY_MOVE_UP = 'E';
+constexpr int KEY_MOVE_DOWN = 'Q';
+constexpr int KEY_TOGGLE_CAMERA_MODE = 'C';
+constexpr int KEY_TOGGLE_INFO_OVERLAY = 'I';
 
 // ============================================================================
 // Rendering Configuration
 // ============================================================================
-constexpr std::size_t POSITION_NORMAL_STRIDE = 6;  // Position (3) + Normal (3)
+constexpr std::size_t POSITION_NORMAL_STRIDE = 6; // Position (3) + Normal (3)
 constexpr float NEAR_PLANE = 0.1f;
 constexpr float FAR_PLANE = 100.0f;
 
