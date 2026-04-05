@@ -13,50 +13,47 @@
 #include "SceneDefinitions.h"
 #include "TextManager.h"
 
-namespace
+struct SceneTimelinePosition
 {
-    struct SceneTimelinePosition
+    std::size_t index;
+    float sceneStartTime;
+};
+
+SceneTimelinePosition resolveSceneTimelinePosition(const std::vector<SceneCycleEntry> &cycle, float timelineTimeSeconds)
+{
+    if (cycle.empty())
     {
-        std::size_t index;
-        float sceneStartTime;
-    };
-
-    SceneTimelinePosition resolveSceneTimelinePosition(const std::vector<SceneCycleEntry> &cycle, float timelineTimeSeconds)
-    {
-        if (cycle.empty())
-        {
-            return {0, 0.0f};
-        }
-
-        float accumulatedStartTime = 0.0f;
-        for (std::size_t i = 0; i < cycle.size(); ++i)
-        {
-            const bool isLastScene = (i + 1 == cycle.size());
-            const float durationSeconds = cycle[i].durationSeconds;
-
-            if (isLastScene)
-            {
-                return {i, accumulatedStartTime};
-            }
-
-            // Non-positive duration means stay on this scene indefinitely.
-            if (durationSeconds <= 0.0f)
-            {
-                return {i, accumulatedStartTime};
-            }
-
-            const float nextSceneStartTime = accumulatedStartTime + durationSeconds;
-            if (timelineTimeSeconds < nextSceneStartTime)
-            {
-                return {i, accumulatedStartTime};
-            }
-
-            accumulatedStartTime = nextSceneStartTime;
-        }
-
-        return {cycle.size() - 1, accumulatedStartTime};
+        return {0, 0.0f};
     }
-} // namespace
+
+    float accumulatedStartTime = 0.0f;
+    for (std::size_t i = 0; i < cycle.size(); ++i)
+    {
+        const bool isLastScene = (i + 1 == cycle.size());
+        const float durationSeconds = cycle[i].durationSeconds;
+
+        if (isLastScene)
+        {
+            return {i, accumulatedStartTime};
+        }
+
+        // Non-positive duration means stay on this scene indefinitely.
+        if (durationSeconds <= 0.0f)
+        {
+            return {i, accumulatedStartTime};
+        }
+
+        const float nextSceneStartTime = accumulatedStartTime + durationSeconds;
+        if (timelineTimeSeconds < nextSceneStartTime)
+        {
+            return {i, accumulatedStartTime};
+        }
+
+        accumulatedStartTime = nextSceneStartTime;
+    }
+
+    return {cycle.size() - 1, accumulatedStartTime};
+}
 
 Application::Application()
     : window(nullptr, glfwDestroyWindow),
