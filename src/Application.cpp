@@ -61,7 +61,6 @@ Application::Application()
       scriptedCameraEnabled(false),
       activeSceneDefinition(),
       deltaTime(0.0f),
-      lastTimeSeconds(0.0f),
       lastRealTimeSeconds(0.0f),
       lastSceneSwitchTime(0.0f),
       activeSceneId(SceneId::Basic),
@@ -240,8 +239,6 @@ void Application::run()
         {
             deltaTime = 0.0f;
         }
-
-        lastTimeSeconds = currentTimeSeconds;
 
         const SceneTimelinePosition timelinePosition = resolveSceneTimelinePosition(sceneCycle, currentTimeSeconds);
         if (timelinePosition.index != sceneCyclePosition)

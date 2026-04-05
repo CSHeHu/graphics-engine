@@ -6,7 +6,6 @@
 #include <vector>
 #include <glm.hpp>
 #include "Shader.h"
-#include "TextureManager.h"
 #include <glad/glad.h>
 
 class Object
@@ -52,7 +51,6 @@ public:
     unsigned int getVBO() const;
 
     std::shared_ptr<Shader> shader;
-    TextureManager textureManager;
 
 private:
     unsigned int VAO, VBO;

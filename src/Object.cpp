@@ -37,19 +37,7 @@ Object::Object(std::shared_ptr<Shader> shaderProgram,
 		glEnableVertexAttribArray(1);
 	}
 
-	for (size_t i = 0; i < texturePaths.size(); ++i)
-	{
-		textureManager.loadTexture(texturePaths[i]);
-	}
-
-	if (!texturePaths.empty() && shader)
-	{
-		shader->use();
-		for (size_t i = 0; i < texturePaths.size(); ++i)
-		{
-			shader->setInt("texture" + std::to_string(i + 1), static_cast<int>(i));
-		}
-	}
+	// Note: texture support removed; texturePaths parameter kept for API compatibility
 }
 
 Object::~Object()

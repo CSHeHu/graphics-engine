@@ -44,7 +44,6 @@ private:
 
     float currentTimeSeconds;
     float deltaTime;
-    float lastTimeSeconds;
     float lastRealTimeSeconds;
     float lastSceneSwitchTime;
     SceneId activeSceneId;
