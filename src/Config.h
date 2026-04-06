@@ -65,6 +65,7 @@ constexpr float SHADOW_FAR_PLANE_DEFAULT = 40.0f;
 constexpr float SHADOW_BIAS_MIN_DEFAULT = 0.001f;
 constexpr float SHADOW_BIAS_SLOPE_DEFAULT = 0.003f;
 constexpr int SHADOW_MAP_TEXTURE_UNIT = 1;
+constexpr unsigned int SHADOW_UPDATE_INTERVAL_FRAMES_DEFAULT = 4;
 constexpr float NEAR_PLANE = 0.1f;
 constexpr float FAR_PLANE = 100.0f;
 

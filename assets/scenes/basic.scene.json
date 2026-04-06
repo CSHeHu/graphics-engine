@@ -137,7 +137,7 @@
     },
     {
       "id": "tree",
-      "role": "LightTarget",
+      "role": "None",
       "meshName": "Tree1.obj",
       "layout": "PositionNormal",
       "position": [-3.0, 0.01, -6.0],

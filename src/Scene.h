@@ -74,6 +74,8 @@ private:
     std::shared_ptr<Shader> shadowDepthShader;
     unsigned int shadowFramebuffer = 0;
     unsigned int shadowDepthTexture = 0;
+    unsigned int shadowFrameCounter = 0;
+    bool shadowCacheValid = false;
 
     std::array<glm::mat4, 6> buildShadowCubeMatrices(const glm::vec3 &lightPosition) const;
     bool initShadowResources();

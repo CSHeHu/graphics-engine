@@ -5,6 +5,7 @@
 #include <glm.hpp>
 
 #include <string>
+#include <unordered_map>
 
 class Shader
 {
@@ -40,6 +41,8 @@ public:
     void setMat4(const std::string &name, const glm::mat4 &mat) const;
 
 private:
+    GLint getUniformLocation(const std::string &name) const;
+    mutable std::unordered_map<std::string, GLint> uniformLocationCache;
     /** @brief Report compile/link errors for shader stages and programs. */
     void checkCompileErrors(GLuint shader, std::string type);
 };

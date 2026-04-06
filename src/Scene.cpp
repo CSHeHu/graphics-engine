@@ -2,12 +2,13 @@
 
 #include <glad/glad.h>
 #include <array>
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <iostream>
+#include <unordered_set>
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
-
 #include <utility>
 
 #include "AssetManager.h"
@@ -129,6 +130,9 @@ bool Scene::init()
         releaseShadowResources();
     }
 
+    shadowFrameCounter = 0;
+    shadowCacheValid = false;
+
     return true;
 }
 
@@ -215,12 +219,7 @@ void Scene::renderShadowDepthPass(const std::array<glm::mat4, 6> &shadowMatrices
 
     // Front-face culling in shadow pass reduces self-shadow acne artifacts.
     const GLboolean cullFaceWasEnabled = glIsEnabled(GL_CULL_FACE);
-    GLint previousCullMode = GL_BACK;
-    if (cullFaceWasEnabled)
-    {
-        glGetIntegerv(GL_CULL_FACE_MODE, &previousCullMode);
-    }
-    else
+    if (!cullFaceWasEnabled)
     {
         glEnable(GL_CULL_FACE);
     }
@@ -247,7 +246,7 @@ void Scene::renderShadowDepthPass(const std::array<glm::mat4, 6> &shadowMatrices
         glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(runtimeObject.vertexCount));
     }
 
-    glCullFace(previousCullMode);
+    glCullFace(GL_BACK);
     if (!cullFaceWasEnabled)
     {
         glDisable(GL_CULL_FACE);
@@ -285,18 +284,60 @@ void Scene::update(float sceneElapsedTime)
 
 void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm::mat4 &view, float fps, float sceneElapsedTime, const UIOverlayConfig &overlayConfig, bool infoOverlayEnabled, float currentTimeSeconds)
 {
-    std::array<glm::mat4, 6> shadowMatrices{};
+    const int lightCount = std::min(static_cast<int>(activeLightSources.size()), MAX_LIGHT_SOURCES);
+    std::array<glm::vec3, MAX_LIGHT_SOURCES> lightPositions{};
+    std::array<glm::vec3, MAX_LIGHT_SOURCES> lightColors{};
+    for (int i = 0; i < lightCount; ++i)
+    {
+        const RuntimeSceneObject *light = activeLightSources[static_cast<std::size_t>(i)];
+        lightPositions[static_cast<std::size_t>(i)] = light->object->getPosition();
+        lightColors[static_cast<std::size_t>(i)] = light->lightColor * light->lightIntensity;
+    }
+
     if (definition.shadows.enabled && shadowFramebuffer != 0 && shadowDepthTexture != 0)
     {
         GLint viewport[4];
         glGetIntegerv(GL_VIEWPORT, viewport);
 
-        const glm::vec3 primaryLightPosition = activeLightSources[0]->object->getPosition();
-        shadowMatrices = buildShadowCubeMatrices(primaryLightPosition);
+        const glm::vec3 primaryLightPosition = lightPositions[0];
+        const bool shouldUpdateShadowMap = !shadowCacheValid || (shadowFrameCounter++ % SHADOW_UPDATE_INTERVAL_FRAMES_DEFAULT == 0);
+        if (shouldUpdateShadowMap)
+        {
+            renderShadowDepthPass(buildShadowCubeMatrices(primaryLightPosition), primaryLightPosition);
+            shadowCacheValid = true;
+        }
 
-        renderShadowDepthPass(shadowMatrices, primaryLightPosition);
         glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
     }
+
+    if (definition.shadows.enabled && shadowDepthTexture != 0)
+    {
+        glActiveTexture(GL_TEXTURE0 + SHADOW_MAP_TEXTURE_UNIT);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, shadowDepthTexture);
+    }
+
+    static const std::array<std::string, MAX_LIGHT_SOURCES> lightPosUniformNames = []
+    {
+        std::array<std::string, MAX_LIGHT_SOURCES> names{};
+        for (int i = 0; i < MAX_LIGHT_SOURCES; ++i)
+        {
+            names[static_cast<std::size_t>(i)] = "lightPos[" + std::to_string(i) + "]";
+        }
+        return names;
+    }();
+
+    static const std::array<std::string, MAX_LIGHT_SOURCES> lightColorUniformNames = []
+    {
+        std::array<std::string, MAX_LIGHT_SOURCES> names{};
+        for (int i = 0; i < MAX_LIGHT_SOURCES; ++i)
+        {
+            names[static_cast<std::size_t>(i)] = "lightColor[" + std::to_string(i) + "]";
+        }
+        return names;
+    }();
+
+    std::unordered_set<unsigned int> configuredLitPrograms;
+    std::unordered_set<unsigned int> configuredUnlitPrograms;
 
     // Render all objects with shared camera matrices and mode-specific uniforms.
     for (const auto &entry : runtimeObjects)
@@ -306,44 +347,51 @@ void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm:
 
         std::shared_ptr<RuntimeMaterial> material = runtimeObject.material;
         material->shader->use();
-        material->shader->setMat4("projection", projection);
-        material->shader->setMat4("view", view);
-        material->shader->setFloat("uTime", sceneElapsedTime);
+        const unsigned int shaderProgramId = material->shader->ID;
 
         if (material->renderMode == RenderMode::Lit)
         {
-            const int lightCount = std::min(static_cast<int>(activeLightSources.size()), MAX_LIGHT_SOURCES);
+            const bool firstUseThisFrame = configuredLitPrograms.insert(shaderProgramId).second;
+            if (firstUseThisFrame)
+            {
+                material->shader->setMat4("projection", projection);
+                material->shader->setMat4("view", view);
+                material->shader->setFloat("uTime", sceneElapsedTime);
+                material->shader->setVec3("viewPos", camera.Position);
+                material->shader->setInt("lightCount", lightCount);
+                material->shader->setInt("shadowEnabled", definition.shadows.enabled ? 1 : 0);
+                material->shader->setFloat("shadowBiasMin", definition.shadows.biasMin);
+                material->shader->setFloat("shadowBiasSlope", definition.shadows.biasSlope);
+                material->shader->setFloat("shadowFarPlane", definition.shadows.farPlane);
+                material->shader->setInt("shadowMap", SHADOW_MAP_TEXTURE_UNIT);
+
+                if (lightCount > 0)
+                {
+                    // Backward-compatible single-light uniforms for legacy shaders.
+                    material->shader->setVec3("lightColor", lightColors[0]);
+                    material->shader->setVec3("lightPos", lightPositions[0]);
+                }
+
+                for (int i = 0; i < lightCount; ++i)
+                {
+                    const std::size_t idx = static_cast<std::size_t>(i);
+                    material->shader->setVec3(lightPosUniformNames[idx], lightPositions[idx]);
+                    material->shader->setVec3(lightColorUniformNames[idx], lightColors[idx]);
+                }
+            }
 
             material->shader->setVec3("objectColor", material->objectColor);
-            material->shader->setVec3("viewPos", camera.Position);
-            material->shader->setInt("lightCount", lightCount);
-            material->shader->setInt("shadowEnabled", definition.shadows.enabled ? 1 : 0);
-            material->shader->setFloat("shadowBiasMin", definition.shadows.biasMin);
-            material->shader->setFloat("shadowBiasSlope", definition.shadows.biasSlope);
-            material->shader->setFloat("shadowFarPlane", definition.shadows.farPlane);
-            material->shader->setInt("shadowMap", SHADOW_MAP_TEXTURE_UNIT);
-
-            // Backward-compatible single-light uniforms for legacy shaders.
-            material->shader->setVec3("lightColor", activeLightSources[0]->lightColor * activeLightSources[0]->lightIntensity);
-            material->shader->setVec3("lightPos", activeLightSources[0]->object->getPosition());
-
-            if (definition.shadows.enabled && shadowDepthTexture != 0)
-            {
-                glActiveTexture(GL_TEXTURE0 + SHADOW_MAP_TEXTURE_UNIT);
-                glBindTexture(GL_TEXTURE_CUBE_MAP, shadowDepthTexture);
-            }
-
-            for (int i = 0; i < lightCount; ++i)
-            {
-                const std::string posUniform = "lightPos[" + std::to_string(i) + "]";
-                const std::string colorUniform = "lightColor[" + std::to_string(i) + "]";
-                const RuntimeSceneObject *light = activeLightSources[static_cast<std::size_t>(i)];
-                material->shader->setVec3(posUniform, light->object->getPosition());
-                material->shader->setVec3(colorUniform, light->lightColor * light->lightIntensity);
-            }
         }
         else if (material->renderMode == RenderMode::LightSource)
         {
+            const bool firstUseThisFrame = configuredUnlitPrograms.insert(shaderProgramId).second;
+            if (firstUseThisFrame)
+            {
+                material->shader->setMat4("projection", projection);
+                material->shader->setMat4("view", view);
+                material->shader->setFloat("uTime", sceneElapsedTime);
+            }
+
             // Visualize each emitter with its configured light tint and intensity.
             material->shader->setVec3("objectColor", runtimeObject.lightColor * runtimeObject.lightIntensity);
         }
