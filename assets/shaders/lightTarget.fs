@@ -31,7 +31,7 @@ void main()
     vec3 norm = normalize(Normal);
     vec3 viewDir = normalize(viewPos - FragPos);
 
-    float ambientStrength = 0.08;
+    float ambientStrength = 0.20;
     vec3 totalDiffuse = vec3(0.0);
     vec3 totalSpecular = vec3(0.0);
     vec3 totalAmbient = vec3(0.0);

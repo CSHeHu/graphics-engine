@@ -42,14 +42,14 @@
       "depthTestEnabled": true,
       "blendEnabled": true,
       "shadowDefaults": {
-        "mapSize": 512,
+        "mapSize": 2056,
         "orthoSize": 20.0,
         "fovDegrees": 90.0,
         "nearPlane": 0.5,
         "farPlane": 22.0,
         "biasMin": 0.003,
         "biasSlope": 0.012,
-        "updateIntervalFrames": 2
+        "updateIntervalFrames": 3
       }
     }
   },
