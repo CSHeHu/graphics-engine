@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <vector>
 #include <glm.hpp>
 
 #include "SceneDefinition.h"
@@ -65,7 +66,7 @@ private:
     std::unordered_map<std::string, std::shared_ptr<RuntimeMaterial>> runtimeMaterials;
     /** Runtime object map keyed by object id. */
     std::unordered_map<std::string, RuntimeSceneObject> runtimeObjects;
-    std::shared_ptr<Object> activeLightSource;
+    std::vector<std::shared_ptr<Object>> activeLightSources;
 
     void renderTextOverlay(const UIOverlayConfig &overlayConfig, bool infoOverlayEnabled, float fps, float sceneElapsedTime, float currentTimeSeconds);
 };

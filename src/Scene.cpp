@@ -11,6 +11,7 @@
 
 #include "AssetManager.h"
 #include "Camera.h"
+#include "Config.h"
 #include "Object.h"
 #include "SceneDefinition.h"
 #include "SceneDefinitions.h"
@@ -26,7 +27,7 @@ Scene::~Scene()
 {
     runtimeMaterials.clear();
     runtimeObjects.clear();
-    activeLightSource.reset();
+    activeLightSources.clear();
 }
 
 bool Scene::init()
@@ -97,19 +98,18 @@ bool Scene::init()
         runtimeObjects[objectDef.id] = runtimeObject;
     }
 
-    // Resolve the active light provider once for lit-object uniforms.
-    activeLightSource.reset();
+    // Resolve active light providers once for lit-object uniforms.
+    activeLightSources.clear();
     for (const auto &entry : runtimeObjects)
     {
         const RuntimeSceneObject &runtimeObject = entry.second;
         if (runtimeObject.role == SceneRole::LightSource)
         {
-            activeLightSource = runtimeObject.object;
-            break;
+            activeLightSources.push_back(runtimeObject.object);
         }
     }
 
-    if (!activeLightSource)
+    if (activeLightSources.empty())
     {
         std::cout << "Scene definition must include an object with role: LightSource" << std::endl;
         return false;
@@ -161,10 +161,23 @@ void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm:
 
         if (material->renderMode == RenderMode::Lit)
         {
+            const int lightCount = std::min(static_cast<int>(activeLightSources.size()), MAX_LIGHT_SOURCES);
+
             material->shader->setVec3("objectColor", material->objectColor);
-            material->shader->setVec3("lightColor", 1.0f, 1.0f, 1.0f);
             material->shader->setVec3("viewPos", camera.Position);
-            material->shader->setVec3("lightPos", activeLightSource->getPosition());
+            material->shader->setInt("lightCount", lightCount);
+
+            // Backward-compatible single-light uniforms for legacy shaders.
+            material->shader->setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+            material->shader->setVec3("lightPos", activeLightSources[0]->getPosition());
+
+            for (int i = 0; i < lightCount; ++i)
+            {
+                const std::string posUniform = "lightPos[" + std::to_string(i) + "]";
+                const std::string colorUniform = "lightColor[" + std::to_string(i) + "]";
+                material->shader->setVec3(posUniform, activeLightSources[static_cast<std::size_t>(i)]->getPosition());
+                material->shader->setVec3(colorUniform, 1.0f, 1.0f, 1.0f);
+            }
         }
 
         glBindVertexArray(object->getVAO());

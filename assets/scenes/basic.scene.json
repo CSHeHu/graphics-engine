@@ -74,6 +74,30 @@
       "behaviorAmplitude": 2.5
     },
     {
+      "id": "lightCube2",
+      "role": "LightSource",
+      "meshName": "cube.obj",
+      "layout": "PositionNormal",
+      "position": [-4.0, 2.2, -6.5],
+      "materialId": "lightSourceMaterial",
+      "behavior": "Oscillate",
+      "behaviorSpeed": 0.8,
+      "behaviorAxis": [0.0, 1.0, 0.5],
+      "behaviorAmplitude": 1.8
+    },
+    {
+      "id": "lightCube3",
+      "role": "LightSource",
+      "meshName": "cube.obj",
+      "layout": "PositionNormal",
+      "position": [2.5, 3.5, -10.0],
+      "materialId": "lightSourceMaterial",
+      "behavior": "Oscillate",
+      "behaviorSpeed": 0.65,
+      "behaviorAxis": [0.6, 0.4, 0.0],
+      "behaviorAmplitude": 2.2
+    },
+    {
       "id": "lightTargetCube",
       "role": "LightTarget",
       "meshName": "cube.obj",
