@@ -52,7 +52,7 @@
       "objectColor": [0.2, 0.7, 0.2]
     },
     {
-      "id": "litGrassMaterial",
+      "id": "litTreeMaterial",
       "vertexShaderPath": "assets/shaders/lightTarget.vs",
       "fragmentShaderPath": "assets/shaders/lightTarget.fs",
       "geometryShaderPath": "",
@@ -128,13 +128,13 @@
       "behaviorAmplitude": 0.0
     },
     {
-      "id": "grass",
+      "id": "tree",
       "role": "None",
-      "meshName": "grass.obj",
+      "meshName": "Tree1.obj",
       "layout": "PositionNormal",
       "position": [-3.0, 0.01, -6.0],
-      "scale": [0.02, 0.02, 0.02],
-      "materialId": "litGrassMaterial",
+      "scale": [0.12, 0.12, 0.12],
+      "materialId": "litTreeMaterial",
       "behavior": "None",
       "behaviorSpeed": 0.0,
       "behaviorAxis": [0.0, 1.0, 0.0],

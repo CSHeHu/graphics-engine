@@ -130,7 +130,8 @@ std::vector<float> AssetManager::loadObjPositionNormal(const std::string &meshNa
     }
 
     std::vector<Vec3> positions(1, {0.0f, 0.0f, 0.0f});
-    std::vector<Vec3> normals(1, {0.0f, 1.0f, 0.0f});
+    std::vector<Vec3> normals(1, {0.0f, 0.0f, 0.0f});
+    const Vec3 defaultNormal{0.0f, 1.0f, 0.0f};
     std::vector<float> vertices;
 
     std::string line;
@@ -185,7 +186,7 @@ std::vector<float> AssetManager::loadObjPositionNormal(const std::string &meshNa
                     }
 
                     const Vec3 &p = positions[pi];
-                    const Vec3 &n = (ni > 0 && ni < static_cast<int>(normals.size())) ? normals[ni] : normals[1];
+                    const Vec3 &n = (ni > 0 && ni < static_cast<int>(normals.size())) ? normals[ni] : defaultNormal;
 
                     vertices.push_back(p.x);
                     vertices.push_back(p.y);
