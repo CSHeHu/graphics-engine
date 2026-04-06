@@ -134,6 +134,19 @@ SceneDefinition SceneDefinitions::parseSceneDefinition(const std::string &sceneF
     SceneDefinition definition;
     definition.name = root.at("name").get<std::string>();
 
+    if (root.contains("shadows"))
+    {
+        const nlohmann::json &shadowsJson = root.at("shadows");
+        definition.shadows.enabled = shadowsJson.value("enabled", definition.shadows.enabled);
+        definition.shadows.mapSize = shadowsJson.value("mapSize", definition.shadows.mapSize);
+        definition.shadows.orthoSize = shadowsJson.value("orthoSize", definition.shadows.orthoSize);
+        definition.shadows.fovDegrees = shadowsJson.value("fovDegrees", definition.shadows.fovDegrees);
+        definition.shadows.nearPlane = shadowsJson.value("nearPlane", definition.shadows.nearPlane);
+        definition.shadows.farPlane = shadowsJson.value("farPlane", definition.shadows.farPlane);
+        definition.shadows.biasMin = shadowsJson.value("biasMin", definition.shadows.biasMin);
+        definition.shadows.biasSlope = shadowsJson.value("biasSlope", definition.shadows.biasSlope);
+    }
+
     if (root.contains("camera"))
     {
         const nlohmann::json &cameraJson = root.at("camera");

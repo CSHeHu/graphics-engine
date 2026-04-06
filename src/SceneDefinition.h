@@ -5,6 +5,7 @@
 #include <vector>
 #include <glm.hpp>
 
+#include "Config.h"
 #include "Object.h"
 
 enum class SceneRole
@@ -116,10 +117,23 @@ struct WindowConfig
     int height;
 };
 
+struct ShadowConfig
+{
+    bool enabled = false;
+    int mapSize = SHADOW_MAP_SIZE_DEFAULT;
+    float orthoSize = SHADOW_ORTHO_SIZE_DEFAULT;
+    float fovDegrees = SHADOW_FOV_DEGREES_DEFAULT;
+    float nearPlane = SHADOW_NEAR_PLANE_DEFAULT;
+    float farPlane = SHADOW_FAR_PLANE_DEFAULT;
+    float biasMin = SHADOW_BIAS_MIN_DEFAULT;
+    float biasSlope = SHADOW_BIAS_SLOPE_DEFAULT;
+};
+
 struct SceneDefinition
 {
     std::string name;
     CameraRouteDefinition camera;
+    ShadowConfig shadows;
     /** Material definitions referenced by scene objects. */
     std::vector<MaterialDefinition> materials;
     /** Scene object definitions instantiated for runtime rendering. */

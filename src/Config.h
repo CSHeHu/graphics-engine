@@ -57,6 +57,14 @@ constexpr int KEY_STEP_TIME_FORWARD = 262;  // GLFW_KEY_RIGHT
 // ============================================================================
 constexpr std::size_t POSITION_NORMAL_STRIDE = 6; // Position (3) + Normal (3)
 constexpr int MAX_LIGHT_SOURCES = 8;
+constexpr int SHADOW_MAP_SIZE_DEFAULT = 1024;
+constexpr float SHADOW_ORTHO_SIZE_DEFAULT = 20.0f;
+constexpr float SHADOW_FOV_DEGREES_DEFAULT = 70.0f;
+constexpr float SHADOW_NEAR_PLANE_DEFAULT = 0.1f;
+constexpr float SHADOW_FAR_PLANE_DEFAULT = 40.0f;
+constexpr float SHADOW_BIAS_MIN_DEFAULT = 0.001f;
+constexpr float SHADOW_BIAS_SLOPE_DEFAULT = 0.003f;
+constexpr int SHADOW_MAP_TEXTURE_UNIT = 1;
 constexpr float NEAR_PLANE = 0.1f;
 constexpr float FAR_PLANE = 100.0f;
 

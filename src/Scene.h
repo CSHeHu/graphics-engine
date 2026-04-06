@@ -2,6 +2,7 @@
 #define SCENE_H
 
 #include <cstddef>
+#include <array>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -69,6 +70,15 @@ private:
     /** Runtime object map keyed by object id. */
     std::unordered_map<std::string, RuntimeSceneObject> runtimeObjects;
     std::vector<RuntimeSceneObject *> activeLightSources;
+
+    std::shared_ptr<Shader> shadowDepthShader;
+    unsigned int shadowFramebuffer = 0;
+    unsigned int shadowDepthTexture = 0;
+
+    std::array<glm::mat4, 6> buildShadowCubeMatrices(const glm::vec3 &lightPosition) const;
+    bool initShadowResources();
+    void releaseShadowResources();
+    void renderShadowDepthPass(const std::array<glm::mat4, 6> &shadowMatrices, const glm::vec3 &lightPosition);
 
     void renderTextOverlay(const UIOverlayConfig &overlayConfig, bool infoOverlayEnabled, float fps, float sceneElapsedTime, float currentTimeSeconds);
 };

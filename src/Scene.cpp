@@ -1,6 +1,7 @@
 #include "Scene.h"
 
 #include <glad/glad.h>
+#include <array>
 #include <cmath>
 #include <cstdio>
 #include <iostream>
@@ -25,6 +26,7 @@ Scene::Scene(AssetManager &assetManager, SceneDefinition definitionValue, TextMa
 
 Scene::~Scene()
 {
+    releaseShadowResources();
     runtimeMaterials.clear();
     runtimeObjects.clear();
     activeLightSources.clear();
@@ -117,7 +119,141 @@ bool Scene::init()
         return false;
     }
 
+    if (definition.shadows.enabled && !initShadowResources())
+    {
+        std::cout << "Failed to initialize shadow resources" << std::endl;
+        return false;
+    }
+    if (!definition.shadows.enabled)
+    {
+        releaseShadowResources();
+    }
+
     return true;
+}
+
+void Scene::releaseShadowResources()
+{
+    if (shadowFramebuffer != 0)
+    {
+        glDeleteFramebuffers(1, &shadowFramebuffer);
+        shadowFramebuffer = 0;
+    }
+
+    if (shadowDepthTexture != 0)
+    {
+        glDeleteTextures(1, &shadowDepthTexture);
+        shadowDepthTexture = 0;
+    }
+
+    shadowDepthShader.reset();
+}
+
+bool Scene::initShadowResources()
+{
+    releaseShadowResources();
+
+    shadowDepthShader = assets.getShader("assets/shaders/shadowDepth.vs", "assets/shaders/shadowDepth.fs", "assets/shaders/shadowDepth.gs");
+    if (!shadowDepthShader)
+    {
+        return false;
+    }
+
+    glGenFramebuffers(1, &shadowFramebuffer);
+    glGenTextures(1, &shadowDepthTexture);
+
+    glBindTexture(GL_TEXTURE_CUBE_MAP, shadowDepthTexture);
+    for (int face = 0; face < 6; ++face)
+    {
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face,
+                     0,
+                     GL_DEPTH_COMPONENT,
+                     definition.shadows.mapSize,
+                     definition.shadows.mapSize,
+                     0,
+                     GL_DEPTH_COMPONENT,
+                     GL_FLOAT,
+                     nullptr);
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, shadowFramebuffer);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadowDepthTexture, 0);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+
+    const bool isComplete = (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    return isComplete;
+}
+
+std::array<glm::mat4, 6> Scene::buildShadowCubeMatrices(const glm::vec3 &lightPosition) const
+{
+    const glm::mat4 shadowProjection = glm::perspective(glm::radians(definition.shadows.fovDegrees),
+                                                        1.0f,
+                                                        definition.shadows.nearPlane,
+                                                        definition.shadows.farPlane);
+
+    return {
+        shadowProjection * glm::lookAt(lightPosition, lightPosition + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
+        shadowProjection * glm::lookAt(lightPosition, lightPosition + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
+        shadowProjection * glm::lookAt(lightPosition, lightPosition + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+        shadowProjection * glm::lookAt(lightPosition, lightPosition + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)),
+        shadowProjection * glm::lookAt(lightPosition, lightPosition + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
+        shadowProjection * glm::lookAt(lightPosition, lightPosition + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f))};
+}
+
+void Scene::renderShadowDepthPass(const std::array<glm::mat4, 6> &shadowMatrices, const glm::vec3 &lightPosition)
+{
+    glViewport(0, 0, definition.shadows.mapSize, definition.shadows.mapSize);
+    glBindFramebuffer(GL_FRAMEBUFFER, shadowFramebuffer);
+    glClear(GL_DEPTH_BUFFER_BIT);
+
+    // Front-face culling in shadow pass reduces self-shadow acne artifacts.
+    const GLboolean cullFaceWasEnabled = glIsEnabled(GL_CULL_FACE);
+    GLint previousCullMode = GL_BACK;
+    if (cullFaceWasEnabled)
+    {
+        glGetIntegerv(GL_CULL_FACE_MODE, &previousCullMode);
+    }
+    else
+    {
+        glEnable(GL_CULL_FACE);
+    }
+    glCullFace(GL_FRONT);
+
+    shadowDepthShader->use();
+    for (std::size_t face = 0; face < shadowMatrices.size(); ++face)
+    {
+        shadowDepthShader->setMat4("shadowMatrices[" + std::to_string(face) + "]", shadowMatrices[face]);
+    }
+    shadowDepthShader->setVec3("lightPos", lightPosition);
+    shadowDepthShader->setFloat("farPlane", definition.shadows.farPlane);
+
+    for (const auto &entry : runtimeObjects)
+    {
+        const RuntimeSceneObject &runtimeObject = entry.second;
+        if (runtimeObject.role == SceneRole::LightSource || runtimeObject.role == SceneRole::Ground)
+        {
+            continue;
+        }
+
+        shadowDepthShader->setMat4("model", runtimeObject.object->getModelMatrix());
+        glBindVertexArray(runtimeObject.object->getVAO());
+        glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(runtimeObject.vertexCount));
+    }
+
+    glCullFace(previousCullMode);
+    if (!cullFaceWasEnabled)
+    {
+        glDisable(GL_CULL_FACE);
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void Scene::update(float sceneElapsedTime)
@@ -149,6 +285,19 @@ void Scene::update(float sceneElapsedTime)
 
 void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm::mat4 &view, float fps, float sceneElapsedTime, const UIOverlayConfig &overlayConfig, bool infoOverlayEnabled, float currentTimeSeconds)
 {
+    std::array<glm::mat4, 6> shadowMatrices{};
+    if (definition.shadows.enabled && shadowFramebuffer != 0 && shadowDepthTexture != 0)
+    {
+        GLint viewport[4];
+        glGetIntegerv(GL_VIEWPORT, viewport);
+
+        const glm::vec3 primaryLightPosition = activeLightSources[0]->object->getPosition();
+        shadowMatrices = buildShadowCubeMatrices(primaryLightPosition);
+
+        renderShadowDepthPass(shadowMatrices, primaryLightPosition);
+        glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+    }
+
     // Render all objects with shared camera matrices and mode-specific uniforms.
     for (const auto &entry : runtimeObjects)
     {
@@ -168,10 +317,21 @@ void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm:
             material->shader->setVec3("objectColor", material->objectColor);
             material->shader->setVec3("viewPos", camera.Position);
             material->shader->setInt("lightCount", lightCount);
+            material->shader->setInt("shadowEnabled", definition.shadows.enabled ? 1 : 0);
+            material->shader->setFloat("shadowBiasMin", definition.shadows.biasMin);
+            material->shader->setFloat("shadowBiasSlope", definition.shadows.biasSlope);
+            material->shader->setFloat("shadowFarPlane", definition.shadows.farPlane);
+            material->shader->setInt("shadowMap", SHADOW_MAP_TEXTURE_UNIT);
 
             // Backward-compatible single-light uniforms for legacy shaders.
             material->shader->setVec3("lightColor", activeLightSources[0]->lightColor * activeLightSources[0]->lightIntensity);
             material->shader->setVec3("lightPos", activeLightSources[0]->object->getPosition());
+
+            if (definition.shadows.enabled && shadowDepthTexture != 0)
+            {
+                glActiveTexture(GL_TEXTURE0 + SHADOW_MAP_TEXTURE_UNIT);
+                glBindTexture(GL_TEXTURE_CUBE_MAP, shadowDepthTexture);
+            }
 
             for (int i = 0; i < lightCount; ++i)
             {
