@@ -87,10 +87,12 @@ Application::~Application()
 
 bool Application::init()
 {
+    const RuntimeConfig &runtimeConfig = SceneDefinitions::getRuntimeConfig();
+
     // glfw: initialize and configure
     glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, GL_CONTEXT_VERSION_MAJOR);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, GL_CONTEXT_VERSION_MINOR);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, runtimeConfig.opengl.contextVersionMajor);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, runtimeConfig.opengl.contextVersionMinor);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     const WindowConfig &windowConfig = SceneDefinitions::getWindowConfig();
@@ -115,7 +117,7 @@ bool Application::init()
     }
 
     // glfw window creation
-    window.reset(glfwCreateWindow(targetWidth, targetHeight, WINDOW_TITLE, targetMonitor, NULL));
+    window.reset(glfwCreateWindow(targetWidth, targetHeight, runtimeConfig.windowTitle.c_str(), targetMonitor, NULL));
     if (window == nullptr)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -125,9 +127,15 @@ bool Application::init()
     glfwMakeContextCurrent(window.get());
 
     // Create and set up camera
-    camera = std::make_unique<Camera>(glm::vec3(CAMERA_DEFAULT_X, CAMERA_DEFAULT_Y, CAMERA_DEFAULT_Z));
+    camera = std::make_unique<Camera>(runtimeConfig.camera.position,
+                                      glm::vec3(0.0f, 1.0f, 0.0f),
+                                      runtimeConfig.camera.yaw,
+                                      runtimeConfig.camera.pitch);
+    camera->MovementSpeed = runtimeConfig.camera.speed;
+    camera->MouseSensitivity = runtimeConfig.camera.sensitivity;
+    camera->Zoom = runtimeConfig.camera.zoom;
     InputManager::setCamera(camera.get());
-    InputManager::setCameraControlEnabled(true);
+    InputManager::setCameraControlEnabled(runtimeConfig.input.cameraControlsEnabled);
 
     // callbacks for window resize, mouse movement and scroll movement
     glfwSetFramebufferSizeCallback(window.get(), InputManager::framebufferSizeCallback);
@@ -135,7 +143,7 @@ bool Application::init()
     glfwSetScrollCallback(window.get(), InputManager::scrollCallback);
 
     // tell GLFW to capture our mouse
-    glfwSetInputMode(window.get(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(window.get(), GLFW_CURSOR, windowConfig.cursorCaptured ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 
     // glad: load all OpenGL function pointers
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -144,13 +152,26 @@ bool Application::init()
         return false;
     }
 
-    // Disable VSync to test uncapped FPS
-    glfwSwapInterval(0);
+    glfwSwapInterval(windowConfig.vsyncEnabled ? 1 : 0);
 
     // configure global opengl state
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    if (runtimeConfig.rendering.depthTestEnabled)
+    {
+        glEnable(GL_DEPTH_TEST);
+    }
+    else
+    {
+        glDisable(GL_DEPTH_TEST);
+    }
+    if (runtimeConfig.rendering.blendEnabled)
+    {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    }
+    else
+    {
+        glDisable(GL_BLEND);
+    }
 
     // Scene order comes from content config instead of app lifecycle code.
     sceneCycle = SceneDefinitions::getDefaultSceneCycle();
@@ -171,6 +192,7 @@ bool Application::init()
         std::cout << "Failed to initialize text manager" << std::endl;
         return false;
     }
+    infoOverlayEnabled = uiConfig.enabled;
 
     activeSceneId = sceneCycle[sceneCyclePosition].id;
     lastSceneSwitchTime = 0.0f;
@@ -284,12 +306,16 @@ void Application::renderFrame()
     int framebufferHeight = 0;
     glfwGetFramebufferSize(window.get(), &framebufferWidth, &framebufferHeight);
 
+    const RuntimeConfig &runtimeConfig = SceneDefinitions::getRuntimeConfig();
     const float aspectRatio = (framebufferHeight > 0)
                                   ? static_cast<float>(framebufferWidth) / static_cast<float>(framebufferHeight)
-                                  : static_cast<float>(SCREEN_WIDTH) / static_cast<float>(SCREEN_HEIGHT);
+                                  : 1.0f;
 
     glm::mat4 projection = glm::mat4(1.0f);
-    projection = glm::perspective(glm::radians(camera->Zoom), aspectRatio, NEAR_PLANE, FAR_PLANE);
+    projection = glm::perspective(glm::radians(camera->Zoom),
+                                  aspectRatio,
+                                  runtimeConfig.rendering.nearPlane,
+                                  runtimeConfig.rendering.farPlane);
 
     glm::mat4 view = glm::mat4(1.0f);
     view = camera->GetViewMatrix();

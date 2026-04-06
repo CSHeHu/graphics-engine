@@ -1,4 +1,58 @@
 {
+  "config": {
+    "windowTitle": "LearnOpenGL",
+    "opengl": {
+      "contextVersionMajor": 3,
+      "contextVersionMinor": 3
+    },
+    "cameraDefaults": {
+      "yaw": -90.0,
+      "pitch": 0.0,
+      "speed": 2.5,
+      "sensitivity": 0.1,
+      "zoom": 45.0,
+      "position": [0.0, 5.0, 3.0]
+    },
+    "assets": {
+      "scenesPath": "assets/scenes",
+      "meshesPath": "assets/meshes",
+      "shadersPath": "assets/shaders"
+    },
+    "input": {
+      "cameraControlsEnabled": true,
+      "escape": 256,
+      "moveForward": 87,
+      "moveBackward": 83,
+      "moveLeft": 65,
+      "moveRight": 68,
+      "moveUp": 69,
+      "moveDown": 81,
+      "toggleCameraMode": 67,
+      "toggleInfoOverlay": 73,
+      "togglePause": 80,
+      "stepTimeBackward": 263,
+      "stepTimeForward": 262
+    },
+    "rendering": {
+      "positionNormalStride": 6,
+      "maxLightSources": 8,
+      "shadowMapTextureUnit": 1,
+      "nearPlane": 0.1,
+      "farPlane": 100.0,
+      "depthTestEnabled": true,
+      "blendEnabled": true,
+      "shadowDefaults": {
+        "mapSize": 512,
+        "orthoSize": 20.0,
+        "fovDegrees": 90.0,
+        "nearPlane": 0.5,
+        "farPlane": 22.0,
+        "biasMin": 0.003,
+        "biasSlope": 0.012,
+        "updateIntervalFrames": 2
+      }
+    }
+  },
   "registry": [
     {
       "id": "Basic",
@@ -19,7 +73,9 @@
     "window": {
       "mode": "Windowed",
       "width": 1920,
-      "height": 1080
+      "height": 1080,
+      "cursorCaptured": true,
+      "vsyncEnabled": false
     },
     "infoOverlay": {
       "enabled": true,

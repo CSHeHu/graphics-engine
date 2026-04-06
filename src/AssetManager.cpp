@@ -6,7 +6,7 @@
 #include <sstream>
 #include <stdexcept>
 
-#include "Config.h"
+#include "SceneDefinitions.h"
 #include "Shader.h"
 
 namespace
@@ -83,7 +83,8 @@ const std::vector<float> &AssetManager::getMeshVertices(const std::string &meshN
 std::size_t AssetManager::getMeshVertexCount(const std::string &meshName)
 {
     const std::vector<float> &vertices = getMeshVertices(meshName);
-    return vertices.size() / POSITION_NORMAL_STRIDE;
+    const std::size_t stride = SceneDefinitions::getRuntimeConfig().rendering.positionNormalStride;
+    return stride > 0 ? (vertices.size() / stride) : 0;
 }
 
 std::shared_ptr<Shader> AssetManager::getShader(const std::string &vertexPath,
@@ -106,9 +107,10 @@ std::shared_ptr<Shader> AssetManager::getShader(const std::string &vertexPath,
 
 std::vector<float> AssetManager::loadObjPositionNormal(const std::string &meshName) const
 {
+    const std::string &meshesPath = SceneDefinitions::getRuntimeConfig().assets.meshesPath;
     const std::vector<std::string> candidatePaths = {
-        "assets/meshes/" + meshName,
-        "../assets/meshes/" + meshName,
+        meshesPath + "/" + meshName,
+        "../" + meshesPath + "/" + meshName,
     };
 
     std::ifstream file;

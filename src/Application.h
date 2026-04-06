@@ -8,7 +8,6 @@
 #include <memory>
 #include <vector>
 
-#include "Config.h"
 #include "SceneDefinition.h"
 #include "SceneDefinitions.h"
 

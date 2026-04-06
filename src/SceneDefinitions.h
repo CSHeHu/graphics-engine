@@ -8,7 +8,6 @@
 
 #include <nlohmann/json.hpp>
 
-#include "Config.h"
 #include "SceneDefinition.h"
 
 enum class SceneId
@@ -37,6 +36,8 @@ public:
     static const UIOverlayConfig &getUIOverlayConfig();
     /** @brief Get window mode and size configuration. */
     static const WindowConfig &getWindowConfig();
+    /** @brief Get global runtime configuration loaded from scene_config.json. */
+    static const RuntimeConfig &getRuntimeConfig();
 
 private:
     template <typename T>
@@ -56,6 +57,7 @@ private:
     static SceneDefinition parseSceneDefinition(const std::string &sceneFilePath);
     static UIOverlayConfig parseUIOverlayConfig(const nlohmann::json &json);
     static WindowConfig parseWindowConfig(const nlohmann::json &json);
+    static RuntimeConfig parseRuntimeConfig(const nlohmann::json &json);
     static void ensureLoaded();
 
     /** Scene cycle entries parsed from scene_config.json. */
@@ -64,6 +66,7 @@ private:
     static std::unordered_map<int, SceneDefinition> sceneDefinitions;
     static UIOverlayConfig uiOverlayConfig;
     static WindowConfig windowConfig;
+    static RuntimeConfig runtimeConfig;
     static bool loaded;
 
     static const std::unordered_map<std::string, SceneId> sceneIdMap;

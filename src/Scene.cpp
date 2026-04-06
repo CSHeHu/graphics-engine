@@ -13,7 +13,6 @@
 
 #include "AssetManager.h"
 #include "Camera.h"
-#include "Config.h"
 #include "Object.h"
 #include "SceneDefinition.h"
 #include "SceneDefinitions.h"
@@ -284,9 +283,15 @@ void Scene::update(float sceneElapsedTime)
 
 void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm::mat4 &view, float fps, float sceneElapsedTime, const UIOverlayConfig &overlayConfig, bool infoOverlayEnabled, float currentTimeSeconds)
 {
-    const int lightCount = std::min(static_cast<int>(activeLightSources.size()), MAX_LIGHT_SOURCES);
-    std::array<glm::vec3, MAX_LIGHT_SOURCES> lightPositions{};
-    std::array<glm::vec3, MAX_LIGHT_SOURCES> lightColors{};
+    // Runtime rendering limits and bindings are centralized in scene_config.json.
+    const RuntimeConfig &runtimeConfig = SceneDefinitions::getRuntimeConfig();
+    const int maxLightSources = std::max(runtimeConfig.rendering.maxLightSources, 1);
+    const int shadowMapTextureUnit = runtimeConfig.rendering.shadowMapTextureUnit;
+    const unsigned int shadowUpdateIntervalFrames = std::max(runtimeConfig.rendering.shadowDefaults.updateIntervalFrames, 1u);
+
+    const int lightCount = std::min(static_cast<int>(activeLightSources.size()), maxLightSources);
+    std::vector<glm::vec3> lightPositions(static_cast<std::size_t>(maxLightSources), glm::vec3(0.0f));
+    std::vector<glm::vec3> lightColors(static_cast<std::size_t>(maxLightSources), glm::vec3(0.0f));
     for (int i = 0; i < lightCount; ++i)
     {
         const RuntimeSceneObject *light = activeLightSources[static_cast<std::size_t>(i)];
@@ -300,7 +305,8 @@ void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm:
         glGetIntegerv(GL_VIEWPORT, viewport);
 
         const glm::vec3 primaryLightPosition = lightPositions[0];
-        const bool shouldUpdateShadowMap = !shadowCacheValid || (shadowFrameCounter++ % SHADOW_UPDATE_INTERVAL_FRAMES_DEFAULT == 0);
+        // Throttle shadow depth updates to trade temporal precision for FPS.
+        const bool shouldUpdateShadowMap = !shadowCacheValid || (shadowFrameCounter++ % shadowUpdateIntervalFrames == 0);
         if (shouldUpdateShadowMap)
         {
             renderShadowDepthPass(buildShadowCubeMatrices(primaryLightPosition), primaryLightPosition);
@@ -312,29 +318,25 @@ void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm:
 
     if (definition.shadows.enabled && shadowDepthTexture != 0)
     {
-        glActiveTexture(GL_TEXTURE0 + SHADOW_MAP_TEXTURE_UNIT);
+        glActiveTexture(GL_TEXTURE0 + shadowMapTextureUnit);
         glBindTexture(GL_TEXTURE_CUBE_MAP, shadowDepthTexture);
     }
 
-    static const std::array<std::string, MAX_LIGHT_SOURCES> lightPosUniformNames = []
+    static std::vector<std::string> lightPosUniformNames;
+    static std::vector<std::string> lightColorUniformNames;
+    static int cachedUniformLightCapacity = 0;
+    if (cachedUniformLightCapacity != maxLightSources)
     {
-        std::array<std::string, MAX_LIGHT_SOURCES> names{};
-        for (int i = 0; i < MAX_LIGHT_SOURCES; ++i)
+        lightPosUniformNames.resize(static_cast<std::size_t>(maxLightSources));
+        lightColorUniformNames.resize(static_cast<std::size_t>(maxLightSources));
+        for (int i = 0; i < maxLightSources; ++i)
         {
-            names[static_cast<std::size_t>(i)] = "lightPos[" + std::to_string(i) + "]";
+            const std::size_t idx = static_cast<std::size_t>(i);
+            lightPosUniformNames[idx] = "lightPos[" + std::to_string(i) + "]";
+            lightColorUniformNames[idx] = "lightColor[" + std::to_string(i) + "]";
         }
-        return names;
-    }();
-
-    static const std::array<std::string, MAX_LIGHT_SOURCES> lightColorUniformNames = []
-    {
-        std::array<std::string, MAX_LIGHT_SOURCES> names{};
-        for (int i = 0; i < MAX_LIGHT_SOURCES; ++i)
-        {
-            names[static_cast<std::size_t>(i)] = "lightColor[" + std::to_string(i) + "]";
-        }
-        return names;
-    }();
+        cachedUniformLightCapacity = maxLightSources;
+    }
 
     std::unordered_set<unsigned int> configuredLitPrograms;
     std::unordered_set<unsigned int> configuredUnlitPrograms;
@@ -363,7 +365,7 @@ void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm:
                 material->shader->setFloat("shadowBiasMin", definition.shadows.biasMin);
                 material->shader->setFloat("shadowBiasSlope", definition.shadows.biasSlope);
                 material->shader->setFloat("shadowFarPlane", definition.shadows.farPlane);
-                material->shader->setInt("shadowMap", SHADOW_MAP_TEXTURE_UNIT);
+                material->shader->setInt("shadowMap", shadowMapTextureUnit);
 
                 if (lightCount > 0)
                 {

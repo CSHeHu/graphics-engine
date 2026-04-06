@@ -112,8 +112,6 @@ void TextManager::renderText(const std::string &text, float x, float y, float sc
 
     glActiveTexture(GL_TEXTURE0);
     glBindVertexArray(vao);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     for (char c : text)
     {

@@ -1,14 +1,7 @@
 {
   "name": "basic",
   "shadows": {
-    "enabled": true,
-    "mapSize": 512,
-    "orthoSize": 20.0,
-    "fovDegrees": 90.0,
-    "nearPlane": 0.5,
-    "farPlane": 22.0,
-    "biasMin": 0.003,
-    "biasSlope": 0.012
+    "enabled": true
   },
   "camera": {
     "mode": "Scripted",

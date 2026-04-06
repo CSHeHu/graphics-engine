@@ -12,6 +12,7 @@ std::vector<SceneCycleEntry> SceneDefinitions::sceneCycle;
 std::unordered_map<int, SceneDefinition> SceneDefinitions::sceneDefinitions;
 UIOverlayConfig SceneDefinitions::uiOverlayConfig;
 WindowConfig SceneDefinitions::windowConfig;
+RuntimeConfig SceneDefinitions::runtimeConfig;
 bool SceneDefinitions::loaded = false;
 
 const std::unordered_map<std::string, SceneId> SceneDefinitions::sceneIdMap = {
@@ -133,18 +134,19 @@ SceneDefinition SceneDefinitions::parseSceneDefinition(const std::string &sceneF
 
     SceneDefinition definition;
     definition.name = root.at("name").get<std::string>();
+    definition.shadows.mapSize = runtimeConfig.rendering.shadowDefaults.mapSize;
+    definition.shadows.orthoSize = runtimeConfig.rendering.shadowDefaults.orthoSize;
+    definition.shadows.fovDegrees = runtimeConfig.rendering.shadowDefaults.fovDegrees;
+    definition.shadows.nearPlane = runtimeConfig.rendering.shadowDefaults.nearPlane;
+    definition.shadows.farPlane = runtimeConfig.rendering.shadowDefaults.farPlane;
+    definition.shadows.biasMin = runtimeConfig.rendering.shadowDefaults.biasMin;
+    definition.shadows.biasSlope = runtimeConfig.rendering.shadowDefaults.biasSlope;
 
     if (root.contains("shadows"))
     {
         const nlohmann::json &shadowsJson = root.at("shadows");
-        definition.shadows.enabled = shadowsJson.value("enabled", definition.shadows.enabled);
-        definition.shadows.mapSize = shadowsJson.value("mapSize", definition.shadows.mapSize);
-        definition.shadows.orthoSize = shadowsJson.value("orthoSize", definition.shadows.orthoSize);
-        definition.shadows.fovDegrees = shadowsJson.value("fovDegrees", definition.shadows.fovDegrees);
-        definition.shadows.nearPlane = shadowsJson.value("nearPlane", definition.shadows.nearPlane);
-        definition.shadows.farPlane = shadowsJson.value("farPlane", definition.shadows.farPlane);
-        definition.shadows.biasMin = shadowsJson.value("biasMin", definition.shadows.biasMin);
-        definition.shadows.biasSlope = shadowsJson.value("biasSlope", definition.shadows.biasSlope);
+        // Scene files explicitly opt shadows in or out; shared shadow tuning lives in config.
+        definition.shadows.enabled = shadowsJson.at("enabled").get<bool>();
     }
 
     if (root.contains("camera"))
@@ -304,6 +306,74 @@ WindowConfig SceneDefinitions::parseWindowConfig(const nlohmann::json &json)
     config.mode = parseWindowMode(json.at("mode").get<std::string>());
     config.width = json.at("width").get<int>();
     config.height = json.at("height").get<int>();
+    config.cursorCaptured = json.at("cursorCaptured").get<bool>();
+    config.vsyncEnabled = json.at("vsyncEnabled").get<bool>();
+    return config;
+}
+
+RuntimeConfig SceneDefinitions::parseRuntimeConfig(const nlohmann::json &json)
+{
+    RuntimeConfig config;
+
+    // Global runtime settings centralize values that were previously split across constants.
+    config.windowTitle = json.at("windowTitle").get<std::string>();
+
+    const nlohmann::json &openglJson = json.at("opengl");
+    config.opengl.contextVersionMajor = openglJson.at("contextVersionMajor").get<int>();
+    config.opengl.contextVersionMinor = openglJson.at("contextVersionMinor").get<int>();
+
+    const nlohmann::json &cameraJson = json.at("cameraDefaults");
+    config.camera.yaw = cameraJson.at("yaw").get<float>();
+    config.camera.pitch = cameraJson.at("pitch").get<float>();
+    config.camera.speed = cameraJson.at("speed").get<float>();
+    config.camera.sensitivity = cameraJson.at("sensitivity").get<float>();
+    config.camera.zoom = cameraJson.at("zoom").get<float>();
+    const nlohmann::json &cameraPosition = cameraJson.at("position");
+    if (!cameraPosition.is_array() || cameraPosition.size() != 3)
+    {
+        throw std::runtime_error("Expected vec3 array for field: config.cameraDefaults.position");
+    }
+    config.camera.position = parseVec3(cameraPosition[0].get<float>(), cameraPosition[1].get<float>(), cameraPosition[2].get<float>());
+
+    const nlohmann::json &assetsJson = json.at("assets");
+    config.assets.scenesPath = assetsJson.at("scenesPath").get<std::string>();
+    config.assets.meshesPath = assetsJson.at("meshesPath").get<std::string>();
+    config.assets.shadersPath = assetsJson.at("shadersPath").get<std::string>();
+
+    const nlohmann::json &inputJson = json.at("input");
+    config.input.cameraControlsEnabled = inputJson.at("cameraControlsEnabled").get<bool>();
+    config.input.keyEscape = inputJson.at("escape").get<int>();
+    config.input.keyMoveForward = inputJson.at("moveForward").get<int>();
+    config.input.keyMoveBackward = inputJson.at("moveBackward").get<int>();
+    config.input.keyMoveLeft = inputJson.at("moveLeft").get<int>();
+    config.input.keyMoveRight = inputJson.at("moveRight").get<int>();
+    config.input.keyMoveUp = inputJson.at("moveUp").get<int>();
+    config.input.keyMoveDown = inputJson.at("moveDown").get<int>();
+    config.input.keyToggleCameraMode = inputJson.at("toggleCameraMode").get<int>();
+    config.input.keyToggleInfoOverlay = inputJson.at("toggleInfoOverlay").get<int>();
+    config.input.keyTogglePause = inputJson.at("togglePause").get<int>();
+    config.input.keyStepTimeBackward = inputJson.at("stepTimeBackward").get<int>();
+    config.input.keyStepTimeForward = inputJson.at("stepTimeForward").get<int>();
+
+    const nlohmann::json &renderingJson = json.at("rendering");
+    config.rendering.positionNormalStride = renderingJson.at("positionNormalStride").get<std::size_t>();
+    config.rendering.maxLightSources = renderingJson.at("maxLightSources").get<int>();
+    config.rendering.shadowMapTextureUnit = renderingJson.at("shadowMapTextureUnit").get<int>();
+    config.rendering.nearPlane = renderingJson.at("nearPlane").get<float>();
+    config.rendering.farPlane = renderingJson.at("farPlane").get<float>();
+    config.rendering.depthTestEnabled = renderingJson.at("depthTestEnabled").get<bool>();
+    config.rendering.blendEnabled = renderingJson.at("blendEnabled").get<bool>();
+
+    const nlohmann::json &shadowDefaultsJson = renderingJson.at("shadowDefaults");
+    config.rendering.shadowDefaults.mapSize = shadowDefaultsJson.at("mapSize").get<int>();
+    config.rendering.shadowDefaults.orthoSize = shadowDefaultsJson.at("orthoSize").get<float>();
+    config.rendering.shadowDefaults.fovDegrees = shadowDefaultsJson.at("fovDegrees").get<float>();
+    config.rendering.shadowDefaults.nearPlane = shadowDefaultsJson.at("nearPlane").get<float>();
+    config.rendering.shadowDefaults.farPlane = shadowDefaultsJson.at("farPlane").get<float>();
+    config.rendering.shadowDefaults.biasMin = shadowDefaultsJson.at("biasMin").get<float>();
+    config.rendering.shadowDefaults.biasSlope = shadowDefaultsJson.at("biasSlope").get<float>();
+    config.rendering.shadowDefaults.updateIntervalFrames = shadowDefaultsJson.at("updateIntervalFrames").get<unsigned int>();
+
     return config;
 }
 
@@ -317,7 +387,7 @@ void SceneDefinitions::ensureLoaded()
     std::ifstream file = openAssetFile("assets/scenes/scene_config.json");
     if (!file.is_open())
     {
-        throw std::runtime_error(std::string("Failed to open ") + SCENE_CONFIG_FILE);
+        throw std::runtime_error("Failed to open assets/scenes/scene_config.json");
     }
 
     nlohmann::json root;
@@ -325,6 +395,7 @@ void SceneDefinitions::ensureLoaded()
 
     sceneCycle.clear();
     sceneDefinitions.clear();
+    runtimeConfig = parseRuntimeConfig(root.at("config"));
 
     // Parse UI overlay config
     if (root.contains("ui") && root.at("ui").contains("infoOverlay"))
@@ -338,9 +409,7 @@ void SceneDefinitions::ensureLoaded()
     }
     else
     {
-        windowConfig.mode = WindowMode::Windowed;
-        windowConfig.width = static_cast<int>(SCREEN_WIDTH);
-        windowConfig.height = static_cast<int>(SCREEN_HEIGHT);
+        throw std::runtime_error("Missing required ui.window configuration");
     }
 
     for (const nlohmann::json &entryJson : root.at("registry"))
@@ -392,4 +461,10 @@ const WindowConfig &SceneDefinitions::getWindowConfig()
 {
     ensureLoaded();
     return windowConfig;
+}
+
+const RuntimeConfig &SceneDefinitions::getRuntimeConfig()
+{
+    ensureLoaded();
+    return runtimeConfig;
 }

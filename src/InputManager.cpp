@@ -1,10 +1,10 @@
 
 #include "InputManager.h"
 
-#include "Config.h"
+#include "SceneDefinitions.h"
 
-float InputManager::lastX = static_cast<float>(SCREEN_WIDTH) / 2.0f;
-float InputManager::lastY = static_cast<float>(SCREEN_HEIGHT) / 2.0f;
+float InputManager::lastX = 0.0f;
+float InputManager::lastY = 0.0f;
 bool InputManager::firstMouse = true;
 bool InputManager::cameraControlEnabled = true;
 bool InputManager::cameraModeToggleLatch = false;
@@ -21,38 +21,40 @@ Camera *InputManager::camera = nullptr;
 
 void InputManager::processInput(GLFWwindow *window, float deltaTime)
 {
-    if (glfwGetKey(window, KEY_ESCAPE) == GLFW_PRESS)
+    const InputConfig &input = SceneDefinitions::getRuntimeConfig().input;
+
+    if (glfwGetKey(window, input.keyEscape) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
-    const bool cameraTogglePressed = glfwGetKey(window, KEY_TOGGLE_CAMERA_MODE) == GLFW_PRESS;
+    const bool cameraTogglePressed = glfwGetKey(window, input.keyToggleCameraMode) == GLFW_PRESS;
     if (cameraTogglePressed && !cameraModeToggleLatch)
     {
         cameraModeToggleRequested = true;
     }
     cameraModeToggleLatch = cameraTogglePressed;
 
-    const bool infoOverlayTogglePressed = glfwGetKey(window, KEY_TOGGLE_INFO_OVERLAY) == GLFW_PRESS;
+    const bool infoOverlayTogglePressed = glfwGetKey(window, input.keyToggleInfoOverlay) == GLFW_PRESS;
     if (infoOverlayTogglePressed && !infoOverlayToggleLatch)
     {
         infoOverlayToggleRequested = true;
     }
     infoOverlayToggleLatch = infoOverlayTogglePressed;
 
-    const bool pauseTogglePressed = glfwGetKey(window, KEY_TOGGLE_PAUSE) == GLFW_PRESS;
+    const bool pauseTogglePressed = glfwGetKey(window, input.keyTogglePause) == GLFW_PRESS;
     if (pauseTogglePressed && !pauseToggleLatch)
     {
         pauseToggleRequested = true;
     }
     pauseToggleLatch = pauseTogglePressed;
 
-    const bool stepForwardPressed = glfwGetKey(window, KEY_STEP_TIME_FORWARD) == GLFW_PRESS;
+    const bool stepForwardPressed = glfwGetKey(window, input.keyStepTimeForward) == GLFW_PRESS;
     if (stepForwardPressed && !stepForwardLatch)
     {
         timeStepForwardRequested = true;
     }
     stepForwardLatch = stepForwardPressed;
 
-    const bool stepBackwardPressed = glfwGetKey(window, KEY_STEP_TIME_BACKWARD) == GLFW_PRESS;
+    const bool stepBackwardPressed = glfwGetKey(window, input.keyStepTimeBackward) == GLFW_PRESS;
     if (stepBackwardPressed && !stepBackwardLatch)
     {
         timeStepBackwardRequested = true;
@@ -63,17 +65,17 @@ void InputManager::processInput(GLFWwindow *window, float deltaTime)
         return;
 
     // Camera movement
-    if (glfwGetKey(window, KEY_MOVE_FORWARD) == GLFW_PRESS)
+    if (glfwGetKey(window, input.keyMoveForward) == GLFW_PRESS)
         InputManager::camera->ProcessKeyboard(FORWARD, deltaTime);
-    if (glfwGetKey(window, KEY_MOVE_BACKWARD) == GLFW_PRESS)
+    if (glfwGetKey(window, input.keyMoveBackward) == GLFW_PRESS)
         InputManager::camera->ProcessKeyboard(BACKWARD, deltaTime);
-    if (glfwGetKey(window, KEY_MOVE_LEFT) == GLFW_PRESS)
+    if (glfwGetKey(window, input.keyMoveLeft) == GLFW_PRESS)
         InputManager::camera->ProcessKeyboard(LEFT, deltaTime);
-    if (glfwGetKey(window, KEY_MOVE_RIGHT) == GLFW_PRESS)
+    if (glfwGetKey(window, input.keyMoveRight) == GLFW_PRESS)
         InputManager::camera->ProcessKeyboard(RIGHT, deltaTime);
-    if (glfwGetKey(window, KEY_MOVE_UP) == GLFW_PRESS)
+    if (glfwGetKey(window, input.keyMoveUp) == GLFW_PRESS)
         InputManager::camera->ProcessKeyboard(UP, deltaTime);
-    if (glfwGetKey(window, KEY_MOVE_DOWN) == GLFW_PRESS)
+    if (glfwGetKey(window, input.keyMoveDown) == GLFW_PRESS)
         InputManager::camera->ProcessKeyboard(DOWN, deltaTime);
 }
 

@@ -1,11 +1,11 @@
 #ifndef SCENEDEFINITION_H
 #define SCENEDEFINITION_H
 
+#include <cstddef>
 #include <string>
 #include <vector>
 #include <glm.hpp>
 
-#include "Config.h"
 #include "Object.h"
 
 enum class SceneRole
@@ -115,18 +115,94 @@ struct WindowConfig
     WindowMode mode;
     int width;
     int height;
+    bool cursorCaptured;
+    bool vsyncEnabled;
+};
+
+struct OpenGLConfig
+{
+    int contextVersionMajor;
+    int contextVersionMinor;
+};
+
+struct CameraDefaultsConfig
+{
+    float yaw;
+    float pitch;
+    float speed;
+    float sensitivity;
+    float zoom;
+    glm::vec3 position;
+};
+
+struct AssetPathsConfig
+{
+    std::string scenesPath;
+    std::string meshesPath;
+    std::string shadersPath;
+};
+
+struct InputConfig
+{
+    bool cameraControlsEnabled;
+    int keyEscape;
+    int keyMoveForward;
+    int keyMoveBackward;
+    int keyMoveLeft;
+    int keyMoveRight;
+    int keyMoveUp;
+    int keyMoveDown;
+    int keyToggleCameraMode;
+    int keyToggleInfoOverlay;
+    int keyTogglePause;
+    int keyStepTimeBackward;
+    int keyStepTimeForward;
+};
+
+struct ShadowDefaultsConfig
+{
+    int mapSize;
+    float orthoSize;
+    float fovDegrees;
+    float nearPlane;
+    float farPlane;
+    float biasMin;
+    float biasSlope;
+    unsigned int updateIntervalFrames;
+};
+
+struct RenderingConfig
+{
+    std::size_t positionNormalStride;
+    int maxLightSources;
+    int shadowMapTextureUnit;
+    float nearPlane;
+    float farPlane;
+    bool depthTestEnabled;
+    bool blendEnabled;
+    ShadowDefaultsConfig shadowDefaults;
+};
+
+struct RuntimeConfig
+{
+    std::string windowTitle;
+    OpenGLConfig opengl;
+    CameraDefaultsConfig camera;
+    AssetPathsConfig assets;
+    InputConfig input;
+    RenderingConfig rendering;
 };
 
 struct ShadowConfig
 {
     bool enabled = false;
-    int mapSize = SHADOW_MAP_SIZE_DEFAULT;
-    float orthoSize = SHADOW_ORTHO_SIZE_DEFAULT;
-    float fovDegrees = SHADOW_FOV_DEGREES_DEFAULT;
-    float nearPlane = SHADOW_NEAR_PLANE_DEFAULT;
-    float farPlane = SHADOW_FAR_PLANE_DEFAULT;
-    float biasMin = SHADOW_BIAS_MIN_DEFAULT;
-    float biasSlope = SHADOW_BIAS_SLOPE_DEFAULT;
+    int mapSize = 0;
+    float orthoSize = 0.0f;
+    float fovDegrees = 0.0f;
+    float nearPlane = 0.0f;
+    float farPlane = 0.0f;
+    float biasMin = 0.0f;
+    float biasSlope = 0.0f;
 };
 
 struct SceneDefinition
