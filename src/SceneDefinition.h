@@ -81,6 +81,9 @@ struct SceneObjectDefinition
     float behaviorSpeed;
     glm::vec3 behaviorAxis;
     float behaviorAmplitude;
+
+    glm::vec3 lightColor;
+    float lightIntensity;
 };
 
 struct TextDefinition

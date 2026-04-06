@@ -37,6 +37,8 @@ struct RuntimeSceneObject
     float behaviorAmplitude;
     glm::vec3 initialPosition;
     float initialRotationAngle;
+    glm::vec3 lightColor;
+    float lightIntensity;
 };
 
 /**
@@ -66,7 +68,7 @@ private:
     std::unordered_map<std::string, std::shared_ptr<RuntimeMaterial>> runtimeMaterials;
     /** Runtime object map keyed by object id. */
     std::unordered_map<std::string, RuntimeSceneObject> runtimeObjects;
-    std::vector<std::shared_ptr<Object>> activeLightSources;
+    std::vector<RuntimeSceneObject *> activeLightSources;
 
     void renderTextOverlay(const UIOverlayConfig &overlayConfig, bool infoOverlayEnabled, float fps, float sceneElapsedTime, float currentTimeSeconds);
 };

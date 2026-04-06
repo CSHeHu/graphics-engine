@@ -227,6 +227,15 @@ SceneDefinition SceneDefinitions::parseSceneDefinition(const std::string &sceneF
         }
         object.behaviorAxis = parseVec3(behaviorAxis[0].get<float>(), behaviorAxis[1].get<float>(), behaviorAxis[2].get<float>());
         object.behaviorAmplitude = objectJson.value("behaviorAmplitude", 0.0f);
+
+        const nlohmann::json lightColor = objectJson.value("lightColor", nlohmann::json::array({1.0f, 1.0f, 1.0f}));
+        if (!lightColor.is_array() || lightColor.size() != 3)
+        {
+            throw std::runtime_error("Expected vec3 array for field: objects.lightColor");
+        }
+        object.lightColor = parseVec3(lightColor[0].get<float>(), lightColor[1].get<float>(), lightColor[2].get<float>());
+        object.lightIntensity = objectJson.value("lightIntensity", 1.0f);
+
         definition.objects.push_back(object);
     }
 

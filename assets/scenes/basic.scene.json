@@ -71,7 +71,9 @@
       "behavior": "Oscillate",
       "behaviorSpeed": 0.5,
       "behaviorAxis": [1.0, 1.0, 1.0],
-      "behaviorAmplitude": 2.5
+      "behaviorAmplitude": 2.5,
+      "lightColor": [1.0, 0.95, 0.85],
+      "lightIntensity": 1.25
     },
     {
       "id": "lightCube2",
@@ -83,7 +85,9 @@
       "behavior": "Oscillate",
       "behaviorSpeed": 0.8,
       "behaviorAxis": [0.0, 1.0, 0.5],
-      "behaviorAmplitude": 1.8
+      "behaviorAmplitude": 1.8,
+      "lightColor": [0.45, 0.65, 1.0],
+      "lightIntensity": 0.95
     },
     {
       "id": "lightCube3",
@@ -95,7 +99,9 @@
       "behavior": "Oscillate",
       "behaviorSpeed": 0.65,
       "behaviorAxis": [0.6, 0.4, 0.0],
-      "behaviorAmplitude": 2.2
+      "behaviorAmplitude": 2.2,
+      "lightColor": [0.9, 0.5, 0.4],
+      "lightIntensity": 1.05
     },
     {
       "id": "lightTargetCube",

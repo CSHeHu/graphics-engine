@@ -94,18 +94,20 @@ bool Scene::init()
         runtimeObject.behaviorAmplitude = objectDef.behaviorAmplitude;
         runtimeObject.initialPosition = objectDef.position;
         runtimeObject.initialRotationAngle = object->getRotationAngle();
+        runtimeObject.lightColor = objectDef.lightColor;
+        runtimeObject.lightIntensity = objectDef.lightIntensity;
 
         runtimeObjects[objectDef.id] = runtimeObject;
     }
 
     // Resolve active light providers once for lit-object uniforms.
     activeLightSources.clear();
-    for (const auto &entry : runtimeObjects)
+    for (auto &entry : runtimeObjects)
     {
-        const RuntimeSceneObject &runtimeObject = entry.second;
+        RuntimeSceneObject &runtimeObject = entry.second;
         if (runtimeObject.role == SceneRole::LightSource)
         {
-            activeLightSources.push_back(runtimeObject.object);
+            activeLightSources.push_back(&runtimeObject);
         }
     }
 
@@ -168,16 +170,22 @@ void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm:
             material->shader->setInt("lightCount", lightCount);
 
             // Backward-compatible single-light uniforms for legacy shaders.
-            material->shader->setVec3("lightColor", 1.0f, 1.0f, 1.0f);
-            material->shader->setVec3("lightPos", activeLightSources[0]->getPosition());
+            material->shader->setVec3("lightColor", activeLightSources[0]->lightColor * activeLightSources[0]->lightIntensity);
+            material->shader->setVec3("lightPos", activeLightSources[0]->object->getPosition());
 
             for (int i = 0; i < lightCount; ++i)
             {
                 const std::string posUniform = "lightPos[" + std::to_string(i) + "]";
                 const std::string colorUniform = "lightColor[" + std::to_string(i) + "]";
-                material->shader->setVec3(posUniform, activeLightSources[static_cast<std::size_t>(i)]->getPosition());
-                material->shader->setVec3(colorUniform, 1.0f, 1.0f, 1.0f);
+                const RuntimeSceneObject *light = activeLightSources[static_cast<std::size_t>(i)];
+                material->shader->setVec3(posUniform, light->object->getPosition());
+                material->shader->setVec3(colorUniform, light->lightColor * light->lightIntensity);
             }
+        }
+        else if (material->renderMode == RenderMode::LightSource)
+        {
+            // Visualize each emitter with its configured light tint and intensity.
+            material->shader->setVec3("objectColor", runtimeObject.lightColor * runtimeObject.lightIntensity);
         }
 
         glBindVertexArray(object->getVAO());
