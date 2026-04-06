@@ -27,7 +27,11 @@ void main()
     vec3 reflectDir = reflect(-lightDir, norm);  
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
     vec3 specular = specularStrength * spec * lightColor;  
+
+    // distance attenuation to simulate light falloff from source.
+    float distanceToLight = length(lightPos - FragPos);
+    float attenuation = 1.0 / (1.0 + 0.09 * distanceToLight + 0.032 * distanceToLight * distanceToLight);
         
-    vec3 result = (ambient + diffuse + specular) * objectColor;
+    vec3 result = (ambient + (diffuse + specular) * attenuation) * objectColor;
     FragColor = vec4(result, 1.0);
 } 
