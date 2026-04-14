@@ -131,9 +131,9 @@ bool Application::init()
                                       glm::vec3(0.0f, 1.0f, 0.0f),
                                       runtimeConfig.camera.yaw,
                                       runtimeConfig.camera.pitch);
-    camera->MovementSpeed = runtimeConfig.camera.speed;
-    camera->MouseSensitivity = runtimeConfig.camera.sensitivity;
-    camera->Zoom = runtimeConfig.camera.zoom;
+    camera->setMovementSpeed(runtimeConfig.camera.speed);
+    camera->setMouseSensitivity(runtimeConfig.camera.sensitivity);
+    camera->setZoom(runtimeConfig.camera.zoom);
     InputManager::setCamera(camera.get());
     InputManager::setCameraControlEnabled(runtimeConfig.input.cameraControlsEnabled);
 
@@ -312,7 +312,7 @@ void Application::renderFrame()
                                   : 1.0f;
 
     glm::mat4 projection = glm::mat4(1.0f);
-    projection = glm::perspective(glm::radians(camera->Zoom),
+    projection = glm::perspective(glm::radians(camera->getZoom()),
                                   aspectRatio,
                                   runtimeConfig.rendering.nearPlane,
                                   runtimeConfig.rendering.farPlane);

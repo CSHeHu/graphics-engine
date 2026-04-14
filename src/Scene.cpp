@@ -359,7 +359,7 @@ void Scene::render(const Camera &camera, const glm::mat4 &projection, const glm:
                 material->shader->setMat4("projection", projection);
                 material->shader->setMat4("view", view);
                 material->shader->setFloat("uTime", sceneElapsedTime);
-                material->shader->setVec3("viewPos", camera.Position);
+                material->shader->setVec3("viewPos", camera.getPosition());
                 material->shader->setInt("lightCount", lightCount);
                 material->shader->setInt("shadowEnabled", definition.shadows.enabled ? 1 : 0);
                 material->shader->setFloat("shadowBiasMin", definition.shadows.biasMin);

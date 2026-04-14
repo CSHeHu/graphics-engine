@@ -49,7 +49,7 @@
         "farPlane": 22.0,
         "biasMin": 0.003,
         "biasSlope": 0.012,
-        "updateIntervalFrames": 3
+        "updateIntervalFrames": 1  
       }
     }
   },
