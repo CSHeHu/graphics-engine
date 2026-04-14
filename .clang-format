@@ -4,7 +4,7 @@ IndentWidth: 4
 TabWidth: 4
 UseTab: Never
 
-ColumnLimit: 80 
+ColumnLimit: 80
 
 BreakBeforeBraces: Allman
 
@@ -13,7 +13,7 @@ AllowShortFunctionsOnASingleLine: None
 
 IndentCaseLabels: true
 
-PointerAlignment: Right 
+PointerAlignment: Left
 
 SortIncludes: true
 

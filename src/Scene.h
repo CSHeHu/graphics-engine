@@ -2,12 +2,11 @@
 #define SCENE_H
 
 #include <cstddef>
-#include <array>
+#include <glm.hpp>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <glm.hpp>
 
 #include "SceneDefinition.h"
 
@@ -16,73 +15,75 @@ class Object;
 class Shader;
 class AssetManager;
 class TextManager;
+class ShadowManager;
 
 /** @brief Runtime material state resolved from scene configuration. */
 struct RuntimeMaterial
 {
     std::shared_ptr<Shader> shader;
-    RenderMode renderMode;
-    glm::vec3 objectColor;
+    RenderMode              renderMode;
+    glm::vec3               objectColor;
 };
 
 /** @brief Runtime object state used for rendering and behavior updates. */
 struct RuntimeSceneObject
 {
-    std::shared_ptr<Object> object;
+    std::shared_ptr<Object>          object;
     std::shared_ptr<RuntimeMaterial> material;
-    std::size_t vertexCount;
-    SceneRole role;
-    BehaviorType behavior;
-    float behaviorSpeed;
-    glm::vec3 behaviorAxis;
-    float behaviorAmplitude;
-    glm::vec3 initialPosition;
-    float initialRotationAngle;
-    glm::vec3 lightColor;
-    float lightIntensity;
+    std::size_t                      vertexCount;
+    SceneRole                        role;
+    BehaviorType                     behavior;
+    float                            behaviorSpeed;
+    glm::vec3                        behaviorAxis;
+    float                            behaviorAmplitude;
+    glm::vec3                        initialPosition;
+    float                            initialRotationAngle;
+    glm::vec3                        lightColor;
+    float                            lightIntensity;
 };
 
 /**
- * @brief Runtime scene container that updates behaviors and renders scene content.
+ * @brief Runtime scene container that updates behaviors and renders scene
+ * content.
  */
 class Scene
 {
-public:
-    /** @brief Construct scene runtime from parsed definition and shared managers. */
-    Scene(AssetManager &assetManager, SceneDefinition definition, TextManager *textManager);
+  public:
+    /** @brief Construct scene runtime from parsed definition and shared
+     * managers. */
+    Scene(AssetManager& assetManager, SceneDefinition definition,
+          TextManager* textManager);
     /** @brief Destroy scene runtime resources. */
     ~Scene();
 
-    /** @brief Initialize runtime materials and objects for the active definition. */
+    /** @brief Initialize runtime materials and objects for the active
+     * definition. */
     bool init();
     /** @brief Update behavior-driven transforms for the current scene time. */
     void update(float sceneElapsedTime);
     /** @brief Render scene geometry and optional text overlay. */
-    void render(const Camera &camera, const glm::mat4 &projection, const glm::mat4 &view, float fps, float sceneElapsedTime, const UIOverlayConfig &overlayConfig, bool infoOverlayEnabled, float currentTimeSeconds);
+    void render(const Camera& camera, const glm::mat4& projection,
+                const glm::mat4& view, float fps, float sceneElapsedTime,
+                const UIOverlayConfig& overlayConfig, bool infoOverlayEnabled,
+                float currentTimeSeconds);
 
-private:
-    AssetManager &assets;
-    TextManager *textRenderer;
+  private:
+    AssetManager&   assets;
+    TextManager*    textRenderer;
     SceneDefinition definition;
 
     /** Runtime material map keyed by material id. */
-    std::unordered_map<std::string, std::shared_ptr<RuntimeMaterial>> runtimeMaterials;
+    std::unordered_map<std::string, std::shared_ptr<RuntimeMaterial>>
+        runtimeMaterials;
     /** Runtime object map keyed by object id. */
     std::unordered_map<std::string, RuntimeSceneObject> runtimeObjects;
-    std::vector<RuntimeSceneObject *> activeLightSources;
+    std::vector<RuntimeSceneObject*>                    activeLightSources;
 
-    std::shared_ptr<Shader> shadowDepthShader;
-    unsigned int shadowFramebuffer = 0;
-    unsigned int shadowDepthTexture = 0;
-    unsigned int shadowFrameCounter = 0;
-    bool shadowCacheValid = false;
+    std::unique_ptr<ShadowManager> shadowManager;
 
-    std::array<glm::mat4, 6> buildShadowCubeMatrices(const glm::vec3 &lightPosition) const;
-    bool initShadowResources();
-    void releaseShadowResources();
-    void renderShadowDepthPass(const std::array<glm::mat4, 6> &shadowMatrices, const glm::vec3 &lightPosition);
-
-    void renderTextOverlay(const UIOverlayConfig &overlayConfig, bool infoOverlayEnabled, float fps, float sceneElapsedTime, float currentTimeSeconds);
+    void renderTextOverlay(const UIOverlayConfig& overlayConfig,
+                           bool infoOverlayEnabled, float fps,
+                           float sceneElapsedTime, float currentTimeSeconds);
 };
 
 #endif // SCENE_H
