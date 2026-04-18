@@ -350,7 +350,7 @@ bool Application::loadSceneById(SceneId id)
         camera->SetPoseLookAt(startKeyframe.position, startKeyframe.lookAt);
     }
 
-    std::unique_ptr<Scene> nextScene = std::make_unique<Scene>(*assetManager, definition, textManager.get());
+    std::unique_ptr<Scene> nextScene = std::make_unique<Scene>(*assetManager, definition, textManager);
     if (!nextScene->init())
     {
         return false;

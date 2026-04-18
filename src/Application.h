@@ -52,7 +52,7 @@ private:
 
     std::unique_ptr<Scene> scene;
     std::unique_ptr<AssetManager> assetManager;
-    std::unique_ptr<TextManager> textManager;
+    std::shared_ptr<TextManager> textManager;
     bool infoOverlayEnabled;
     bool paused;
 

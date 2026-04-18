@@ -127,19 +127,6 @@
       "behaviorSpeed": 0.0,
       "behaviorAxis": [0.0, 1.0, 0.0],
       "behaviorAmplitude": 0.0
-    },
-    {
-      "id": "tree",
-      "role": "None",
-      "meshName": "Tree1.obj",
-      "layout": "PositionNormal",
-      "position": [-3.0, 0.01, -6.0],
-      "scale": [0.12, 0.12, 0.12],
-      "materialId": "litTreeMaterial",
-      "behavior": "None",
-      "behaviorSpeed": 0.0,
-      "behaviorAxis": [0.0, 1.0, 0.0],
-      "behaviorAmplitude": 0.0
     }
   ],
   "texts": []

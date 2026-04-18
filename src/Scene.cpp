@@ -18,8 +18,8 @@
 #include "TextManager.h"
 
 Scene::Scene(AssetManager& assetManager, SceneDefinition definitionValue,
-             TextManager* textManager)
-    : assets(assetManager), textRenderer(textManager),
+             std::shared_ptr<TextManager> textManager)
+    : assets(assetManager), textRenderer(std::move(textManager)),
       definition(std::move(definitionValue)),
       shadowManager(std::make_unique<ShadowManager>())
 {
@@ -199,11 +199,11 @@ void Scene::computeLightUniformData(int maxLightSources, int& lightCount,
     }
 }
 
-void Scene::renderShadowDepthPass(
-    const std::vector<glm::vec3>& lightPositions,
-    unsigned int shadowUpdateIntervalFrames)
+void Scene::renderShadowDepthPass(const std::vector<glm::vec3>& lightPositions,
+                                  unsigned int shadowUpdateIntervalFrames)
 {
-    if (!definition.shadows.enabled || !shadowManager || !shadowManager->isReady())
+    if (!definition.shadows.enabled || !shadowManager ||
+        !shadowManager->isReady())
     {
         return;
     }
@@ -238,11 +238,13 @@ void Scene::bindShadowTextureIfEnabled(int shadowMapTextureUnit) const
     }
 }
 
-void Scene::renderRuntimeObjects(
-    const Camera& camera, const glm::mat4& projection, const glm::mat4& view,
-    float sceneElapsedTime, int maxLightSources, int lightCount,
-    const std::vector<glm::vec3>& lightPositions,
-    const std::vector<glm::vec3>& lightColors, int shadowMapTextureUnit)
+void Scene::renderRuntimeObjects(const Camera&    camera,
+                                 const glm::mat4& projection,
+                                 const glm::mat4& view, float sceneElapsedTime,
+                                 int maxLightSources, int lightCount,
+                                 const std::vector<glm::vec3>& lightPositions,
+                                 const std::vector<glm::vec3>& lightColors,
+                                 int shadowMapTextureUnit)
 {
     static std::vector<std::string> lightPosUniformNames;
     static std::vector<std::string> lightColorUniformNames;
