@@ -5,8 +5,11 @@ layout (location = 0) in vec3 aPos;
 out vec3 WorldPos;
 
 uniform mat4 model;
+uniform mat4 shadowMatrix;
 
 void main()
 {
-    WorldPos = vec3(model * vec4(aPos, 1.0));
+    vec4 worldPosition = model * vec4(aPos, 1.0);
+    WorldPos = worldPosition.xyz;
+    gl_Position = shadowMatrix * worldPosition;
 }

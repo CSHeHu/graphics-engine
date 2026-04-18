@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <glad/glad.h>
 #include <gtc/matrix_transform.hpp>
-#include <string>
 
 #include "AssetManager.h"
 #include "Shader.h"
@@ -28,6 +27,7 @@ void ShadowManager::shutdown()
 {
     releaseResources();
     depthPassActive = false;
+    shadowPassEnabled = false;
 }
 
 bool ShadowManager::isReady() const
@@ -44,8 +44,7 @@ float ShadowManager::getFarPlane() const
 bool ShadowManager::initResources(AssetManager& assets)
 {
     shadowDepthShader = assets.getShader("assets/shaders/shadowDepth.vs",
-                                         "assets/shaders/shadowDepth.fs",
-                                         "assets/shaders/shadowDepth.gs");
+                                         "assets/shaders/shadowDepth.fs");
     if (!shadowDepthShader)
     {
         return false;
@@ -96,51 +95,77 @@ void ShadowManager::releaseResources()
     shadowDepthShader.reset();
 }
 
-std::array<glm::mat4, 6>
-ShadowManager::buildShadowCubeMatrices(const glm::vec3& lightPosition) const
+glm::mat4 ShadowManager::buildShadowFaceMatrix(const glm::vec3& lightPosition,
+                                               int faceIndex) const
 {
     const glm::mat4 shadowProjection =
         glm::perspective(glm::radians(config.fovDegrees), 1.0f,
                          config.nearPlane, config.farPlane);
 
-    return {shadowProjection *
-                glm::lookAt(lightPosition,
-                            lightPosition + glm::vec3(1.0f, 0.0f, 0.0f),
-                            glm::vec3(0.0f, -1.0f, 0.0f)),
-            shadowProjection *
-                glm::lookAt(lightPosition,
-                            lightPosition + glm::vec3(-1.0f, 0.0f, 0.0f),
-                            glm::vec3(0.0f, -1.0f, 0.0f)),
-            shadowProjection *
-                glm::lookAt(lightPosition,
-                            lightPosition + glm::vec3(0.0f, 1.0f, 0.0f),
-                            glm::vec3(0.0f, 0.0f, 1.0f)),
-            shadowProjection *
-                glm::lookAt(lightPosition,
-                            lightPosition + glm::vec3(0.0f, -1.0f, 0.0f),
-                            glm::vec3(0.0f, 0.0f, -1.0f)),
-            shadowProjection *
-                glm::lookAt(lightPosition,
-                            lightPosition + glm::vec3(0.0f, 0.0f, 1.0f),
-                            glm::vec3(0.0f, -1.0f, 0.0f)),
-            shadowProjection *
-                glm::lookAt(lightPosition,
-                            lightPosition + glm::vec3(0.0f, 0.0f, -1.0f),
-                            glm::vec3(0.0f, -1.0f, 0.0f))};
+    glm::vec3 targetDirection(1.0f, 0.0f, 0.0f);
+    glm::vec3 upDirection(0.0f, -1.0f, 0.0f);
+
+    switch (faceIndex)
+    {
+    case 0:
+        targetDirection = glm::vec3(1.0f, 0.0f, 0.0f);
+        upDirection = glm::vec3(0.0f, -1.0f, 0.0f);
+        break;
+    case 1:
+        targetDirection = glm::vec3(-1.0f, 0.0f, 0.0f);
+        upDirection = glm::vec3(0.0f, -1.0f, 0.0f);
+        break;
+    case 2:
+        targetDirection = glm::vec3(0.0f, 1.0f, 0.0f);
+        upDirection = glm::vec3(0.0f, 0.0f, 1.0f);
+        break;
+    case 3:
+        targetDirection = glm::vec3(0.0f, -1.0f, 0.0f);
+        upDirection = glm::vec3(0.0f, 0.0f, -1.0f);
+        break;
+    case 4:
+        targetDirection = glm::vec3(0.0f, 0.0f, 1.0f);
+        upDirection = glm::vec3(0.0f, -1.0f, 0.0f);
+        break;
+    case 5:
+        targetDirection = glm::vec3(0.0f, 0.0f, -1.0f);
+        upDirection = glm::vec3(0.0f, -1.0f, 0.0f);
+        break;
+    default:
+        break;
+    }
+
+    return shadowProjection *
+           glm::lookAt(lightPosition, lightPosition + targetDirection,
+                       upDirection);
 }
 
 bool ShadowManager::beginDepthPass(const glm::vec3& lightPosition,
-                                   unsigned int     updateIntervalFrames)
+                                   unsigned int     updateIntervalFrames,
+                                   int              faceIndex)
 {
     if (!isReady())
     {
         return false;
     }
 
-    const unsigned int safeInterval = std::max(updateIntervalFrames, 1u);
-    const bool         shouldUpdate =
-        !shadowCacheValid || (shadowFrameCounter++ % safeInterval == 0);
-    if (!shouldUpdate)
+    if (faceIndex < 0 || faceIndex >= 6)
+    {
+        return false;
+    }
+
+    if (faceIndex == 0)
+    {
+        const unsigned int safeInterval = std::max(updateIntervalFrames, 1u);
+        shadowPassEnabled =
+            !shadowCacheValid || (shadowFrameCounter++ % safeInterval == 0);
+        if (!shadowPassEnabled)
+        {
+            return false;
+        }
+    }
+
+    if (!shadowPassEnabled)
     {
         return false;
     }
@@ -149,6 +174,9 @@ bool ShadowManager::beginDepthPass(const glm::vec3& lightPosition,
 
     glViewport(0, 0, config.mapSize, config.mapSize);
     glBindFramebuffer(GL_FRAMEBUFFER, shadowFramebuffer);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                           GL_TEXTURE_CUBE_MAP_POSITIVE_X + faceIndex,
+                           shadowDepthTexture, 0);
     glClear(GL_DEPTH_BUFFER_BIT);
 
     cullFaceWasEnabled = glIsEnabled(GL_CULL_FACE);
@@ -159,14 +187,8 @@ bool ShadowManager::beginDepthPass(const glm::vec3& lightPosition,
     glCullFace(GL_FRONT);
 
     shadowDepthShader->use();
-    const std::array<glm::mat4, 6> shadowMatrices =
-        buildShadowCubeMatrices(lightPosition);
-    for (std::size_t face = 0; face < shadowMatrices.size(); ++face)
-    {
-        shadowDepthShader->setMat4("shadowMatrices[" + std::to_string(face) +
-                                       "]",
-                                   shadowMatrices[face]);
-    }
+    shadowDepthShader->setMat4("shadowMatrix",
+                               buildShadowFaceMatrix(lightPosition, faceIndex));
     shadowDepthShader->setVec3("lightPos", lightPosition);
     shadowDepthShader->setFloat("farPlane", config.farPlane);
 
@@ -187,7 +209,7 @@ void ShadowManager::submitDepthRenderable(const glm::mat4& model,
     glDrawArrays(GL_TRIANGLES, 0, vertexCount);
 }
 
-void ShadowManager::endDepthPass()
+void ShadowManager::endDepthPass(int faceIndex)
 {
     if (!depthPassActive)
     {
@@ -204,8 +226,12 @@ void ShadowManager::endDepthPass()
     glViewport(previousViewport[0], previousViewport[1], previousViewport[2],
                previousViewport[3]);
 
-    shadowCacheValid = true;
-    depthPassActive  = false;
+    if (faceIndex == 5)
+    {
+        shadowCacheValid  = true;
+        shadowPassEnabled = false;
+    }
+    depthPassActive = false;
 }
 
 void ShadowManager::bindShadowTexture(int textureUnit) const
