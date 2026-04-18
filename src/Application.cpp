@@ -359,7 +359,7 @@ bool Application::loadSceneById(SceneId id)
     }
 
     std::unique_ptr<Scene> nextScene =
-        std::make_unique<Scene>(*assetManager, definition, textManager);
+        std::make_unique<Scene>(*assetManager, definition, *textManager);
     if (!nextScene->init())
     {
         return false;

@@ -19,8 +19,8 @@
 
 Scene::Scene(AssetManager&                    assetManager,
              std::shared_ptr<SceneDefinition> definitionValue,
-             std::shared_ptr<TextManager>     textManager)
-    : assets(assetManager), textRenderer(std::move(textManager)),
+             TextManager&                     textManager)
+    : assets(assetManager), textRenderer(textManager),
       definition(std::move(definitionValue)),
       shadowManager(std::make_unique<ShadowManager>())
 {
@@ -233,7 +233,8 @@ void Scene::renderShadowDepthPass(const std::vector<glm::vec3>& lightPositions,
 
 void Scene::bindShadowTextureIfEnabled(int shadowMapTextureUnit) const
 {
-    if (definition->shadows.enabled && shadowManager && shadowManager->isReady())
+    if (definition->shadows.enabled && shadowManager &&
+        shadowManager->isReady())
     {
         shadowManager->bindShadowTexture(shadowMapTextureUnit);
     }
@@ -415,11 +416,8 @@ void Scene::render(const Camera& camera, const glm::mat4& projection,
                          lightColors, shadowMapTextureUnit);
 
     // Render scene text overlays
-    if (textRenderer)
-    {
-        renderTextOverlay(overlayConfig, infoOverlayEnabled, fps,
-                          sceneElapsedTime, currentTimeSeconds);
-    }
+    renderTextOverlay(overlayConfig, infoOverlayEnabled, fps, sceneElapsedTime,
+                      currentTimeSeconds);
 }
 
 void Scene::renderTextOverlay(const UIOverlayConfig& overlayConfig,
@@ -428,8 +426,8 @@ void Scene::renderTextOverlay(const UIOverlayConfig& overlayConfig,
 {
     for (const TextDefinition& text : definition->texts)
     {
-        textRenderer->renderText(text.text, text.x, text.y, text.scale,
-                                 text.color);
+        textRenderer.renderText(text.text, text.x, text.y, text.scale,
+                                text.color);
     }
 
     // The overlay is config-driven: each stat token picks a different line.
@@ -480,7 +478,8 @@ void Scene::renderTextOverlay(const UIOverlayConfig& overlayConfig,
             else if (stat == "shaders")
             {
                 statLine = "Shaders:";
-                for (const MaterialDefinition& objectDef : definition->materials)
+                for (const MaterialDefinition& objectDef :
+                     definition->materials)
                 {
                     statLine += " " + objectDef.id;
                 }
@@ -488,8 +487,8 @@ void Scene::renderTextOverlay(const UIOverlayConfig& overlayConfig,
 
             if (!statLine.empty())
             {
-                textRenderer->renderText(statLine, overlayConfig.x, yOffset,
-                                         overlayConfig.scale, overlayColor);
+                textRenderer.renderText(statLine, overlayConfig.x, yOffset,
+                                        overlayConfig.scale, overlayColor);
                 yOffset -= overlayConfig.lineSpacing;
             }
         }

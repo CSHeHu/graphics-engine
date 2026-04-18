@@ -53,7 +53,7 @@ class Scene
      * managers. */
     Scene(AssetManager&                    assetManager,
           std::shared_ptr<SceneDefinition> definition,
-          std::shared_ptr<TextManager>     textManager);
+          TextManager&                     textManager);
     /** @brief Destroy scene runtime resources. */
     ~Scene();
 
@@ -70,7 +70,7 @@ class Scene
 
   private:
     AssetManager&                    assets;
-    std::shared_ptr<TextManager>     textRenderer;
+    TextManager&                     textRenderer;
     std::shared_ptr<SceneDefinition> definition;
 
     /** Runtime material map keyed by material id. */
