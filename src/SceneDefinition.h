@@ -85,6 +85,7 @@ struct SceneObjectDefinition
 
     glm::vec3 lightColor;
     float lightIntensity;
+    bool castsShadow = true;
 };
 
 struct TextDefinition

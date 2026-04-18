@@ -40,6 +40,7 @@ struct RuntimeSceneObject
     float                            initialRotationAngle;
     glm::vec3                        lightColor;
     float                            lightIntensity;
+    bool                             castsShadow;
 };
 
 /**

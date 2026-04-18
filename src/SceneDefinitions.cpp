@@ -250,6 +250,7 @@ SceneDefinition SceneDefinitions::parseSceneDefinition(const std::string &sceneF
         }
         object.lightColor = parseVec3(lightColor[0].get<float>(), lightColor[1].get<float>(), lightColor[2].get<float>());
         object.lightIntensity = objectJson.value("lightIntensity", 1.0f);
+        object.castsShadow = objectJson.value("castsShadow", true);
 
         definition.objects.push_back(object);
     }

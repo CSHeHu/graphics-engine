@@ -142,6 +142,7 @@ bool Scene::initializeRuntimeObjects()
         runtimeObject.initialRotationAngle = object->getRotationAngle();
         runtimeObject.lightColor           = objectDef.lightColor;
         runtimeObject.lightIntensity       = objectDef.lightIntensity;
+        runtimeObject.castsShadow          = objectDef.castsShadow;
 
         runtimeObjects[objectDef.id] = runtimeObject;
     }
@@ -217,7 +218,8 @@ void Scene::renderShadowDepthPass(const std::vector<glm::vec3>& lightPositions,
         {
             const RuntimeSceneObject& runtimeObject = entry.second;
             if (runtimeObject.role == SceneRole::LightSource ||
-                runtimeObject.role == SceneRole::Ground)
+                runtimeObject.role == SceneRole::Ground ||
+                !runtimeObject.castsShadow)
             {
                 continue;
             }
