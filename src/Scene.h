@@ -51,8 +51,9 @@ class Scene
   public:
     /** @brief Construct scene runtime from parsed definition and shared
      * managers. */
-    Scene(AssetManager& assetManager, SceneDefinition definition,
-          std::shared_ptr<TextManager> textManager);
+    Scene(AssetManager&                    assetManager,
+          std::shared_ptr<SceneDefinition> definition,
+          std::shared_ptr<TextManager>     textManager);
     /** @brief Destroy scene runtime resources. */
     ~Scene();
 
@@ -68,9 +69,9 @@ class Scene
                 float currentTimeSeconds);
 
   private:
-    AssetManager&                assets;
-    std::shared_ptr<TextManager> textRenderer;
-    SceneDefinition              definition;
+    AssetManager&                    assets;
+    std::shared_ptr<TextManager>     textRenderer;
+    std::shared_ptr<SceneDefinition> definition;
 
     /** Runtime material map keyed by material id. */
     std::unordered_map<std::string, std::shared_ptr<RuntimeMaterial>>

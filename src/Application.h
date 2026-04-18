@@ -39,7 +39,7 @@ private:
 
     std::unique_ptr<Camera> camera;
     bool scriptedCameraEnabled;
-    SceneDefinition activeSceneDefinition;
+    std::shared_ptr<SceneDefinition> activeSceneDefinition;
 
     float currentTimeSeconds;
     float deltaTime;

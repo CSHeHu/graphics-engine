@@ -31,7 +31,7 @@ public:
     /** @brief Get ordered default scene cycle from global config. */
     static const std::vector<SceneCycleEntry> &getDefaultSceneCycle();
     /** @brief Build scene definition for scene id if available. */
-    static bool tryCreateSceneDefinition(SceneId id, SceneDefinition &outDefinition);
+    static bool tryCreateSceneDefinition(SceneId id, std::shared_ptr<SceneDefinition>& outDefinition);
     /** @brief Get UI overlay configuration. */
     static const UIOverlayConfig &getUIOverlayConfig();
     /** @brief Get window mode and size configuration. */
@@ -63,7 +63,7 @@ private:
     /** Scene cycle entries parsed from scene_config.json. */
     static std::vector<SceneCycleEntry> sceneCycle;
     /** Parsed per-scene definitions keyed by SceneId integer value. */
-    static std::unordered_map<int, SceneDefinition> sceneDefinitions;
+    static std::unordered_map<int, std::shared_ptr<SceneDefinition>> sceneDefinitions;
     static UIOverlayConfig uiOverlayConfig;
     static WindowConfig windowConfig;
     static RuntimeConfig runtimeConfig;

@@ -1,9 +1,9 @@
 #include "Application.h"
 
+#include <cmath>
 #include <glad/glad.h>
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
-#include <cmath>
 #include <iostream>
 
 #include "AssetManager.h"
@@ -16,10 +16,12 @@
 struct SceneTimelinePosition
 {
     std::size_t index;
-    float sceneStartTime;
+    float       sceneStartTime;
 };
 
-SceneTimelinePosition resolveSceneTimelinePosition(const std::vector<SceneCycleEntry> &cycle, float timelineTimeSeconds)
+SceneTimelinePosition
+resolveSceneTimelinePosition(const std::vector<SceneCycleEntry>& cycle,
+                             float timelineTimeSeconds)
 {
     if (cycle.empty())
     {
@@ -29,7 +31,7 @@ SceneTimelinePosition resolveSceneTimelinePosition(const std::vector<SceneCycleE
     float accumulatedStartTime = 0.0f;
     for (std::size_t i = 0; i < cycle.size(); ++i)
     {
-        const bool isLastScene = (i + 1 == cycle.size());
+        const bool  isLastScene     = (i + 1 == cycle.size());
         const float durationSeconds = cycle[i].durationSeconds;
 
         if (isLastScene)
@@ -56,22 +58,12 @@ SceneTimelinePosition resolveSceneTimelinePosition(const std::vector<SceneCycleE
 }
 
 Application::Application()
-    : window(nullptr, glfwDestroyWindow),
-      camera(nullptr),
-      scriptedCameraEnabled(false),
-      activeSceneDefinition(),
-      deltaTime(0.0f),
-      lastRealTimeSeconds(0.0f),
-      lastSceneSwitchTime(0.0f),
-      activeSceneId(SceneId::Basic),
-      sceneCycle(),
-      sceneCyclePosition(0),
-      scene(nullptr),
-      assetManager(nullptr),
-      currentTimeSeconds(0.0f),
-      textManager(nullptr),
-      infoOverlayEnabled(false),
-      paused(false)
+    : window(nullptr, glfwDestroyWindow), camera(nullptr),
+      scriptedCameraEnabled(false), activeSceneDefinition(), deltaTime(0.0f),
+      lastRealTimeSeconds(0.0f), lastSceneSwitchTime(0.0f),
+      activeSceneId(SceneId::Basic), sceneCycle(), sceneCyclePosition(0),
+      scene(nullptr), assetManager(nullptr), currentTimeSeconds(0.0f),
+      textManager(nullptr), infoOverlayEnabled(false), paused(false)
 {
 }
 
@@ -87,37 +79,42 @@ Application::~Application()
 
 bool Application::init()
 {
-    const RuntimeConfig &runtimeConfig = SceneDefinitions::getRuntimeConfig();
+    const RuntimeConfig& runtimeConfig = SceneDefinitions::getRuntimeConfig();
 
     // glfw: initialize and configure
     glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, runtimeConfig.opengl.contextVersionMajor);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, runtimeConfig.opengl.contextVersionMinor);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,
+                   runtimeConfig.opengl.contextVersionMajor);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,
+                   runtimeConfig.opengl.contextVersionMinor);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    const WindowConfig &windowConfig = SceneDefinitions::getWindowConfig();
+    const WindowConfig& windowConfig = SceneDefinitions::getWindowConfig();
 
-    GLFWmonitor *targetMonitor = nullptr;
-    int targetWidth = windowConfig.width;
-    int targetHeight = windowConfig.height;
+    GLFWmonitor* targetMonitor = nullptr;
+    int          targetWidth   = windowConfig.width;
+    int          targetHeight  = windowConfig.height;
 
     if (windowConfig.mode == WindowMode::Fullscreen)
     {
-        targetMonitor = glfwGetPrimaryMonitor();
-        const GLFWvidmode *videoMode = glfwGetVideoMode(targetMonitor);
+        targetMonitor                = glfwGetPrimaryMonitor();
+        const GLFWvidmode* videoMode = glfwGetVideoMode(targetMonitor);
         if (targetMonitor == nullptr || videoMode == nullptr)
         {
-            std::cout << "Failed to query primary monitor for fullscreen mode" << std::endl;
+            std::cout << "Failed to query primary monitor for fullscreen mode"
+                      << std::endl;
             glfwTerminate();
             return false;
         }
 
-        targetWidth = videoMode->width;
+        targetWidth  = videoMode->width;
         targetHeight = videoMode->height;
     }
 
     // glfw window creation
-    window.reset(glfwCreateWindow(targetWidth, targetHeight, runtimeConfig.windowTitle.c_str(), targetMonitor, NULL));
+    window.reset(glfwCreateWindow(targetWidth, targetHeight,
+                                  runtimeConfig.windowTitle.c_str(),
+                                  targetMonitor, NULL));
     if (window == nullptr)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -127,23 +124,26 @@ bool Application::init()
     glfwMakeContextCurrent(window.get());
 
     // Create and set up camera
-    camera = std::make_unique<Camera>(runtimeConfig.camera.position,
-                                      glm::vec3(0.0f, 1.0f, 0.0f),
-                                      runtimeConfig.camera.yaw,
-                                      runtimeConfig.camera.pitch);
+    camera = std::make_unique<Camera>(
+        runtimeConfig.camera.position, glm::vec3(0.0f, 1.0f, 0.0f),
+        runtimeConfig.camera.yaw, runtimeConfig.camera.pitch);
     camera->setMovementSpeed(runtimeConfig.camera.speed);
     camera->setMouseSensitivity(runtimeConfig.camera.sensitivity);
     camera->setZoom(runtimeConfig.camera.zoom);
     InputManager::setCamera(camera.get());
-    InputManager::setCameraControlEnabled(runtimeConfig.input.cameraControlsEnabled);
+    InputManager::setCameraControlEnabled(
+        runtimeConfig.input.cameraControlsEnabled);
 
     // callbacks for window resize, mouse movement and scroll movement
-    glfwSetFramebufferSizeCallback(window.get(), InputManager::framebufferSizeCallback);
+    glfwSetFramebufferSizeCallback(window.get(),
+                                   InputManager::framebufferSizeCallback);
     glfwSetCursorPosCallback(window.get(), InputManager::mouseCallback);
     glfwSetScrollCallback(window.get(), InputManager::scrollCallback);
 
     // tell GLFW to capture our mouse
-    glfwSetInputMode(window.get(), GLFW_CURSOR, windowConfig.cursorCaptured ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+    glfwSetInputMode(window.get(), GLFW_CURSOR,
+                     windowConfig.cursorCaptured ? GLFW_CURSOR_DISABLED
+                                                 : GLFW_CURSOR_NORMAL);
 
     // glad: load all OpenGL function pointers
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -174,7 +174,7 @@ bool Application::init()
     }
 
     // Scene order comes from content config instead of app lifecycle code.
-    sceneCycle = SceneDefinitions::getDefaultSceneCycle();
+    sceneCycle         = SceneDefinitions::getDefaultSceneCycle();
     sceneCyclePosition = 0;
 
     assetManager = std::make_unique<AssetManager>();
@@ -185,16 +185,17 @@ bool Application::init()
     }
 
     // Initialize text manager with config
-    const UIOverlayConfig &uiConfig = SceneDefinitions::getUIOverlayConfig();
-    textManager = std::make_unique<TextManager>();
-    if (!textManager->init(uiConfig.fontPath, uiConfig.vertexShaderPath, uiConfig.fragmentShaderPath))
+    const UIOverlayConfig& uiConfig = SceneDefinitions::getUIOverlayConfig();
+    textManager                     = std::make_unique<TextManager>();
+    if (!textManager->init(uiConfig.fontPath, uiConfig.vertexShaderPath,
+                           uiConfig.fragmentShaderPath))
     {
         std::cout << "Failed to initialize text manager" << std::endl;
         return false;
     }
     infoOverlayEnabled = uiConfig.enabled;
 
-    activeSceneId = sceneCycle[sceneCyclePosition].id;
+    activeSceneId       = sceneCycle[sceneCyclePosition].id;
     lastSceneSwitchTime = 0.0f;
     lastRealTimeSeconds = static_cast<float>(glfwGetTime());
     if (!loadSceneById(activeSceneId))
@@ -213,8 +214,8 @@ void Application::run()
     // render loop
     while (!glfwWindowShouldClose(window.get()))
     {
-        const float nowRealSeconds = static_cast<float>(glfwGetTime());
-        float realDeltaSeconds = nowRealSeconds - lastRealTimeSeconds;
+        const float nowRealSeconds   = static_cast<float>(glfwGetTime());
+        float       realDeltaSeconds = nowRealSeconds - lastRealTimeSeconds;
         if (realDeltaSeconds < 0.0f)
         {
             realDeltaSeconds = 0.0f;
@@ -262,14 +263,15 @@ void Application::run()
             deltaTime = 0.0f;
         }
 
-        const SceneTimelinePosition timelinePosition = resolveSceneTimelinePosition(sceneCycle, currentTimeSeconds);
+        const SceneTimelinePosition timelinePosition =
+            resolveSceneTimelinePosition(sceneCycle, currentTimeSeconds);
         if (timelinePosition.index != sceneCyclePosition)
         {
             const SceneId targetSceneId = sceneCycle[timelinePosition.index].id;
             if (loadSceneById(targetSceneId))
             {
-                sceneCyclePosition = timelinePosition.index;
-                activeSceneId = targetSceneId;
+                sceneCyclePosition  = timelinePosition.index;
+                activeSceneId       = targetSceneId;
                 lastSceneSwitchTime = timelinePosition.sceneStartTime;
             }
             else
@@ -302,30 +304,32 @@ void Application::renderFrame()
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    int framebufferWidth = 0;
+    int framebufferWidth  = 0;
     int framebufferHeight = 0;
     glfwGetFramebufferSize(window.get(), &framebufferWidth, &framebufferHeight);
 
-    const RuntimeConfig &runtimeConfig = SceneDefinitions::getRuntimeConfig();
+    const RuntimeConfig& runtimeConfig = SceneDefinitions::getRuntimeConfig();
     const float aspectRatio = (framebufferHeight > 0)
-                                  ? static_cast<float>(framebufferWidth) / static_cast<float>(framebufferHeight)
+                                  ? static_cast<float>(framebufferWidth) /
+                                        static_cast<float>(framebufferHeight)
                                   : 1.0f;
 
     glm::mat4 projection = glm::mat4(1.0f);
-    projection = glm::perspective(glm::radians(camera->getZoom()),
-                                  aspectRatio,
+    projection = glm::perspective(glm::radians(camera->getZoom()), aspectRatio,
                                   runtimeConfig.rendering.nearPlane,
                                   runtimeConfig.rendering.farPlane);
 
     glm::mat4 view = glm::mat4(1.0f);
-    view = camera->GetViewMatrix();
+    view           = camera->GetViewMatrix();
 
-    float fps = (deltaTime > 0.0f) ? 1.0f / deltaTime : 0.0f;
+    float fps              = (deltaTime > 0.0f) ? 1.0f / deltaTime : 0.0f;
     float sceneElapsedTime = currentTimeSeconds - lastSceneSwitchTime;
-    const UIOverlayConfig &overlayConfig = SceneDefinitions::getUIOverlayConfig();
+    const UIOverlayConfig& overlayConfig =
+        SceneDefinitions::getUIOverlayConfig();
 
     scene->update(sceneElapsedTime);
-    scene->render(*camera, projection, view, fps, sceneElapsedTime, overlayConfig, infoOverlayEnabled, currentTimeSeconds);
+    scene->render(*camera, projection, view, fps, sceneElapsedTime,
+                  overlayConfig, infoOverlayEnabled, currentTimeSeconds);
 }
 
 bool Application::loadSceneById(SceneId id)
@@ -335,22 +339,27 @@ bool Application::loadSceneById(SceneId id)
         return false;
     }
 
-    SceneDefinition definition;
+    std::shared_ptr<SceneDefinition> definition;
     if (!SceneDefinitions::tryCreateSceneDefinition(id, definition))
     {
         return false;
     }
 
     activeSceneDefinition = definition;
-    scriptedCameraEnabled = activeSceneDefinition.camera.mode == CameraMode::Scripted && !activeSceneDefinition.camera.keyframes.empty();
+    scriptedCameraEnabled =
+        activeSceneDefinition->camera.mode == CameraMode::Scripted &&
+        !activeSceneDefinition->camera.keyframes.empty();
     refreshCameraControlMode();
-    if (scriptedCameraEnabled && !activeSceneDefinition.camera.keyframes.empty())
+    if (scriptedCameraEnabled &&
+        !activeSceneDefinition->camera.keyframes.empty())
     {
-        const CameraKeyframe &startKeyframe = activeSceneDefinition.camera.keyframes.front();
+        const CameraKeyframe& startKeyframe =
+            activeSceneDefinition->camera.keyframes.front();
         camera->SetPoseLookAt(startKeyframe.position, startKeyframe.lookAt);
     }
 
-    std::unique_ptr<Scene> nextScene = std::make_unique<Scene>(*assetManager, definition, textManager);
+    std::unique_ptr<Scene> nextScene =
+        std::make_unique<Scene>(*assetManager, definition, textManager);
     if (!nextScene->init())
     {
         return false;
@@ -362,7 +371,8 @@ bool Application::loadSceneById(SceneId id)
 
 void Application::applyScriptedCamera(float sceneElapsedTimeSeconds)
 {
-    const std::vector<CameraKeyframe> &keyframes = activeSceneDefinition.camera.keyframes;
+    const std::vector<CameraKeyframe>& keyframes =
+        activeSceneDefinition->camera.keyframes;
     if (keyframes.empty())
     {
         return;
@@ -370,38 +380,43 @@ void Application::applyScriptedCamera(float sceneElapsedTimeSeconds)
 
     if (keyframes.size() == 1)
     {
-        camera->SetPoseLookAt(keyframes.front().position, keyframes.front().lookAt);
+        camera->SetPoseLookAt(keyframes.front().position,
+                              keyframes.front().lookAt);
         return;
     }
 
     const float routeEnd = keyframes.back().timeSeconds;
     if (routeEnd <= 0.0f)
     {
-        camera->SetPoseLookAt(keyframes.back().position, keyframes.back().lookAt);
+        camera->SetPoseLookAt(keyframes.back().position,
+                              keyframes.back().lookAt);
         return;
     }
 
     float routeTime = sceneElapsedTimeSeconds;
-    if (activeSceneDefinition.camera.loop)
+    if (activeSceneDefinition->camera.loop)
     {
         routeTime = std::fmod(routeTime, routeEnd);
     }
     else if (routeTime >= routeEnd)
     {
-        camera->SetPoseLookAt(keyframes.back().position, keyframes.back().lookAt);
+        camera->SetPoseLookAt(keyframes.back().position,
+                              keyframes.back().lookAt);
         return;
     }
 
     for (std::size_t i = 0; i + 1 < keyframes.size(); ++i)
     {
-        const CameraKeyframe &a = keyframes[i];
-        const CameraKeyframe &b = keyframes[i + 1];
+        const CameraKeyframe& a = keyframes[i];
+        const CameraKeyframe& b = keyframes[i + 1];
         if (routeTime >= a.timeSeconds && routeTime <= b.timeSeconds)
         {
             const float segmentDuration = b.timeSeconds - a.timeSeconds;
-            const float t = segmentDuration > 0.0f ? (routeTime - a.timeSeconds) / segmentDuration : 0.0f;
+            const float t = segmentDuration > 0.0f
+                                ? (routeTime - a.timeSeconds) / segmentDuration
+                                : 0.0f;
             const glm::vec3 position = lerpVec3(a.position, b.position, t);
-            const glm::vec3 lookAt = lerpVec3(a.lookAt, b.lookAt, t);
+            const glm::vec3 lookAt   = lerpVec3(a.lookAt, b.lookAt, t);
             camera->SetPoseLookAt(position, lookAt);
             return;
         }
@@ -417,14 +432,14 @@ void Application::refreshCameraControlMode()
 
 void Application::toggleCameraMode()
 {
-    if (!activeSceneDefinition.camera.keyframes.empty())
+    if (!activeSceneDefinition->camera.keyframes.empty())
     {
         scriptedCameraEnabled = !scriptedCameraEnabled;
         refreshCameraControlMode();
     }
 }
 
-glm::vec3 Application::lerpVec3(const glm::vec3 &a, const glm::vec3 &b, float t)
+glm::vec3 Application::lerpVec3(const glm::vec3& a, const glm::vec3& b, float t)
 {
     return a + (b - a) * t;
 }

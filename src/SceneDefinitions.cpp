@@ -9,7 +9,7 @@
 #include <nlohmann/json.hpp>
 
 std::vector<SceneCycleEntry> SceneDefinitions::sceneCycle;
-std::unordered_map<int, SceneDefinition> SceneDefinitions::sceneDefinitions;
+std::unordered_map<int, std::shared_ptr<SceneDefinition>> SceneDefinitions::sceneDefinitions;
 UIOverlayConfig SceneDefinitions::uiOverlayConfig;
 WindowConfig SceneDefinitions::windowConfig;
 RuntimeConfig SceneDefinitions::runtimeConfig;
@@ -417,7 +417,7 @@ void SceneDefinitions::ensureLoaded()
         const SceneId id = parseSceneId(entryJson.at("id").get<std::string>());
         const std::string filePath = entryJson.at("file").get<std::string>();
 
-        sceneDefinitions[static_cast<int>(id)] = parseSceneDefinition(filePath);
+sceneDefinitions[static_cast<int>(id)] = std::make_shared<SceneDefinition>(parseSceneDefinition(filePath));
     }
 
     for (const nlohmann::json &cycleJson : root.at("cycle"))
@@ -437,7 +437,7 @@ const std::vector<SceneCycleEntry> &SceneDefinitions::getDefaultSceneCycle()
     return sceneCycle;
 }
 
-bool SceneDefinitions::tryCreateSceneDefinition(SceneId id, SceneDefinition &outDefinition)
+bool SceneDefinitions::tryCreateSceneDefinition(SceneId id, std::shared_ptr<SceneDefinition>& outDefinition)
 {
     ensureLoaded();
 

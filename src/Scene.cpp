@@ -17,8 +17,9 @@
 #include "ShadowManager.h"
 #include "TextManager.h"
 
-Scene::Scene(AssetManager& assetManager, SceneDefinition definitionValue,
-             std::shared_ptr<TextManager> textManager)
+Scene::Scene(AssetManager&                    assetManager,
+             std::shared_ptr<SceneDefinition> definitionValue,
+             std::shared_ptr<TextManager>     textManager)
     : assets(assetManager), textRenderer(std::move(textManager)),
       definition(std::move(definitionValue)),
       shadowManager(std::make_unique<ShadowManager>())
@@ -73,7 +74,7 @@ bool Scene::init()
 
 bool Scene::initializeRuntimeMaterials()
 {
-    for (const MaterialDefinition& materialDef : definition.materials)
+    for (const MaterialDefinition& materialDef : definition->materials)
     {
         std::shared_ptr<RuntimeMaterial> material =
             std::make_shared<RuntimeMaterial>();
@@ -92,7 +93,7 @@ bool Scene::initializeRuntimeMaterials()
 bool Scene::initializeRuntimeObjects()
 {
     // Build runtime objects from scene definition data.
-    for (const SceneObjectDefinition& objectDef : definition.objects)
+    for (const SceneObjectDefinition& objectDef : definition->objects)
     {
         const auto materialIt = runtimeMaterials.find(objectDef.materialId);
         if (materialIt == runtimeMaterials.end())
@@ -164,13 +165,13 @@ void Scene::refreshActiveLightSources()
 
 bool Scene::configureShadowManager()
 {
-    if (definition.shadows.enabled &&
-        !shadowManager->init(assets, definition.shadows))
+    if (definition->shadows.enabled &&
+        !shadowManager->init(assets, definition->shadows))
     {
         std::cout << "Failed to initialize shadow resources" << std::endl;
         return false;
     }
-    if (!definition.shadows.enabled)
+    if (!definition->shadows.enabled)
     {
         shadowManager->shutdown();
     }
@@ -202,7 +203,7 @@ void Scene::computeLightUniformData(int maxLightSources, int& lightCount,
 void Scene::renderShadowDepthPass(const std::vector<glm::vec3>& lightPositions,
                                   unsigned int shadowUpdateIntervalFrames)
 {
-    if (!definition.shadows.enabled || !shadowManager ||
+    if (!definition->shadows.enabled || !shadowManager ||
         !shadowManager->isReady())
     {
         return;
@@ -232,7 +233,7 @@ void Scene::renderShadowDepthPass(const std::vector<glm::vec3>& lightPositions,
 
 void Scene::bindShadowTextureIfEnabled(int shadowMapTextureUnit) const
 {
-    if (definition.shadows.enabled && shadowManager && shadowManager->isReady())
+    if (definition->shadows.enabled && shadowManager && shadowManager->isReady())
     {
         shadowManager->bindShadowTexture(shadowMapTextureUnit);
     }
@@ -293,13 +294,13 @@ void Scene::renderRuntimeObjects(const Camera&    camera,
                 material->shader->setVec3("viewPos", camera.getPosition());
                 material->shader->setInt("lightCount", lightCount);
                 material->shader->setInt("shadowEnabled",
-                                         definition.shadows.enabled ? 1 : 0);
+                                         definition->shadows.enabled ? 1 : 0);
                 material->shader->setFloat("shadowBiasMin",
-                                           definition.shadows.biasMin);
+                                           definition->shadows.biasMin);
                 material->shader->setFloat("shadowBiasSlope",
-                                           definition.shadows.biasSlope);
+                                           definition->shadows.biasSlope);
                 material->shader->setFloat("shadowFarPlane",
-                                           definition.shadows.farPlane);
+                                           definition->shadows.farPlane);
                 material->shader->setInt("shadowMap", shadowMapTextureUnit);
 
                 if (lightCount > 0)
@@ -425,7 +426,7 @@ void Scene::renderTextOverlay(const UIOverlayConfig& overlayConfig,
                               bool infoOverlayEnabled, float fps,
                               float sceneElapsedTime, float currentTimeSeconds)
 {
-    for (const TextDefinition& text : definition.texts)
+    for (const TextDefinition& text : definition->texts)
     {
         textRenderer->renderText(text.text, text.x, text.y, text.scale,
                                  text.color);
@@ -447,7 +448,7 @@ void Scene::renderTextOverlay(const UIOverlayConfig& overlayConfig,
             }
             else if (stat == "sceneName")
             {
-                statLine = "Scene: " + definition.name;
+                statLine = "Scene: " + definition->name;
             }
             else if (stat == "time")
             {
@@ -471,7 +472,7 @@ void Scene::renderTextOverlay(const UIOverlayConfig& overlayConfig,
             else if (stat == "objects")
             {
                 statLine = "Objects:";
-                for (const SceneObjectDefinition& object : definition.objects)
+                for (const SceneObjectDefinition& object : definition->objects)
                 {
                     statLine += " " + object.id;
                 }
@@ -479,7 +480,7 @@ void Scene::renderTextOverlay(const UIOverlayConfig& overlayConfig,
             else if (stat == "shaders")
             {
                 statLine = "Shaders:";
-                for (const MaterialDefinition& objectDef : definition.materials)
+                for (const MaterialDefinition& objectDef : definition->materials)
                 {
                     statLine += " " + objectDef.id;
                 }
