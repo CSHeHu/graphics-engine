@@ -47,17 +47,17 @@ Object::~Object()
 	glDeleteBuffers(1, &VBO);
 }
 
-glm::vec3 Object::getPosition() const
+const glm::vec3& Object::getPosition() const
 {
 	return pos;
 }
 
-void Object::setPosition(glm::vec3 position)
+void Object::setPosition(const glm::vec3& position)
 {
 	pos = position;
 }
 
-glm::vec3 Object::getScale() const
+const glm::vec3& Object::getScale() const
 {
 	return size;
 }
@@ -72,7 +72,7 @@ float Object::getRotationAngle() const
 	return rotationAngle;
 }
 
-glm::vec3 Object::getRotationAxis() const
+const glm::vec3& Object::getRotationAxis() const
 {
 	return rotationAxis;
 }
@@ -95,7 +95,7 @@ void Object::rotate(float deltaAngleRadians, const glm::vec3 &axis)
 	}
 }
 
-glm::mat4 Object::getModelMatrix() const
+const glm::mat4 Object::getModelMatrix() const
 {
 	glm::mat4 model = glm::mat4(1.0f);
 	model = glm::translate(model, pos);

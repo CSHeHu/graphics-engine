@@ -86,20 +86,6 @@
       "behaviorSpeed": 0.0,
       "behaviorAxis": [0.0, 1.0, 0.0],
       "behaviorAmplitude": 0.0
-    },
-    {
-      "id": "airplane",
-      "role": "LightTarget",
-      "meshName": "airplane.obj",
-      "layout": "PositionNormal",
-      "position": [-30.0, 2.0, -10.0],
-      "rotation": [-1.5708, 0.0, 0.0],
-      "scale": [0.005, 0.005, 0.005],
-      "materialId": "litAirplaneMaterial",
-      "behavior": "Fly",
-      "behaviorSpeed": 3.0,
-      "behaviorAxis": [1.0, 0.0, 0.0],
-      "behaviorAmplitude": 0.0
     }
   ],
   "texts": []

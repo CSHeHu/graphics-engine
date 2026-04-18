@@ -67,6 +67,10 @@
     {
       "id": "Basic",
       "durationSeconds": 30
+    },
+    {
+      "id": "Alternate",
+      "durationSeconds": 30
     }
   ],
   "ui": {
