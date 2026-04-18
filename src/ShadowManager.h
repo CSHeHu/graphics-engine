@@ -1,6 +1,7 @@
 #ifndef SHADOWMANAGER_H
 #define SHADOWMANAGER_H
 
+#include <array>
 #include <glad/glad.h>
 #include <glm.hpp>
 #include <memory>
@@ -20,11 +21,10 @@ class ShadowManager
     void shutdown();
 
     bool beginDepthPass(const glm::vec3& lightPosition,
-                        unsigned int     updateIntervalFrames,
-                        int              faceIndex);
+                        unsigned int     updateIntervalFrames);
     void submitDepthRenderable(const glm::mat4& model, unsigned int vao,
                                int vertexCount);
-    void endDepthPass(int faceIndex);
+    void endDepthPass();
 
     void bindShadowTexture(int textureUnit) const;
 
@@ -34,8 +34,8 @@ class ShadowManager
   private:
     bool initResources(AssetManager& assets);
     void releaseResources();
-    glm::mat4 buildShadowFaceMatrix(const glm::vec3& lightPosition,
-                                    int faceIndex) const;
+    std::array<glm::mat4, 6>
+    buildShadowCubeMatrices(const glm::vec3& lightPosition) const;
 
     ShadowConfig            config;
     std::shared_ptr<Shader> shadowDepthShader;
@@ -43,7 +43,6 @@ class ShadowManager
     unsigned int            shadowDepthTexture = 0;
     unsigned int            shadowFrameCounter = 0;
     bool                    shadowCacheValid   = false;
-    bool                    shadowPassEnabled  = false;
 
     bool  depthPassActive     = false;
     GLint previousViewport[4] = {0, 0, 0, 0};

@@ -210,15 +210,9 @@ void Scene::renderShadowDepthPass(const std::vector<glm::vec3>& lightPositions,
     }
 
     const glm::vec3 primaryLightPosition = lightPositions[0];
-    for (int faceIndex = 0; faceIndex < 6; ++faceIndex)
+    if (shadowManager->beginDepthPass(primaryLightPosition,
+                                      shadowUpdateIntervalFrames))
     {
-        if (!shadowManager->beginDepthPass(primaryLightPosition,
-                                           shadowUpdateIntervalFrames,
-                                           faceIndex))
-        {
-            break;
-        }
-
         for (const auto& entry : runtimeObjects)
         {
             const RuntimeSceneObject& runtimeObject = entry.second;
@@ -233,7 +227,7 @@ void Scene::renderShadowDepthPass(const std::vector<glm::vec3>& lightPositions,
                 runtimeObject.object->getVAO(),
                 static_cast<int>(runtimeObject.vertexCount));
         }
-        shadowManager->endDepthPass(faceIndex);
+        shadowManager->endDepthPass();
     }
 }
 
