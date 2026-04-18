@@ -30,7 +30,7 @@ struct RuntimeSceneObject
 {
     std::shared_ptr<Object>          object;
     std::shared_ptr<RuntimeMaterial> material;
-    std::size_t                      vertexCount;
+    std::size_t                      indexCount;
     SceneRole                        role;
     BehaviorType                     behavior;
     float                            behaviorSpeed;

@@ -175,7 +175,7 @@ bool ShadowManager::beginDepthPass(const glm::vec3& lightPosition,
 }
 
 void ShadowManager::submitDepthRenderable(const glm::mat4& model,
-                                          unsigned int vao, int vertexCount)
+                                          unsigned int vao, int indexCount)
 {
     if (!depthPassActive || !shadowDepthShader)
     {
@@ -184,7 +184,7 @@ void ShadowManager::submitDepthRenderable(const glm::mat4& model,
 
     shadowDepthShader->setMat4("model", model);
     glBindVertexArray(vao);
-    glDrawArrays(GL_TRIANGLES, 0, vertexCount);
+    glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, nullptr);
 }
 
 void ShadowManager::endDepthPass()

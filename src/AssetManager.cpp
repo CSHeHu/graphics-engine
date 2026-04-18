@@ -5,6 +5,7 @@
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
+#include <unordered_map>
 
 #include "SceneDefinitions.h"
 #include "Shader.h"
@@ -23,6 +24,13 @@ namespace
         int positionIndex;
         int normalIndex;
     };
+
+    uint64_t packVertexKey(int positionIndex, int normalIndex)
+    {
+        return (static_cast<uint64_t>(static_cast<uint32_t>(positionIndex))
+                << 32) |
+               static_cast<uint32_t>(normalIndex);
+    }
 
     int resolveIndex(int index, int size)
     {
@@ -73,18 +81,34 @@ const std::vector<float> &AssetManager::getMeshVertices(const std::string &meshN
     auto it = meshCache.find(meshName);
     if (it != meshCache.end())
     {
-        return it->second;
+        return it->second.vertices;
     }
 
     auto inserted = meshCache.emplace(meshName, loadObjPositionNormal(meshName));
-    return inserted.first->second;
+    return inserted.first->second.vertices;
 }
 
 std::size_t AssetManager::getMeshVertexCount(const std::string &meshName)
 {
-    const std::vector<float> &vertices = getMeshVertices(meshName);
-    const std::size_t stride = SceneDefinitions::getRuntimeConfig().rendering.positionNormalStride;
-    return stride > 0 ? (vertices.size() / stride) : 0;
+    return getMeshIndexCount(meshName);
+}
+
+const std::vector<unsigned int> &AssetManager::getMeshIndices(const std::string &meshName)
+{
+    auto it = meshCache.find(meshName);
+    if (it != meshCache.end())
+    {
+        return it->second.indices;
+    }
+
+    auto inserted = meshCache.emplace(meshName, loadObjPositionNormal(meshName));
+    return inserted.first->second.indices;
+}
+
+std::size_t AssetManager::getMeshIndexCount(const std::string &meshName)
+{
+    const std::vector<unsigned int> &indices = getMeshIndices(meshName);
+    return indices.size();
 }
 
 std::shared_ptr<Shader> AssetManager::getShader(const std::string &vertexPath,
@@ -105,7 +129,7 @@ std::shared_ptr<Shader> AssetManager::getShader(const std::string &vertexPath,
     return shader;
 }
 
-std::vector<float> AssetManager::loadObjPositionNormal(const std::string &meshName) const
+MeshData AssetManager::loadObjPositionNormal(const std::string &meshName) const
 {
     const std::string &meshesPath = SceneDefinitions::getRuntimeConfig().assets.meshesPath;
     const std::vector<std::string> candidatePaths = {
@@ -134,7 +158,8 @@ std::vector<float> AssetManager::loadObjPositionNormal(const std::string &meshNa
     std::vector<Vec3> positions(1, {0.0f, 0.0f, 0.0f});
     std::vector<Vec3> normals(1, {0.0f, 0.0f, 0.0f});
     const Vec3 defaultNormal{0.0f, 1.0f, 0.0f};
-    std::vector<float> vertices;
+    MeshData mesh;
+    std::unordered_map<uint64_t, unsigned int> vertexMap;
 
     std::string line;
     while (std::getline(file, line))
@@ -187,25 +212,43 @@ std::vector<float> AssetManager::loadObjPositionNormal(const std::string &meshNa
                         throw std::runtime_error("Position index out of range while parsing " + openedPath);
                     }
 
-                    const Vec3 &p = positions[pi];
-                    const Vec3 &n = (ni > 0 && ni < static_cast<int>(normals.size())) ? normals[ni] : defaultNormal;
+                    const int safeNormalIndex =
+                        (ni > 0 && ni < static_cast<int>(normals.size())) ? ni : 0;
+                    const uint64_t key = packVertexKey(pi, safeNormalIndex);
+                    auto            mapped = vertexMap.find(key);
+                    if (mapped == vertexMap.end())
+                    {
+                        const Vec3 &p = positions[pi];
+                        const Vec3 &n = (safeNormalIndex > 0) ? normals[safeNormalIndex] : defaultNormal;
 
-                    vertices.push_back(p.x);
-                    vertices.push_back(p.y);
-                    vertices.push_back(p.z);
-                    vertices.push_back(n.x);
-                    vertices.push_back(n.y);
-                    vertices.push_back(n.z);
+                        mesh.vertices.push_back(p.x);
+                        mesh.vertices.push_back(p.y);
+                        mesh.vertices.push_back(p.z);
+                        mesh.vertices.push_back(n.x);
+                        mesh.vertices.push_back(n.y);
+                        mesh.vertices.push_back(n.z);
+
+                        const unsigned int newIndex =
+                            static_cast<unsigned int>((mesh.vertices.size() / 6) - 1);
+                        vertexMap.emplace(key, newIndex);
+                        mesh.indices.push_back(newIndex);
+                    }
+                    else
+                    {
+                        mesh.indices.push_back(mapped->second);
+                    }
                 }
             }
         }
     }
 
-    if (vertices.empty())
+    if (mesh.vertices.empty() || mesh.indices.empty())
     {
         throw std::runtime_error("Mesh file contained no triangles: " + openedPath);
     }
 
-    std::cout << "Loaded mesh: " << openedPath << " (" << vertices.size() / 6 << " vertices)" << std::endl;
-    return vertices;
+    std::cout << "Loaded mesh: " << openedPath << " (" << mesh.vertices.size() / 6
+              << " unique vertices, " << mesh.indices.size() / 3
+              << " triangles)" << std::endl;
+    return mesh;
 }

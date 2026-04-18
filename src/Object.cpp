@@ -4,15 +4,17 @@
 
 Object::Object(std::shared_ptr<Shader> shaderProgram,
 			   const std::vector<float> &vertices,
+			   const std::vector<unsigned int> &indices,
 			   const glm::vec3 &position,
 			   const glm::vec3 &scale,
 			   VertexLayout layout,
 			   const std::vector<std::string> &texturePaths)
-	: shader(std::move(shaderProgram)), pos(position), size(scale), rotationAngle(0.0f), rotationAxis(0.0f, 1.0f, 0.0f)
+	: shader(std::move(shaderProgram)), pos(position), size(scale), rotationAngle(0.0f), rotationAxis(0.0f, 1.0f, 0.0f), indexCount(indices.size())
 {
 	// Generate vertex array object and buffers
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
+	glGenBuffers(1, &EBO);
 
 	// Bind vertex array object
 	glBindVertexArray(VAO);
@@ -20,6 +22,10 @@ Object::Object(std::shared_ptr<Shader> shaderProgram,
 	// Bind and set vertex buffer data
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertices.size(), vertices.data(), GL_STATIC_DRAW);
+
+	// Bind and set index buffer data
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * indices.size(), indices.data(), GL_STATIC_DRAW);
 
 	if (layout == VertexLayout::PositionUV)
 	{
@@ -45,6 +51,7 @@ Object::~Object()
 	// Clean up resources
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
+	glDeleteBuffers(1, &EBO);
 }
 
 const glm::vec3& Object::getPosition() const
@@ -112,4 +119,14 @@ unsigned int Object::getVAO() const
 unsigned int Object::getVBO() const
 {
 	return VBO;
+}
+
+unsigned int Object::getEBO() const
+{
+	return EBO;
+}
+
+std::size_t Object::getIndexCount() const
+{
+	return indexCount;
 }

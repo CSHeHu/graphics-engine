@@ -23,7 +23,7 @@ class ShadowManager
     bool beginDepthPass(const glm::vec3& lightPosition,
                         unsigned int     updateIntervalFrames);
     void submitDepthRenderable(const glm::mat4& model, unsigned int vao,
-                               int vertexCount);
+                               int indexCount);
     void endDepthPass();
 
     void bindShadowTexture(int textureUnit) const;

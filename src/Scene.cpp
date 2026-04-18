@@ -106,12 +106,15 @@ bool Scene::initializeRuntimeObjects()
 
         const std::vector<float>& vertices =
             assets.getMeshVertices(objectDef.meshName);
-        const std::size_t vertexCount =
-            assets.getMeshVertexCount(objectDef.meshName);
+        const std::vector<unsigned int>& indices =
+            assets.getMeshIndices(objectDef.meshName);
+        const std::size_t indexCount =
+            assets.getMeshIndexCount(objectDef.meshName);
         std::shared_ptr<RuntimeMaterial> material = materialIt->second;
 
         std::shared_ptr<Object> object = std::make_shared<Object>(
-            material->shader, vertices, objectDef.position, objectDef.scale,
+            material->shader, vertices, indices,
+            objectDef.position, objectDef.scale,
             objectDef.layout);
 
         // Apply initial rotations (pitch, yaw, roll)
@@ -132,7 +135,7 @@ bool Scene::initializeRuntimeObjects()
         RuntimeSceneObject runtimeObject;
         runtimeObject.object               = object;
         runtimeObject.material             = material;
-        runtimeObject.vertexCount          = vertexCount;
+        runtimeObject.indexCount           = indexCount;
         runtimeObject.role                 = objectDef.role;
         runtimeObject.behavior             = objectDef.behavior;
         runtimeObject.behaviorSpeed        = objectDef.behaviorSpeed;
@@ -227,7 +230,7 @@ void Scene::renderShadowDepthPass(const std::vector<glm::vec3>& lightPositions,
             shadowManager->submitDepthRenderable(
                 runtimeObject.object->getModelMatrix(),
                 runtimeObject.object->getVAO(),
-                static_cast<int>(runtimeObject.vertexCount));
+                static_cast<int>(runtimeObject.indexCount));
         }
         shadowManager->endDepthPass();
     }
@@ -348,8 +351,12 @@ void Scene::renderRuntimeObjects(const Camera&    camera,
         glBindVertexArray(object->getVAO());
         glm::mat4 model = object->getModelMatrix();
         material->shader->setMat4("model", model);
-        glDrawArrays(GL_TRIANGLES, 0,
-                     static_cast<GLsizei>(runtimeObject.vertexCount));
+        const glm::mat3 normalMatrix =
+            glm::mat3(glm::transpose(glm::inverse(model)));
+        material->shader->setMat3("normalMatrix", normalMatrix);
+        glDrawElements(GL_TRIANGLES,
+                       static_cast<GLsizei>(runtimeObject.indexCount),
+                       GL_UNSIGNED_INT, nullptr);
     }
 }
 

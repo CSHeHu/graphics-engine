@@ -20,6 +20,7 @@ public:
     /** @brief Construct renderable object from vertex data and initial transform. */
     Object(std::shared_ptr<Shader> shaderProgram,
            const std::vector<float> &vertices,
+            const std::vector<unsigned int> &indices,
            const glm::vec3 &position,
            const glm::vec3 &scale,
            VertexLayout layout,
@@ -49,11 +50,16 @@ public:
     unsigned int getVAO() const;
     /** @brief Get VBO handle. */
     unsigned int getVBO() const;
+    /** @brief Get EBO handle. */
+    unsigned int getEBO() const;
+    /** @brief Get draw index count. */
+    std::size_t getIndexCount() const;
 
     std::shared_ptr<Shader> shader;
 
 private:
-    unsigned int VAO, VBO;
+    unsigned int VAO, VBO, EBO;
+    std::size_t indexCount;
     glm::vec3 pos;
     glm::vec3 size;
     float rotationAngle;
