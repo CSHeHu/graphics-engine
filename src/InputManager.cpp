@@ -12,11 +12,8 @@ bool InputManager::infoOverlayToggleLatch = false;
 bool InputManager::pauseToggleLatch = false;
 bool InputManager::stepForwardLatch = false;
 bool InputManager::stepBackwardLatch = false;
-bool InputManager::cameraModeToggleRequested = false;
-bool InputManager::infoOverlayToggleRequested = false;
-bool InputManager::pauseToggleRequested = false;
-bool InputManager::timeStepForwardRequested = false;
-bool InputManager::timeStepBackwardRequested = false;
+InputActions InputManager::pendingActions = {false, false, false, false,
+                                             false};
 Camera *InputManager::camera = nullptr;
 
 void InputManager::processInput(GLFWwindow *window, float deltaTime)
@@ -29,35 +26,35 @@ void InputManager::processInput(GLFWwindow *window, float deltaTime)
     const bool cameraTogglePressed = glfwGetKey(window, input.keyToggleCameraMode) == GLFW_PRESS;
     if (cameraTogglePressed && !cameraModeToggleLatch)
     {
-        cameraModeToggleRequested = true;
+        pendingActions.toggleCameraMode = true;
     }
     cameraModeToggleLatch = cameraTogglePressed;
 
     const bool infoOverlayTogglePressed = glfwGetKey(window, input.keyToggleInfoOverlay) == GLFW_PRESS;
     if (infoOverlayTogglePressed && !infoOverlayToggleLatch)
     {
-        infoOverlayToggleRequested = true;
+        pendingActions.toggleInfoOverlay = true;
     }
     infoOverlayToggleLatch = infoOverlayTogglePressed;
 
     const bool pauseTogglePressed = glfwGetKey(window, input.keyTogglePause) == GLFW_PRESS;
     if (pauseTogglePressed && !pauseToggleLatch)
     {
-        pauseToggleRequested = true;
+        pendingActions.togglePause = true;
     }
     pauseToggleLatch = pauseTogglePressed;
 
     const bool stepForwardPressed = glfwGetKey(window, input.keyStepTimeForward) == GLFW_PRESS;
     if (stepForwardPressed && !stepForwardLatch)
     {
-        timeStepForwardRequested = true;
+        pendingActions.stepTimeForward = true;
     }
     stepForwardLatch = stepForwardPressed;
 
     const bool stepBackwardPressed = glfwGetKey(window, input.keyStepTimeBackward) == GLFW_PRESS;
     if (stepBackwardPressed && !stepBackwardLatch)
     {
-        timeStepBackwardRequested = true;
+        pendingActions.stepTimeBackward = true;
     }
     stepBackwardLatch = stepBackwardPressed;
 
@@ -123,39 +120,11 @@ void InputManager::setCameraControlEnabled(bool enabled)
     firstMouse = true;
 }
 
-bool InputManager::consumeCameraModeToggleRequest()
+InputActions InputManager::consumeActions()
 {
-    const bool wasRequested = cameraModeToggleRequested;
-    cameraModeToggleRequested = false;
-    return wasRequested;
-}
-
-bool InputManager::consumeInfoOverlayToggleRequest()
-{
-    const bool wasRequested = infoOverlayToggleRequested;
-    infoOverlayToggleRequested = false;
-    return wasRequested;
-}
-
-bool InputManager::consumePauseToggleRequest()
-{
-    const bool wasRequested = pauseToggleRequested;
-    pauseToggleRequested = false;
-    return wasRequested;
-}
-
-bool InputManager::consumeTimeStepForwardRequest()
-{
-    const bool wasRequested = timeStepForwardRequested;
-    timeStepForwardRequested = false;
-    return wasRequested;
-}
-
-bool InputManager::consumeTimeStepBackwardRequest()
-{
-    const bool wasRequested = timeStepBackwardRequested;
-    timeStepBackwardRequested = false;
-    return wasRequested;
+    const InputActions actions = pendingActions;
+    pendingActions = {false, false, false, false, false};
+    return actions;
 }
 
 void InputManager::scrollCallback(GLFWwindow *window, double xoffset, double yoffset)

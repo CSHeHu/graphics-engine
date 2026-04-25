@@ -169,28 +169,29 @@ void Application::run()
             timeState.computeRealDelta(nowRealSeconds);
 
         InputManager::processInput(window.get(), realDeltaSeconds);
+        const InputActions actions = InputManager::consumeActions();
 
-        if (InputManager::consumeCameraModeToggleRequest())
+        if (actions.toggleCameraMode)
         {
             toggleCameraMode();
         }
 
-        if (InputManager::consumeInfoOverlayToggleRequest())
+        if (actions.toggleInfoOverlay)
         {
             infoOverlayEnabled = !infoOverlayEnabled;
         }
 
-        if (InputManager::consumePauseToggleRequest())
+        if (actions.togglePause)
         {
             timeState.paused = !timeState.paused;
         }
 
-        if (InputManager::consumeTimeStepForwardRequest())
+        if (actions.stepTimeForward)
         {
             timeState.stepForward(TIME_STEP_SECONDS);
         }
 
-        if (InputManager::consumeTimeStepBackwardRequest())
+        if (actions.stepTimeBackward)
         {
             timeState.stepBackward(TIME_STEP_SECONDS);
         }
