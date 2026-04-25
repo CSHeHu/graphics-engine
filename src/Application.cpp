@@ -59,11 +59,11 @@ resolveSceneTimelinePosition(const std::vector<SceneCycleEntry>& cycle,
 
 Application::Application()
     : window(nullptr, glfwDestroyWindow), camera(nullptr),
-      scriptedCameraEnabled(false), activeSceneDefinition(), deltaTime(0.0f),
-      lastRealTimeSeconds(0.0f), lastSceneSwitchTime(0.0f),
+    scriptedCameraEnabled(false), activeSceneDefinition(),
+    lastSceneSwitchTime(0.0f),
       activeSceneId(SceneId::Basic), sceneCycle(), sceneCyclePosition(0),
-      scene(nullptr), assetManager(nullptr), currentTimeSeconds(0.0f),
-      textManager(nullptr), infoOverlayEnabled(false), paused(false)
+    scene(nullptr), assetManager(nullptr), textManager(nullptr),
+    infoOverlayEnabled(false)
 {
 }
 
@@ -197,7 +197,7 @@ bool Application::init()
 
     activeSceneId       = sceneCycle[sceneCyclePosition].id;
     lastSceneSwitchTime = 0.0f;
-    lastRealTimeSeconds = static_cast<float>(glfwGetTime());
+    timeState.initialize(static_cast<float>(glfwGetTime()));
     if (!loadSceneById(activeSceneId))
     {
         std::cout << "Failed to initialize scene" << std::endl;
@@ -214,13 +214,9 @@ void Application::run()
     // render loop
     while (!glfwWindowShouldClose(window.get()))
     {
-        const float nowRealSeconds   = static_cast<float>(glfwGetTime());
-        float       realDeltaSeconds = nowRealSeconds - lastRealTimeSeconds;
-        if (realDeltaSeconds < 0.0f)
-        {
-            realDeltaSeconds = 0.0f;
-        }
-        lastRealTimeSeconds = nowRealSeconds;
+        const float nowRealSeconds = static_cast<float>(glfwGetTime());
+        const float realDeltaSeconds =
+            timeState.computeRealDelta(nowRealSeconds);
 
         InputManager::processInput(window.get(), realDeltaSeconds);
 
@@ -236,35 +232,23 @@ void Application::run()
 
         if (InputManager::consumePauseToggleRequest())
         {
-            paused = !paused;
+            timeState.paused = !timeState.paused;
         }
 
         if (InputManager::consumeTimeStepForwardRequest())
         {
-            currentTimeSeconds += TIME_STEP_SECONDS;
+            timeState.stepForward(TIME_STEP_SECONDS);
         }
 
         if (InputManager::consumeTimeStepBackwardRequest())
         {
-            currentTimeSeconds -= TIME_STEP_SECONDS;
-            if (currentTimeSeconds < 0.0f)
-            {
-                currentTimeSeconds = 0.0f;
-            }
+            timeState.stepBackward(TIME_STEP_SECONDS);
         }
 
-        if (!paused)
-        {
-            currentTimeSeconds += realDeltaSeconds;
-            deltaTime = realDeltaSeconds;
-        }
-        else
-        {
-            deltaTime = 0.0f;
-        }
+        timeState.advance(realDeltaSeconds);
 
         const SceneTimelinePosition timelinePosition =
-            resolveSceneTimelinePosition(sceneCycle, currentTimeSeconds);
+            resolveSceneTimelinePosition(sceneCycle, timeState.currentTimeSeconds);
         if (timelinePosition.index != sceneCyclePosition)
         {
             const SceneId targetSceneId = sceneCycle[timelinePosition.index].id;
@@ -286,7 +270,8 @@ void Application::run()
 
         if (scriptedCameraEnabled)
         {
-            const float sceneElapsed = currentTimeSeconds - lastSceneSwitchTime;
+            const float sceneElapsed =
+                timeState.currentTimeSeconds - lastSceneSwitchTime;
             applyScriptedCamera(sceneElapsed);
         }
 
@@ -322,14 +307,17 @@ void Application::renderFrame()
     glm::mat4 view = glm::mat4(1.0f);
     view           = camera->GetViewMatrix();
 
-    float fps              = (deltaTime > 0.0f) ? 1.0f / deltaTime : 0.0f;
-    float sceneElapsedTime = currentTimeSeconds - lastSceneSwitchTime;
+    float fps = (timeState.deltaTimeSeconds > 0.0f)
+                    ? 1.0f / timeState.deltaTimeSeconds
+                    : 0.0f;
+    float sceneElapsedTime = timeState.currentTimeSeconds - lastSceneSwitchTime;
     const UIOverlayConfig& overlayConfig =
         SceneDefinitions::getUIOverlayConfig();
 
     scene->update(sceneElapsedTime);
     scene->render(*camera, projection, view, fps, sceneElapsedTime,
-                  overlayConfig, infoOverlayEnabled, currentTimeSeconds);
+                  overlayConfig, infoOverlayEnabled,
+                  timeState.currentTimeSeconds);
 }
 
 bool Application::loadSceneById(SceneId id)

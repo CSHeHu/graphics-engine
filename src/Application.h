@@ -16,6 +16,59 @@ class Scene;
 class AssetManager;
 class TextManager;
 
+struct TimeState
+{
+  float currentTimeSeconds;
+  float deltaTimeSeconds;
+  float lastRealTimeSeconds;
+  bool  paused;
+
+  void initialize(float nowRealTimeSeconds)
+  {
+    currentTimeSeconds  = 0.0f;
+    deltaTimeSeconds    = 0.0f;
+    lastRealTimeSeconds = nowRealTimeSeconds;
+    paused              = false;
+  }
+
+  float computeRealDelta(float nowRealTimeSeconds)
+  {
+    float realDeltaSeconds = nowRealTimeSeconds - lastRealTimeSeconds;
+    if (realDeltaSeconds < 0.0f)
+    {
+      realDeltaSeconds = 0.0f;
+    }
+    lastRealTimeSeconds = nowRealTimeSeconds;
+    return realDeltaSeconds;
+  }
+
+  void stepForward(float stepSeconds)
+  {
+    currentTimeSeconds += stepSeconds;
+  }
+
+  void stepBackward(float stepSeconds)
+  {
+    currentTimeSeconds -= stepSeconds;
+    if (currentTimeSeconds < 0.0f)
+    {
+      currentTimeSeconds = 0.0f;
+    }
+  }
+
+  void advance(float realDeltaSeconds)
+  {
+    if (!paused)
+    {
+      currentTimeSeconds += realDeltaSeconds;
+      deltaTimeSeconds = realDeltaSeconds;
+      return;
+    }
+
+    deltaTimeSeconds = 0.0f;
+  }
+};
+
 /**
  * @brief Main application controller for initialization, update loop and
  * rendering.
@@ -42,9 +95,7 @@ class Application
     bool                             scriptedCameraEnabled;
     std::shared_ptr<SceneDefinition> activeSceneDefinition;
 
-    float   currentTimeSeconds;
-    float   deltaTime;
-    float   lastRealTimeSeconds;
+    TimeState timeState;
     float   lastSceneSwitchTime;
     SceneId activeSceneId;
     /** Ordered scene playback plan loaded from scene configuration. */
@@ -55,7 +106,6 @@ class Application
     std::unique_ptr<AssetManager> assetManager;
     std::unique_ptr<TextManager>  textManager;
     bool                          infoOverlayEnabled;
-    bool                          paused;
 
     /** @brief Load and activate scene runtime objects for a scene id. */
     bool loadSceneById(SceneId id);
