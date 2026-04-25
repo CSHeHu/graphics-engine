@@ -1,24 +1,36 @@
 
 #include "InputManager.h"
 
+#include <glad/glad.h>
+
 #include "SceneDefinitions.h"
 
-float InputManager::lastX = 0.0f;
-float InputManager::lastY = 0.0f;
-bool InputManager::firstMouse = true;
-bool InputManager::cameraControlEnabled = true;
-bool InputManager::cameraModeToggleLatch = false;
-bool InputManager::infoOverlayToggleLatch = false;
-bool InputManager::pauseToggleLatch = false;
-bool InputManager::stepForwardLatch = false;
-bool InputManager::stepBackwardLatch = false;
-InputActions InputManager::pendingActions = {false, false, false, false,
-                                             false};
-Camera *InputManager::camera = nullptr;
+InputManager* InputManager::callbackTarget = nullptr;
 
-void InputManager::processInput(GLFWwindow *window, float deltaTime)
+InputManager::InputManager()
+    : lastX(0.0f), lastY(0.0f), firstMouse(true), cameraControlEnabled(true),
+      cameraModeToggleLatch(false), infoOverlayToggleLatch(false),
+      pauseToggleLatch(false), stepForwardLatch(false), stepBackwardLatch(false),
+      pendingActions{false, false, false, false, false}, camera(nullptr)
 {
-    const InputConfig &input = SceneDefinitions::getRuntimeConfig().input;
+}
+
+InputManager::~InputManager()
+{
+    if (callbackTarget == this)
+    {
+        callbackTarget = nullptr;
+    }
+}
+
+void InputManager::registerAsCallbackTarget()
+{
+    callbackTarget = this;
+}
+
+void InputManager::processInput(GLFWwindow* window, float deltaTime)
+{
+    const InputConfig& input = SceneDefinitions::getRuntimeConfig().input;
 
     if (glfwGetKey(window, input.keyEscape) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
@@ -58,34 +70,43 @@ void InputManager::processInput(GLFWwindow *window, float deltaTime)
     }
     stepBackwardLatch = stepBackwardPressed;
 
-    if (!InputManager::cameraControlEnabled || InputManager::camera == nullptr)
+    if (!cameraControlEnabled || camera == nullptr)
         return;
 
     // Camera movement
     if (glfwGetKey(window, input.keyMoveForward) == GLFW_PRESS)
-        InputManager::camera->ProcessKeyboard(FORWARD, deltaTime);
+        camera->ProcessKeyboard(FORWARD, deltaTime);
     if (glfwGetKey(window, input.keyMoveBackward) == GLFW_PRESS)
-        InputManager::camera->ProcessKeyboard(BACKWARD, deltaTime);
+        camera->ProcessKeyboard(BACKWARD, deltaTime);
     if (glfwGetKey(window, input.keyMoveLeft) == GLFW_PRESS)
-        InputManager::camera->ProcessKeyboard(LEFT, deltaTime);
+        camera->ProcessKeyboard(LEFT, deltaTime);
     if (glfwGetKey(window, input.keyMoveRight) == GLFW_PRESS)
-        InputManager::camera->ProcessKeyboard(RIGHT, deltaTime);
+        camera->ProcessKeyboard(RIGHT, deltaTime);
     if (glfwGetKey(window, input.keyMoveUp) == GLFW_PRESS)
-        InputManager::camera->ProcessKeyboard(UP, deltaTime);
+        camera->ProcessKeyboard(UP, deltaTime);
     if (glfwGetKey(window, input.keyMoveDown) == GLFW_PRESS)
-        InputManager::camera->ProcessKeyboard(DOWN, deltaTime);
+        camera->ProcessKeyboard(DOWN, deltaTime);
 }
 
-void InputManager::framebufferSizeCallback(GLFWwindow *window, int width, int height)
+void InputManager::framebufferSizeCallback(GLFWwindow* window, int width,
+                                           int height)
 {
+    (void)window;
     // make sure the viewport matches the new window dimensions; note that width and
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
 }
 
-void InputManager::mouseCallback(GLFWwindow *window, double xposIn, double yposIn)
+void InputManager::mouseCallback(GLFWwindow* window, double xposIn,
+                                 double yposIn)
 {
-    if (!cameraControlEnabled || camera == nullptr)
+    (void)window;
+    if (callbackTarget == nullptr)
+    {
+        return;
+    }
+
+    if (!callbackTarget->cameraControlEnabled || callbackTarget->camera == nullptr)
     {
         return;
     }
@@ -93,23 +114,23 @@ void InputManager::mouseCallback(GLFWwindow *window, double xposIn, double yposI
     float xpos = static_cast<float>(xposIn);
     float ypos = static_cast<float>(yposIn);
 
-    if (firstMouse)
+    if (callbackTarget->firstMouse)
     {
-        lastX = xpos;
-        lastY = ypos;
-        firstMouse = false;
+        callbackTarget->lastX = xpos;
+        callbackTarget->lastY = ypos;
+        callbackTarget->firstMouse = false;
     }
 
-    float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
+    float xoffset = xpos - callbackTarget->lastX;
+    float yoffset = callbackTarget->lastY - ypos; // reversed since y-coordinates go from bottom to top
 
-    lastX = xpos;
-    lastY = ypos;
+    callbackTarget->lastX = xpos;
+    callbackTarget->lastY = ypos;
 
-    camera->ProcessMouseMovement(xoffset, yoffset);
+    callbackTarget->camera->ProcessMouseMovement(xoffset, yoffset);
 }
 
-void InputManager::setCamera(Camera *cameraPtr)
+void InputManager::setCamera(Camera* cameraPtr)
 {
     camera = cameraPtr;
 }
@@ -127,12 +148,20 @@ InputActions InputManager::consumeActions()
     return actions;
 }
 
-void InputManager::scrollCallback(GLFWwindow *window, double xoffset, double yoffset)
+void InputManager::scrollCallback(GLFWwindow* window, double xoffset,
+                                  double yoffset)
 {
-    if (!cameraControlEnabled || camera == nullptr)
+    (void)window;
+    (void)xoffset;
+    if (callbackTarget == nullptr)
     {
         return;
     }
 
-    InputManager::camera->ProcessMouseScroll(static_cast<float>(yoffset));
+    if (!callbackTarget->cameraControlEnabled || callbackTarget->camera == nullptr)
+    {
+        return;
+    }
+
+    callbackTarget->camera->ProcessMouseScroll(static_cast<float>(yoffset));
 }

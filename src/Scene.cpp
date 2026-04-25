@@ -33,6 +33,7 @@ Scene::~Scene()
 {
     runtimeMaterials.clear();
     runtimeObjects.clear();
+    runtimeObjectOrder.clear();
     activeLightSources.clear();
 }
 
@@ -40,6 +41,7 @@ bool Scene::init()
 {
     runtimeMaterials.clear();
     runtimeObjects.clear();
+    runtimeObjectOrder.clear();
 
     
     if (!initializeRuntimeMaterials())
@@ -140,6 +142,7 @@ bool Scene::initializeRuntimeObjects()
         runtimeObject.lightIntensity       = objectDef.lightIntensity;
 
         runtimeObjects[objectDef.id] = runtimeObject;
+        runtimeObjectOrder.push_back(objectDef.id);
     }
 
     return true;
@@ -149,9 +152,9 @@ void Scene::refreshActiveLightSources()
 {
     // Resolve active light providers once for lit-object uniforms.
     activeLightSources.clear();
-    for (auto& entry : runtimeObjects)
+    for (const std::string& objectId : runtimeObjectOrder)
     {
-        RuntimeSceneObject& runtimeObject = entry.second;
+        RuntimeSceneObject& runtimeObject = runtimeObjects.at(objectId);
         if (runtimeObject.role == SceneRole::LightSource)
         {
             activeLightSources.push_back(&runtimeObject);
@@ -217,9 +220,9 @@ void Scene::renderRuntimeObjects(const Camera&    camera,
 
     // Render all objects with shared camera matrices and mode-specific
     // uniforms.
-    for (const auto& entry : runtimeObjects)
+    for (const std::string& objectId : runtimeObjectOrder)
     {
-        const RuntimeSceneObject& runtimeObject = entry.second;
+        const RuntimeSceneObject& runtimeObject = runtimeObjects.at(objectId);
 
         std::shared_ptr<RuntimeMaterial> material = runtimeObject.material;
         material->shader->use();
@@ -307,9 +310,10 @@ void Scene::update(float sceneElapsedTime)
 {
     // Behaviors are evaluated from the spawn transform, which keeps them
     // deterministic and avoids accumulating floating-point drift.
-    for (auto& entry : runtimeObjects)
+    for (const std::string& objectId : runtimeObjectOrder)
     {
-        updateRuntimeObjectBehavior(entry.second, sceneElapsedTime);
+        updateRuntimeObjectBehavior(runtimeObjects.at(objectId),
+                                    sceneElapsedTime);
     }
 }
 

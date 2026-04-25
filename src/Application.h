@@ -15,6 +15,8 @@ class Camera;
 class Scene;
 class AssetManager;
 class TextManager;
+class InputManager;
+class CameraRouteController;
 
 struct TimeState
 {
@@ -192,22 +194,20 @@ class Application
     std::unique_ptr<Scene>        scene;
     std::unique_ptr<AssetManager> assetManager;
     std::unique_ptr<TextManager>  textManager;
+    std::unique_ptr<InputManager> inputManager;
     bool                          infoOverlayEnabled;
+    std::unique_ptr<CameraRouteController> cameraRouteController;
 
     /** @brief Load and activate scene runtime objects for a scene id. */
     bool loadSceneById(SceneId id);
     /** @brief Render one frame for the active scene. */
     void renderFrame();
-    /** @brief Apply scripted camera route at scene-local elapsed time. */
-    void applyScriptedCamera(float sceneElapsedTimeSeconds);
     /** @brief Enable or disable manual camera controls based on current mode.
      */
     void refreshCameraControlMode();
     /** @brief Toggle between scripted and manual camera modes when available.
      */
     void toggleCameraMode();
-    /** @brief Linear interpolation helper for camera path blending. */
-    static glm::vec3 lerpVec3(const glm::vec3& a, const glm::vec3& b, float t);
 };
 
 #endif // APPLICATION_H

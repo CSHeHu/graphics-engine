@@ -1,12 +1,12 @@
 #include "Application.h"
 
-#include <cmath>
 #include <glad/glad.h>
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
 #include <iostream>
 
 #include "AssetManager.h"
+#include "CameraRouteController.h"
 #include "Camera.h"
 #include "InputManager.h"
 #include "Scene.h"
@@ -17,7 +17,8 @@ Application::Application()
     : window(nullptr, glfwDestroyWindow), camera(nullptr),
     scriptedCameraEnabled(false), activeSceneDefinition(),
     scene(nullptr), assetManager(nullptr), textManager(nullptr),
-    infoOverlayEnabled(false)
+    inputManager(nullptr), infoOverlayEnabled(false),
+    cameraRouteController(nullptr)
 {
 }
 
@@ -26,6 +27,8 @@ Application::~Application()
     scene.reset();
     assetManager.reset();
     textManager.reset();
+    inputManager.reset();
+    cameraRouteController.reset();
     camera.reset();
     window.reset();
     glfwTerminate();
@@ -84,9 +87,12 @@ bool Application::init()
     camera->setMovementSpeed(runtimeConfig.camera.speed);
     camera->setMouseSensitivity(runtimeConfig.camera.sensitivity);
     camera->setZoom(runtimeConfig.camera.zoom);
-    InputManager::setCamera(camera.get());
-    InputManager::setCameraControlEnabled(
+    inputManager = std::make_unique<InputManager>();
+    inputManager->registerAsCallbackTarget();
+    inputManager->setCamera(camera.get());
+    inputManager->setCameraControlEnabled(
         runtimeConfig.input.cameraControlsEnabled);
+    cameraRouteController = std::make_unique<CameraRouteController>();
 
     // callbacks for window resize, mouse movement and scroll movement
     glfwSetFramebufferSizeCallback(window.get(),
@@ -168,8 +174,8 @@ void Application::run()
         const float realDeltaSeconds =
             timeState.computeRealDelta(nowRealSeconds);
 
-        InputManager::processInput(window.get(), realDeltaSeconds);
-        const InputActions actions = InputManager::consumeActions();
+        inputManager->processInput(window.get(), realDeltaSeconds);
+        const InputActions actions = inputManager->consumeActions();
 
         if (actions.toggleCameraMode)
         {
@@ -223,7 +229,8 @@ void Application::run()
             const float sceneElapsed =
                 timeState.currentTimeSeconds -
                 scenePlaylist.activeSceneStartTimeSeconds;
-            applyScriptedCamera(sceneElapsed);
+            cameraRouteController->apply(*camera, activeSceneDefinition->camera,
+                                         sceneElapsed);
         }
 
         // render
@@ -309,65 +316,9 @@ bool Application::loadSceneById(SceneId id)
     return true;
 }
 
-void Application::applyScriptedCamera(float sceneElapsedTimeSeconds)
-{
-    const std::vector<CameraKeyframe>& keyframes =
-        activeSceneDefinition->camera.keyframes;
-    if (keyframes.empty())
-    {
-        return;
-    }
-
-    if (keyframes.size() == 1)
-    {
-        camera->SetPoseLookAt(keyframes.front().position,
-                              keyframes.front().lookAt);
-        return;
-    }
-
-    const float routeEnd = keyframes.back().timeSeconds;
-    if (routeEnd <= 0.0f)
-    {
-        camera->SetPoseLookAt(keyframes.back().position,
-                              keyframes.back().lookAt);
-        return;
-    }
-
-    float routeTime = sceneElapsedTimeSeconds;
-    if (activeSceneDefinition->camera.loop)
-    {
-        routeTime = std::fmod(routeTime, routeEnd);
-    }
-    else if (routeTime >= routeEnd)
-    {
-        camera->SetPoseLookAt(keyframes.back().position,
-                              keyframes.back().lookAt);
-        return;
-    }
-
-    for (std::size_t i = 0; i + 1 < keyframes.size(); ++i)
-    {
-        const CameraKeyframe& a = keyframes[i];
-        const CameraKeyframe& b = keyframes[i + 1];
-        if (routeTime >= a.timeSeconds && routeTime <= b.timeSeconds)
-        {
-            const float segmentDuration = b.timeSeconds - a.timeSeconds;
-            const float t = segmentDuration > 0.0f
-                                ? (routeTime - a.timeSeconds) / segmentDuration
-                                : 0.0f;
-            const glm::vec3 position = lerpVec3(a.position, b.position, t);
-            const glm::vec3 lookAt   = lerpVec3(a.lookAt, b.lookAt, t);
-            camera->SetPoseLookAt(position, lookAt);
-            return;
-        }
-    }
-
-    camera->SetPoseLookAt(keyframes.back().position, keyframes.back().lookAt);
-}
-
 void Application::refreshCameraControlMode()
 {
-    InputManager::setCameraControlEnabled(!scriptedCameraEnabled);
+    inputManager->setCameraControlEnabled(!scriptedCameraEnabled);
 }
 
 void Application::toggleCameraMode()
@@ -377,9 +328,4 @@ void Application::toggleCameraMode()
         scriptedCameraEnabled = !scriptedCameraEnabled;
         refreshCameraControlMode();
     }
-}
-
-glm::vec3 Application::lerpVec3(const glm::vec3& a, const glm::vec3& b, float t)
-{
-    return a + (b - a) * t;
 }

@@ -102,6 +102,8 @@ class Scene
         runtimeMaterials;
     /** Runtime object map keyed by object id. */
     std::unordered_map<std::string, RuntimeSceneObject> runtimeObjects;
+    /** Deterministic object iteration order matching scene definition order. */
+    std::vector<std::string>                            runtimeObjectOrder;
     std::vector<RuntimeSceneObject*>                    activeLightSources;
     LightUniformNameTable                               lightUniformNameTable;
     std::array<BehaviorHandler, kBehaviorTypeCount>    behaviorHandlers;
