@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstdio>
 #include <glm.hpp>
 #include <iostream>
 #include <unordered_set>
@@ -13,6 +12,7 @@
 #include "Object.h"
 #include "SceneDefinition.h"
 #include "SceneDefinitions.h"
+#include "SceneOverlayRenderer.h"
 #include "Shader.h"
 #include "TextManager.h"
 
@@ -23,9 +23,10 @@ Scene::Scene(AssetManager&                    assetManager,
     definition(std::move(definitionValue)),
     lightUniformNameTable{0, {}, {}},
     behaviorHandlers{&Scene::applyBehaviorNone,
-                 &Scene::applyBehaviorOscillate,
-                 &Scene::applyBehaviorSpin,
-                 &Scene::applyBehaviorFly}
+                     &Scene::applyBehaviorOscillate,
+                     &Scene::applyBehaviorSpin,
+                     &Scene::applyBehaviorFly},
+    overlayRenderer(std::make_unique<SceneOverlayRenderer>())
 {
 }
 
@@ -43,7 +44,6 @@ bool Scene::init()
     runtimeObjects.clear();
     runtimeObjectOrder.clear();
 
-    
     if (!initializeRuntimeMaterials())
     {
         return false;
@@ -73,10 +73,10 @@ bool Scene::initializeRuntimeMaterials()
     {
         std::shared_ptr<RuntimeMaterial> material =
             std::make_shared<RuntimeMaterial>();
-        material->shader     = assets.getShader(materialDef.vertexShaderPath,
-                                                materialDef.fragmentShaderPath,
-                                                materialDef.geometryShaderPath);
-        material->renderMode = materialDef.renderMode;
+        material->shader = assets.getShader(materialDef.vertexShaderPath,
+                                            materialDef.fragmentShaderPath,
+                                            materialDef.geometryShaderPath);
+        material->renderMode  = materialDef.renderMode;
         material->objectColor = materialDef.objectColor;
 
         runtimeMaterials[materialDef.id] = material;
@@ -108,9 +108,8 @@ bool Scene::initializeRuntimeObjects()
         std::shared_ptr<RuntimeMaterial> material = materialIt->second;
 
         std::shared_ptr<Object> object = std::make_shared<Object>(
-            material->shader, vertices, indices,
-            objectDef.position, objectDef.scale,
-            objectDef.layout);
+            material->shader, vertices, indices, objectDef.position,
+            objectDef.scale, objectDef.layout);
 
         // Apply initial rotations (pitch, yaw, roll)
         if (objectDef.rotation.y != 0.0f)
@@ -207,11 +206,10 @@ void Scene::ensureLightUniformNameTable(int maxLightSources)
     lightUniformNameTable.capacity = maxLightSources;
 }
 
-void Scene::renderRuntimeObjects(const Camera&    camera,
-                                 const glm::mat4& projection,
-                                 const glm::mat4& view, float sceneElapsedTime,
-                                 int maxLightSources,
-                                 const PerFrameLightUniforms& perFrameLightUniforms)
+void Scene::renderRuntimeObjects(
+    const Camera& camera, const glm::mat4& projection, const glm::mat4& view,
+    float sceneElapsedTime, int maxLightSources,
+    const PerFrameLightUniforms& perFrameLightUniforms)
 {
     ensureLightUniformNameTable(maxLightSources);
 
@@ -263,9 +261,8 @@ void Scene::renderRuntimeObjects(const Camera&    camera,
 }
 
 void Scene::configureLitShaderPerFrame(
-    const std::shared_ptr<RuntimeMaterial>& material,
-    const Camera& camera, const glm::mat4& projection,
-    const glm::mat4& view, float sceneElapsedTime,
+    const std::shared_ptr<RuntimeMaterial>& material, const Camera& camera,
+    const glm::mat4& projection, const glm::mat4& view, float sceneElapsedTime,
     const PerFrameLightUniforms& perFrameLightUniforms) const
 {
     // These values are frame-wide, so upload them once per shader program
@@ -318,7 +315,7 @@ void Scene::update(float sceneElapsedTime)
 }
 
 void Scene::updateRuntimeObjectBehavior(RuntimeSceneObject& runtimeObject,
-                                        float               sceneElapsedTime)
+                                        float sceneElapsedTime)
 {
     std::size_t behaviorIndex = static_cast<std::size_t>(runtimeObject.behavior);
     if (behaviorIndex >= behaviorHandlers.size())
@@ -331,25 +328,24 @@ void Scene::updateRuntimeObjectBehavior(RuntimeSceneObject& runtimeObject,
 }
 
 void Scene::applyBehaviorNone(RuntimeSceneObject& runtimeObject,
-                              float               sceneElapsedTime)
+                              float sceneElapsedTime)
 {
     (void)runtimeObject;
     (void)sceneElapsedTime;
 }
 
 void Scene::applyBehaviorOscillate(RuntimeSceneObject& runtimeObject,
-                                   float               sceneElapsedTime)
+                                   float sceneElapsedTime)
 {
     std::shared_ptr<Object> object = runtimeObject.object;
-    const float             delta =
-        std::sin(sceneElapsedTime * runtimeObject.behaviorSpeed) *
-        runtimeObject.behaviorAmplitude;
+    const float delta = std::sin(sceneElapsedTime * runtimeObject.behaviorSpeed) *
+                        runtimeObject.behaviorAmplitude;
     object->setPosition(runtimeObject.initialPosition +
                         runtimeObject.behaviorAxis * delta);
 }
 
 void Scene::applyBehaviorSpin(RuntimeSceneObject& runtimeObject,
-                              float               sceneElapsedTime)
+                              float sceneElapsedTime)
 {
     std::shared_ptr<Object> object = runtimeObject.object;
     object->setRotation(runtimeObject.initialRotationAngle +
@@ -358,11 +354,10 @@ void Scene::applyBehaviorSpin(RuntimeSceneObject& runtimeObject,
 }
 
 void Scene::applyBehaviorFly(RuntimeSceneObject& runtimeObject,
-                             float               sceneElapsedTime)
+                             float sceneElapsedTime)
 {
-    std::shared_ptr<Object> object    = runtimeObject.object;
-    const glm::vec3         direction =
-        glm::normalize(runtimeObject.behaviorAxis);
+    std::shared_ptr<Object> object = runtimeObject.object;
+    const glm::vec3 direction      = glm::normalize(runtimeObject.behaviorAxis);
     const glm::vec3 displacement =
         direction * (runtimeObject.behaviorSpeed * sceneElapsedTime);
     object->setPosition(runtimeObject.initialPosition + displacement);
@@ -370,7 +365,7 @@ void Scene::applyBehaviorFly(RuntimeSceneObject& runtimeObject,
 
 void Scene::drawRuntimeObject(const RuntimeSceneObject& runtimeObject) const
 {
-    std::shared_ptr<Object> object   = runtimeObject.object;
+    std::shared_ptr<Object> object           = runtimeObject.object;
     std::shared_ptr<RuntimeMaterial> material = runtimeObject.material;
     glBindVertexArray(object->getVAO());
     glm::mat4 model = object->getModelMatrix();
@@ -389,8 +384,7 @@ void Scene::render(const Camera& camera, const glm::mat4& projection,
     // Runtime rendering limits and bindings are centralized in
     // scene_config.json.
     const RuntimeConfig& runtimeConfig = SceneDefinitions::getRuntimeConfig();
-    const int            maxLightSources =
-        std::max(runtimeConfig.rendering.maxLightSources, 1);
+    const int maxLightSources = std::max(runtimeConfig.rendering.maxLightSources, 1);
 
     const PerFrameLightUniforms perFrameLightUniforms =
         buildPerFrameLightUniforms(maxLightSources);
@@ -399,82 +393,8 @@ void Scene::render(const Camera& camera, const glm::mat4& projection,
     renderRuntimeObjects(camera, projection, view, sceneElapsedTime,
                          maxLightSources, perFrameLightUniforms);
 
-    // Render scene text overlays
-    renderTextOverlay(overlayConfig, infoOverlayEnabled, fps, sceneElapsedTime,
-                      currentTimeSeconds);
-}
-
-void Scene::renderTextOverlay(const UIOverlayConfig& overlayConfig,
-                              bool infoOverlayEnabled, float fps,
-                              float sceneElapsedTime, float currentTimeSeconds)
-{
-    for (const TextDefinition& text : definition->texts)
-    {
-        textRenderer.renderText(text.text, text.x, text.y, text.scale,
-                                text.color);
-    }
-
-    // The overlay is config-driven: each stat token picks a different line.
-    if (infoOverlayEnabled && overlayConfig.enabled)
-    {
-        glm::vec3 overlayColor(1.0f, 1.0f, 1.0f);
-        float     yOffset = overlayConfig.y;
-
-        for (const std::string& stat : overlayConfig.stats)
-        {
-            std::string statLine;
-
-            if (stat == "fps")
-            {
-                statLine = "FPS: " + std::to_string(static_cast<int>(fps));
-            }
-            else if (stat == "sceneName")
-            {
-                statLine = "Scene: " + definition->name;
-            }
-            else if (stat == "time")
-            {
-                // Show both global time and current-scene time to make
-                // timeline changes obvious during playback.
-                int  totalMinutes = static_cast<int>(currentTimeSeconds) / 60;
-                int  totalSeconds = static_cast<int>(currentTimeSeconds) % 60;
-                char totalTimeBuffer[32];
-                snprintf(totalTimeBuffer, sizeof(totalTimeBuffer),
-                         "Total: %d:%02d", totalMinutes, totalSeconds);
-
-                int  sceneMinutes = static_cast<int>(sceneElapsedTime) / 60;
-                int  sceneSeconds = static_cast<int>(sceneElapsedTime) % 60;
-                char sceneTimeBuffer[32];
-                snprintf(sceneTimeBuffer, sizeof(sceneTimeBuffer),
-                         "Scene: %d:%02d", sceneMinutes, sceneSeconds);
-
-                statLine = std::string(totalTimeBuffer) + " | " +
-                           std::string(sceneTimeBuffer);
-            }
-            else if (stat == "objects")
-            {
-                statLine = "Objects:";
-                for (const SceneObjectDefinition& object : definition->objects)
-                {
-                    statLine += " " + object.id;
-                }
-            }
-            else if (stat == "shaders")
-            {
-                statLine = "Shaders:";
-                for (const MaterialDefinition& objectDef :
-                     definition->materials)
-                {
-                    statLine += " " + objectDef.id;
-                }
-            }
-
-            if (!statLine.empty())
-            {
-                textRenderer.renderText(statLine, overlayConfig.x, yOffset,
-                                        overlayConfig.scale, overlayColor);
-                yOffset -= overlayConfig.lineSpacing;
-            }
-        }
-    }
+    // Render scene text and runtime overlays through a dedicated presenter.
+    overlayRenderer->render(textRenderer, *definition, overlayConfig,
+                            infoOverlayEnabled, fps, sceneElapsedTime,
+                            currentTimeSeconds);
 }

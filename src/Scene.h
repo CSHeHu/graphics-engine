@@ -16,6 +16,7 @@ class Object;
 class Shader;
 class AssetManager;
 class TextManager;
+class SceneOverlayRenderer;
 
 /** @brief Runtime material state resolved from scene configuration. */
 struct RuntimeMaterial
@@ -107,6 +108,7 @@ class Scene
     std::vector<RuntimeSceneObject*>                    activeLightSources;
     LightUniformNameTable                               lightUniformNameTable;
     std::array<BehaviorHandler, kBehaviorTypeCount>    behaviorHandlers;
+    std::unique_ptr<SceneOverlayRenderer>               overlayRenderer;
 
     /** Build shader-backed material instances for the current scene. */
     bool initializeRuntimeMaterials();
@@ -152,11 +154,6 @@ class Scene
         float sceneElapsedTime) const;
     /** Draw one object with model-space uniforms and indexed geometry. */
     void drawRuntimeObject(const RuntimeSceneObject& runtimeObject) const;
-
-    /** Render static scene text plus optional runtime info overlay. */
-    void renderTextOverlay(const UIOverlayConfig& overlayConfig,
-                           bool infoOverlayEnabled, float fps,
-                           float sceneElapsedTime, float currentTimeSeconds);
 };
 
 #endif // SCENE_H

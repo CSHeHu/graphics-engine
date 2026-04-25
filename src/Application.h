@@ -200,6 +200,14 @@ class Application
 
     /** @brief Load and activate scene runtime objects for a scene id. */
     bool loadSceneById(SceneId id);
+    /** @brief Initialize GLFW window and OpenGL context. */
+    bool initWindowAndContext(const RuntimeConfig& runtimeConfig,
+                  const WindowConfig&  windowConfig);
+    /** @brief Initialize camera, input, render state, and shared managers. */
+    bool initSystems(const RuntimeConfig& runtimeConfig,
+             const WindowConfig&  windowConfig);
+    /** @brief Initialize simulation time and load the initial scene. */
+    bool loadInitialScene();
     /** @brief Render one frame for the active scene. */
     void renderFrame();
     /** @brief Enable or disable manual camera controls based on current mode.

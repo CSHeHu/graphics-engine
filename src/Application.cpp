@@ -37,7 +37,29 @@ Application::~Application()
 bool Application::init()
 {
     const RuntimeConfig& runtimeConfig = SceneDefinitions::getRuntimeConfig();
+    const WindowConfig&  windowConfig  = SceneDefinitions::getWindowConfig();
 
+    if (!initWindowAndContext(runtimeConfig, windowConfig))
+    {
+        return false;
+    }
+
+    if (!initSystems(runtimeConfig, windowConfig))
+    {
+        return false;
+    }
+
+    if (!loadInitialScene())
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool Application::initWindowAndContext(const RuntimeConfig& runtimeConfig,
+                                       const WindowConfig&  windowConfig)
+{
     // glfw: initialize and configure
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,
@@ -45,8 +67,6 @@ bool Application::init()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,
                    runtimeConfig.opengl.contextVersionMinor);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-    const WindowConfig& windowConfig = SceneDefinitions::getWindowConfig();
 
     GLFWmonitor* targetMonitor = nullptr;
     int          targetWidth   = windowConfig.width;
@@ -79,7 +99,12 @@ bool Application::init()
         return false;
     }
     glfwMakeContextCurrent(window.get());
+    return true;
+}
 
+bool Application::initSystems(const RuntimeConfig& runtimeConfig,
+                              const WindowConfig&  windowConfig)
+{
     // Create and set up camera
     camera = std::make_unique<Camera>(
         runtimeConfig.camera.position, glm::vec3(0.0f, 1.0f, 0.0f),
@@ -153,6 +178,11 @@ bool Application::init()
     }
     infoOverlayEnabled = uiConfig.enabled;
 
+    return true;
+}
+
+bool Application::loadInitialScene()
+{
     timeState.initialize(static_cast<float>(glfwGetTime()));
     if (!loadSceneById(scenePlaylist.activeSceneId))
     {
