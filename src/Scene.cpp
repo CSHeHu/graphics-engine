@@ -14,24 +14,18 @@
 #include "SceneDefinition.h"
 #include "SceneDefinitions.h"
 #include "Shader.h"
-#include "ShadowManager.h"
 #include "TextManager.h"
 
 Scene::Scene(AssetManager&                    assetManager,
              std::shared_ptr<SceneDefinition> definitionValue,
              TextManager&                     textManager)
     : assets(assetManager), textRenderer(textManager),
-      definition(std::move(definitionValue)),
-      shadowManager(std::make_unique<ShadowManager>())
+      definition(std::move(definitionValue))
 {
 }
 
 Scene::~Scene()
 {
-    if (shadowManager)
-    {
-        shadowManager->shutdown();
-    }
     runtimeMaterials.clear();
     runtimeObjects.clear();
     activeLightSources.clear();
@@ -61,11 +55,6 @@ bool Scene::init()
         std::cout
             << "Scene definition must include an object with role: LightSource"
             << std::endl;
-        return false;
-    }
-
-    if (!configureShadowManager())
-    {
         return false;
     }
 
@@ -145,7 +134,6 @@ bool Scene::initializeRuntimeObjects()
         runtimeObject.initialRotationAngle = object->getRotationAngle();
         runtimeObject.lightColor           = objectDef.lightColor;
         runtimeObject.lightIntensity       = objectDef.lightIntensity;
-        runtimeObject.castsShadow          = objectDef.castsShadow;
 
         runtimeObjects[objectDef.id] = runtimeObject;
     }
@@ -165,22 +153,6 @@ void Scene::refreshActiveLightSources()
             activeLightSources.push_back(&runtimeObject);
         }
     }
-}
-
-bool Scene::configureShadowManager()
-{
-    if (definition->shadows.enabled &&
-        !shadowManager->init(assets, definition->shadows))
-    {
-        std::cout << "Failed to initialize shadow resources" << std::endl;
-        return false;
-    }
-    if (!definition->shadows.enabled)
-    {
-        shadowManager->shutdown();
-    }
-
-    return true;
 }
 
 void Scene::computeLightUniformData(int maxLightSources, int& lightCount,
@@ -204,54 +176,12 @@ void Scene::computeLightUniformData(int maxLightSources, int& lightCount,
     }
 }
 
-void Scene::renderShadowDepthPass(const std::vector<glm::vec3>& lightPositions,
-                                  unsigned int shadowUpdateIntervalFrames)
-{
-    if (!definition->shadows.enabled || !shadowManager ||
-        !shadowManager->isReady())
-    {
-        return;
-    }
-
-    const glm::vec3 primaryLightPosition = lightPositions[0];
-    if (shadowManager->beginDepthPass(primaryLightPosition,
-                                      shadowUpdateIntervalFrames))
-    {
-        for (const auto& entry : runtimeObjects)
-        {
-            const RuntimeSceneObject& runtimeObject = entry.second;
-            if (runtimeObject.role == SceneRole::LightSource ||
-                runtimeObject.role == SceneRole::Ground ||
-                !runtimeObject.castsShadow)
-            {
-                continue;
-            }
-
-            shadowManager->submitDepthRenderable(
-                runtimeObject.object->getModelMatrix(),
-                runtimeObject.object->getVAO(),
-                static_cast<int>(runtimeObject.indexCount));
-        }
-        shadowManager->endDepthPass();
-    }
-}
-
-void Scene::bindShadowTextureIfEnabled(int shadowMapTextureUnit) const
-{
-    if (definition->shadows.enabled && shadowManager &&
-        shadowManager->isReady())
-    {
-        shadowManager->bindShadowTexture(shadowMapTextureUnit);
-    }
-}
-
 void Scene::renderRuntimeObjects(const Camera&    camera,
                                  const glm::mat4& projection,
                                  const glm::mat4& view, float sceneElapsedTime,
                                  int maxLightSources, int lightCount,
                                  const std::vector<glm::vec3>& lightPositions,
-                                 const std::vector<glm::vec3>& lightColors,
-                                 int shadowMapTextureUnit)
+                                 const std::vector<glm::vec3>& lightColors)
 {
     static std::vector<std::string> lightPosUniformNames;
     static std::vector<std::string> lightColorUniformNames;
@@ -299,15 +229,6 @@ void Scene::renderRuntimeObjects(const Camera&    camera,
                 material->shader->setFloat("uTime", sceneElapsedTime);
                 material->shader->setVec3("viewPos", camera.getPosition());
                 material->shader->setInt("lightCount", lightCount);
-                material->shader->setInt("shadowEnabled",
-                                         definition->shadows.enabled ? 1 : 0);
-                material->shader->setFloat("shadowBiasMin",
-                                           definition->shadows.biasMin);
-                material->shader->setFloat("shadowBiasSlope",
-                                           definition->shadows.biasSlope);
-                material->shader->setFloat("shadowFarPlane",
-                                           definition->shadows.farPlane);
-                material->shader->setInt("shadowMap", shadowMapTextureUnit);
 
                 if (lightCount > 0)
                 {
@@ -405,10 +326,6 @@ void Scene::render(const Camera& camera, const glm::mat4& projection,
     const RuntimeConfig& runtimeConfig = SceneDefinitions::getRuntimeConfig();
     const int            maxLightSources =
         std::max(runtimeConfig.rendering.maxLightSources, 1);
-    const int shadowMapTextureUnit =
-        runtimeConfig.rendering.shadowMapTextureUnit;
-    const unsigned int shadowUpdateIntervalFrames = std::max(
-        runtimeConfig.rendering.shadowDefaults.updateIntervalFrames, 1u);
 
     int                    lightCount = 0;
     std::vector<glm::vec3> lightPositions;
@@ -416,13 +333,10 @@ void Scene::render(const Camera& camera, const glm::mat4& projection,
     computeLightUniformData(maxLightSources, lightCount, lightPositions,
                             lightColors);
 
-    // Shadow pass first, then bind the depth texture for lit materials, then
-    // draw the visible scene objects.
-    renderShadowDepthPass(lightPositions, shadowUpdateIntervalFrames);
-    bindShadowTextureIfEnabled(shadowMapTextureUnit);
+    // Draw visible scene objects.
     renderRuntimeObjects(camera, projection, view, sceneElapsedTime,
                          maxLightSources, lightCount, lightPositions,
-                         lightColors, shadowMapTextureUnit);
+                         lightColors);
 
     // Render scene text overlays
     renderTextOverlay(overlayConfig, infoOverlayEnabled, fps, sceneElapsedTime,

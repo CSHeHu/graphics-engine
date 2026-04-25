@@ -15,7 +15,6 @@ class Object;
 class Shader;
 class AssetManager;
 class TextManager;
-class ShadowManager;
 
 /** @brief Runtime material state resolved from scene configuration. */
 struct RuntimeMaterial
@@ -40,7 +39,6 @@ struct RuntimeSceneObject
     float                            initialRotationAngle;
     glm::vec3                        lightColor;
     float                            lightIntensity;
-    bool                             castsShadow;
 };
 
 /**
@@ -81,33 +79,23 @@ class Scene
     std::unordered_map<std::string, RuntimeSceneObject> runtimeObjects;
     std::vector<RuntimeSceneObject*>                    activeLightSources;
 
-    std::unique_ptr<ShadowManager> shadowManager;
-
     /** Build shader-backed material instances for the current scene. */
     bool initializeRuntimeMaterials();
     /** Build runtime objects and apply initial transforms from scene data. */
     bool initializeRuntimeObjects();
     /** Refresh cached pointers to objects that act as lights. */
     void refreshActiveLightSources();
-    /** Initialize or disable shadow resources based on scene settings. */
-    bool configureShadowManager();
 
     /** Collect per-frame light uniform arrays from active light sources. */
     void computeLightUniformData(int maxLightSources, int& lightCount,
                                  std::vector<glm::vec3>& lightPositions,
                                  std::vector<glm::vec3>& lightColors) const;
-    /** Submit depth-only geometry before the main color pass. */
-    void renderShadowDepthPass(const std::vector<glm::vec3>& lightPositions,
-                               unsigned int shadowUpdateIntervalFrames);
-    /** Bind the shadow texture if shadows are active and ready. */
-    void bindShadowTextureIfEnabled(int shadowMapTextureUnit) const;
     /** Draw all scene objects with per-shader uniform setup. */
     void renderRuntimeObjects(const Camera& camera, const glm::mat4& projection,
                               const glm::mat4& view, float sceneElapsedTime,
                               int maxLightSources, int lightCount,
                               const std::vector<glm::vec3>& lightPositions,
-                              const std::vector<glm::vec3>& lightColors,
-                              int shadowMapTextureUnit);
+                              const std::vector<glm::vec3>& lightColors);
 
     void renderTextOverlay(const UIOverlayConfig& overlayConfig,
                            bool infoOverlayEnabled, float fps,
@@ -115,3 +103,4 @@ class Scene
 };
 
 #endif // SCENE_H
+

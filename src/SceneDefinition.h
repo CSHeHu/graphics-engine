@@ -85,7 +85,6 @@ struct SceneObjectDefinition
 
     glm::vec3 lightColor;
     float lightIntensity;
-    bool castsShadow = true;
 };
 
 struct TextDefinition
@@ -160,28 +159,14 @@ struct InputConfig
     int keyStepTimeForward;
 };
 
-struct ShadowDefaultsConfig
-{
-    int mapSize;
-    float orthoSize;
-    float fovDegrees;
-    float nearPlane;
-    float farPlane;
-    float biasMin;
-    float biasSlope;
-    unsigned int updateIntervalFrames;
-};
-
 struct RenderingConfig
 {
     std::size_t positionNormalStride;
     int maxLightSources;
-    int shadowMapTextureUnit;
     float nearPlane;
     float farPlane;
     bool depthTestEnabled;
     bool blendEnabled;
-    ShadowDefaultsConfig shadowDefaults;
 };
 
 struct RuntimeConfig
@@ -194,23 +179,10 @@ struct RuntimeConfig
     RenderingConfig rendering;
 };
 
-struct ShadowConfig
-{
-    bool enabled = false;
-    int mapSize = 0;
-    float orthoSize = 0.0f;
-    float fovDegrees = 0.0f;
-    float nearPlane = 0.0f;
-    float farPlane = 0.0f;
-    float biasMin = 0.0f;
-    float biasSlope = 0.0f;
-};
-
 struct SceneDefinition
 {
     std::string name;
     CameraRouteDefinition camera;
-    ShadowConfig shadows;
     /** Material definitions referenced by scene objects. */
     std::vector<MaterialDefinition> materials;
     /** Scene object definitions instantiated for runtime rendering. */

@@ -134,20 +134,6 @@ SceneDefinition SceneDefinitions::parseSceneDefinition(const std::string &sceneF
 
     SceneDefinition definition;
     definition.name = root.at("name").get<std::string>();
-    definition.shadows.mapSize = runtimeConfig.rendering.shadowDefaults.mapSize;
-    definition.shadows.orthoSize = runtimeConfig.rendering.shadowDefaults.orthoSize;
-    definition.shadows.fovDegrees = runtimeConfig.rendering.shadowDefaults.fovDegrees;
-    definition.shadows.nearPlane = runtimeConfig.rendering.shadowDefaults.nearPlane;
-    definition.shadows.farPlane = runtimeConfig.rendering.shadowDefaults.farPlane;
-    definition.shadows.biasMin = runtimeConfig.rendering.shadowDefaults.biasMin;
-    definition.shadows.biasSlope = runtimeConfig.rendering.shadowDefaults.biasSlope;
-
-    if (root.contains("shadows"))
-    {
-        const nlohmann::json &shadowsJson = root.at("shadows");
-        // Scene files explicitly opt shadows in or out; shared shadow tuning lives in config.
-        definition.shadows.enabled = shadowsJson.at("enabled").get<bool>();
-    }
 
     if (root.contains("camera"))
     {
@@ -250,7 +236,6 @@ SceneDefinition SceneDefinitions::parseSceneDefinition(const std::string &sceneF
         }
         object.lightColor = parseVec3(lightColor[0].get<float>(), lightColor[1].get<float>(), lightColor[2].get<float>());
         object.lightIntensity = objectJson.value("lightIntensity", 1.0f);
-        object.castsShadow = objectJson.value("castsShadow", true);
 
         definition.objects.push_back(object);
     }
@@ -359,21 +344,10 @@ RuntimeConfig SceneDefinitions::parseRuntimeConfig(const nlohmann::json &json)
     const nlohmann::json &renderingJson = json.at("rendering");
     config.rendering.positionNormalStride = renderingJson.at("positionNormalStride").get<std::size_t>();
     config.rendering.maxLightSources = renderingJson.at("maxLightSources").get<int>();
-    config.rendering.shadowMapTextureUnit = renderingJson.at("shadowMapTextureUnit").get<int>();
     config.rendering.nearPlane = renderingJson.at("nearPlane").get<float>();
     config.rendering.farPlane = renderingJson.at("farPlane").get<float>();
     config.rendering.depthTestEnabled = renderingJson.at("depthTestEnabled").get<bool>();
     config.rendering.blendEnabled = renderingJson.at("blendEnabled").get<bool>();
-
-    const nlohmann::json &shadowDefaultsJson = renderingJson.at("shadowDefaults");
-    config.rendering.shadowDefaults.mapSize = shadowDefaultsJson.at("mapSize").get<int>();
-    config.rendering.shadowDefaults.orthoSize = shadowDefaultsJson.at("orthoSize").get<float>();
-    config.rendering.shadowDefaults.fovDegrees = shadowDefaultsJson.at("fovDegrees").get<float>();
-    config.rendering.shadowDefaults.nearPlane = shadowDefaultsJson.at("nearPlane").get<float>();
-    config.rendering.shadowDefaults.farPlane = shadowDefaultsJson.at("farPlane").get<float>();
-    config.rendering.shadowDefaults.biasMin = shadowDefaultsJson.at("biasMin").get<float>();
-    config.rendering.shadowDefaults.biasSlope = shadowDefaultsJson.at("biasSlope").get<float>();
-    config.rendering.shadowDefaults.updateIntervalFrames = shadowDefaultsJson.at("updateIntervalFrames").get<unsigned int>();
 
     return config;
 }

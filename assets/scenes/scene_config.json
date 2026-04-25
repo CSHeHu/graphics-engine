@@ -36,21 +36,10 @@
     "rendering": {
       "positionNormalStride": 6,
       "maxLightSources": 8,
-      "shadowMapTextureUnit": 1,
       "nearPlane": 0.1,
       "farPlane": 100.0,
       "depthTestEnabled": true,
-      "blendEnabled": true,
-      "shadowDefaults": {
-        "mapSize": 512,
-        "orthoSize": 20.0,
-        "fovDegrees": 90.0,
-        "nearPlane": 0.5,
-        "farPlane": 22.0,
-        "biasMin": 0.003,
-        "biasSlope": 0.012,
-        "updateIntervalFrames": 3
-      }
+      "blendEnabled": true
     }
   },
   "registry": [

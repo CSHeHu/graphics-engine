@@ -11,20 +11,6 @@ uniform vec3 lightPos[MAX_LIGHTS];
 uniform vec3 lightColor[MAX_LIGHTS];
 uniform vec3 objectColor;
 uniform vec3 viewPos; 
-uniform int shadowEnabled;
-uniform samplerCube shadowMap;
-uniform float shadowFarPlane;
-uniform float shadowBiasMin;
-uniform float shadowBiasSlope;
-
-float computeShadowFactor(vec3 fragPos, vec3 normal, vec3 lightDir, vec3 lightPosition)
-{
-    vec3 fragToLight = fragPos - lightPosition;
-    float currentDepth = length(fragToLight) / shadowFarPlane;
-    float closestDepth = texture(shadowMap, fragToLight).r;
-    float bias = max(shadowBiasSlope * (1.0 - dot(normal, lightDir)), shadowBiasMin);
-    return currentDepth - bias > closestDepth ? 1.0 : 0.0;
-}
 
 void main()
 {
@@ -51,15 +37,9 @@ void main()
         float distanceToLight = length(lightPos[i] - FragPos);
         float attenuation = 1.0 / (1.0 + 0.09 * distanceToLight + 0.032 * distanceToLight * distanceToLight);
 
-        float shadow = 0.0;
-        if (shadowEnabled == 1 && i == 0)
-        {
-            shadow = computeShadowFactor(FragPos, norm, lightDir, lightPos[i]);
-        }
-
         totalAmbient += ambientStrength * lightColor[i] * attenuation;
-        totalDiffuse += diffuse * attenuation * (1.0 - shadow);
-        totalSpecular += specular * attenuation * (1.0 - shadow);
+        totalDiffuse += diffuse * attenuation;
+        totalSpecular += specular * attenuation;
     }
 
     // Keep object albedo on ambient+diffuse, but keep specular independent so light tint remains visible.
