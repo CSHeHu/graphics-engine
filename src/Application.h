@@ -69,6 +69,87 @@ struct TimeState
   }
 };
 
+struct SceneTimelinePosition
+{
+  std::size_t index;
+  float       sceneStartTimeSeconds;
+};
+
+struct ScenePlaylist
+{
+  std::vector<SceneCycleEntry> cycle;
+  std::size_t                  position;
+  SceneId                      activeSceneId;
+  float                        activeSceneStartTimeSeconds;
+
+  bool initialize(const std::vector<SceneCycleEntry>& configuredCycle)
+  {
+    cycle = configuredCycle;
+    if (cycle.empty())
+    {
+      return false;
+    }
+
+    position                    = 0;
+    activeSceneId               = cycle[position].id;
+    activeSceneStartTimeSeconds = 0.0f;
+    return true;
+  }
+
+  SceneTimelinePosition resolve(float timelineTimeSeconds) const
+  {
+    if (cycle.empty())
+    {
+      return {0, 0.0f};
+    }
+
+    float accumulatedStartTime = 0.0f;
+    for (std::size_t i = 0; i < cycle.size(); ++i)
+    {
+      const bool  isLastScene     = (i + 1 == cycle.size());
+      const float durationSeconds = cycle[i].durationSeconds;
+
+      if (isLastScene)
+      {
+        return {i, accumulatedStartTime};
+      }
+
+      // Non-positive duration means stay on this scene indefinitely.
+      if (durationSeconds <= 0.0f)
+      {
+        return {i, accumulatedStartTime};
+      }
+
+      const float nextSceneStartTime = accumulatedStartTime + durationSeconds;
+      if (timelineTimeSeconds < nextSceneStartTime)
+      {
+        return {i, accumulatedStartTime};
+      }
+
+      accumulatedStartTime = nextSceneStartTime;
+    }
+
+    return {cycle.size() - 1, accumulatedStartTime};
+  }
+
+  SceneId sceneIdAt(std::size_t index) const
+  {
+    return cycle[index].id;
+  }
+
+  bool needsSwitch(const SceneTimelinePosition& timelinePosition) const
+  {
+    return timelinePosition.index != position;
+  }
+
+  void commit(const SceneTimelinePosition& timelinePosition)
+  {
+    position                    = timelinePosition.index;
+    activeSceneId               = cycle[position].id;
+    activeSceneStartTimeSeconds = timelinePosition.sceneStartTimeSeconds;
+  }
+};
+
 /**
  * @brief Main application controller for initialization, update loop and
  * rendering.
@@ -95,12 +176,8 @@ class Application
     bool                             scriptedCameraEnabled;
     std::shared_ptr<SceneDefinition> activeSceneDefinition;
 
-    TimeState timeState;
-    float   lastSceneSwitchTime;
-    SceneId activeSceneId;
-    /** Ordered scene playback plan loaded from scene configuration. */
-    std::vector<SceneCycleEntry> sceneCycle;
-    std::size_t                  sceneCyclePosition;
+    TimeState     timeState;
+    ScenePlaylist scenePlaylist;
 
     std::unique_ptr<Scene>        scene;
     std::unique_ptr<AssetManager> assetManager;

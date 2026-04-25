@@ -13,55 +13,9 @@
 #include "SceneDefinitions.h"
 #include "TextManager.h"
 
-struct SceneTimelinePosition
-{
-    std::size_t index;
-    float       sceneStartTime;
-};
-
-SceneTimelinePosition
-resolveSceneTimelinePosition(const std::vector<SceneCycleEntry>& cycle,
-                             float timelineTimeSeconds)
-{
-    if (cycle.empty())
-    {
-        return {0, 0.0f};
-    }
-
-    float accumulatedStartTime = 0.0f;
-    for (std::size_t i = 0; i < cycle.size(); ++i)
-    {
-        const bool  isLastScene     = (i + 1 == cycle.size());
-        const float durationSeconds = cycle[i].durationSeconds;
-
-        if (isLastScene)
-        {
-            return {i, accumulatedStartTime};
-        }
-
-        // Non-positive duration means stay on this scene indefinitely.
-        if (durationSeconds <= 0.0f)
-        {
-            return {i, accumulatedStartTime};
-        }
-
-        const float nextSceneStartTime = accumulatedStartTime + durationSeconds;
-        if (timelineTimeSeconds < nextSceneStartTime)
-        {
-            return {i, accumulatedStartTime};
-        }
-
-        accumulatedStartTime = nextSceneStartTime;
-    }
-
-    return {cycle.size() - 1, accumulatedStartTime};
-}
-
 Application::Application()
     : window(nullptr, glfwDestroyWindow), camera(nullptr),
     scriptedCameraEnabled(false), activeSceneDefinition(),
-    lastSceneSwitchTime(0.0f),
-      activeSceneId(SceneId::Basic), sceneCycle(), sceneCyclePosition(0),
     scene(nullptr), assetManager(nullptr), textManager(nullptr),
     infoOverlayEnabled(false)
 {
@@ -174,15 +128,13 @@ bool Application::init()
     }
 
     // Scene order comes from content config instead of app lifecycle code.
-    sceneCycle         = SceneDefinitions::getDefaultSceneCycle();
-    sceneCyclePosition = 0;
-
-    assetManager = std::make_unique<AssetManager>();
-    if (sceneCycle.empty())
+    if (!scenePlaylist.initialize(SceneDefinitions::getDefaultSceneCycle()))
     {
         std::cout << "No scenes configured for scene cycle" << std::endl;
         return false;
     }
+
+    assetManager = std::make_unique<AssetManager>();
 
     // Initialize text manager with config
     const UIOverlayConfig& uiConfig = SceneDefinitions::getUIOverlayConfig();
@@ -195,10 +147,8 @@ bool Application::init()
     }
     infoOverlayEnabled = uiConfig.enabled;
 
-    activeSceneId       = sceneCycle[sceneCyclePosition].id;
-    lastSceneSwitchTime = 0.0f;
     timeState.initialize(static_cast<float>(glfwGetTime()));
-    if (!loadSceneById(activeSceneId))
+    if (!loadSceneById(scenePlaylist.activeSceneId))
     {
         std::cout << "Failed to initialize scene" << std::endl;
         return false;
@@ -248,15 +198,14 @@ void Application::run()
         timeState.advance(realDeltaSeconds);
 
         const SceneTimelinePosition timelinePosition =
-            resolveSceneTimelinePosition(sceneCycle, timeState.currentTimeSeconds);
-        if (timelinePosition.index != sceneCyclePosition)
+            scenePlaylist.resolve(timeState.currentTimeSeconds);
+        if (scenePlaylist.needsSwitch(timelinePosition))
         {
-            const SceneId targetSceneId = sceneCycle[timelinePosition.index].id;
+            const SceneId targetSceneId =
+                scenePlaylist.sceneIdAt(timelinePosition.index);
             if (loadSceneById(targetSceneId))
             {
-                sceneCyclePosition  = timelinePosition.index;
-                activeSceneId       = targetSceneId;
-                lastSceneSwitchTime = timelinePosition.sceneStartTime;
+                scenePlaylist.commit(timelinePosition);
             }
             else
             {
@@ -265,13 +214,14 @@ void Application::run()
         }
         else
         {
-            lastSceneSwitchTime = timelinePosition.sceneStartTime;
+            scenePlaylist.commit(timelinePosition);
         }
 
         if (scriptedCameraEnabled)
         {
             const float sceneElapsed =
-                timeState.currentTimeSeconds - lastSceneSwitchTime;
+                timeState.currentTimeSeconds -
+                scenePlaylist.activeSceneStartTimeSeconds;
             applyScriptedCamera(sceneElapsed);
         }
 
@@ -310,7 +260,8 @@ void Application::renderFrame()
     float fps = (timeState.deltaTimeSeconds > 0.0f)
                     ? 1.0f / timeState.deltaTimeSeconds
                     : 0.0f;
-    float sceneElapsedTime = timeState.currentTimeSeconds - lastSceneSwitchTime;
+    float sceneElapsedTime =
+        timeState.currentTimeSeconds - scenePlaylist.activeSceneStartTimeSeconds;
     const UIOverlayConfig& overlayConfig =
         SceneDefinitions::getUIOverlayConfig();
 
