@@ -20,7 +20,12 @@ Scene::Scene(AssetManager&                    assetManager,
              std::shared_ptr<SceneDefinition> definitionValue,
              TextManager&                     textManager)
     : assets(assetManager), textRenderer(textManager),
-      definition(std::move(definitionValue))
+    definition(std::move(definitionValue)),
+    lightUniformNameTable{0, {}, {}},
+    behaviorHandlers{&Scene::applyBehaviorNone,
+                 &Scene::applyBehaviorOscillate,
+                 &Scene::applyBehaviorSpin,
+                 &Scene::applyBehaviorFly}
 {
 }
 
@@ -36,8 +41,7 @@ bool Scene::init()
     runtimeMaterials.clear();
     runtimeObjects.clear();
 
-    // Initialization is intentionally staged so each failure point is easy to
-    // identify.
+    
     if (!initializeRuntimeMaterials())
     {
         return false;
@@ -155,52 +159,58 @@ void Scene::refreshActiveLightSources()
     }
 }
 
-void Scene::computeLightUniformData(int maxLightSources, int& lightCount,
-                                    std::vector<glm::vec3>& lightPositions,
-                                    std::vector<glm::vec3>& lightColors) const
+Scene::PerFrameLightUniforms
+Scene::buildPerFrameLightUniforms(int maxLightSources) const
 {
-    lightCount =
+    PerFrameLightUniforms perFrameLightUniforms;
+    perFrameLightUniforms.lightCount =
         std::min(static_cast<int>(activeLightSources.size()), maxLightSources);
-    lightPositions.assign(static_cast<std::size_t>(maxLightSources),
-                          glm::vec3(0.0f));
-    lightColors.assign(static_cast<std::size_t>(maxLightSources),
-                       glm::vec3(0.0f));
-    for (int i = 0; i < lightCount; ++i)
+    perFrameLightUniforms.lightPositions.assign(
+        static_cast<std::size_t>(maxLightSources), glm::vec3(0.0f));
+    perFrameLightUniforms.lightColors.assign(
+        static_cast<std::size_t>(maxLightSources), glm::vec3(0.0f));
+    for (int i = 0; i < perFrameLightUniforms.lightCount; ++i)
     {
         const RuntimeSceneObject* light =
             activeLightSources[static_cast<std::size_t>(i)];
-        lightPositions[static_cast<std::size_t>(i)] =
+        perFrameLightUniforms.lightPositions[static_cast<std::size_t>(i)] =
             light->object->getPosition();
-        lightColors[static_cast<std::size_t>(i)] =
+        perFrameLightUniforms.lightColors[static_cast<std::size_t>(i)] =
             light->lightColor * light->lightIntensity;
     }
+
+    return perFrameLightUniforms;
+}
+
+void Scene::ensureLightUniformNameTable(int maxLightSources)
+{
+    if (lightUniformNameTable.capacity == maxLightSources)
+    {
+        return;
+    }
+
+    lightUniformNameTable.lightPosNames.resize(
+        static_cast<std::size_t>(maxLightSources));
+    lightUniformNameTable.lightColorNames.resize(
+        static_cast<std::size_t>(maxLightSources));
+    for (int i = 0; i < maxLightSources; ++i)
+    {
+        const std::size_t idx = static_cast<std::size_t>(i);
+        lightUniformNameTable.lightPosNames[idx] =
+            "lightPos[" + std::to_string(i) + "]";
+        lightUniformNameTable.lightColorNames[idx] =
+            "lightColor[" + std::to_string(i) + "]";
+    }
+    lightUniformNameTable.capacity = maxLightSources;
 }
 
 void Scene::renderRuntimeObjects(const Camera&    camera,
                                  const glm::mat4& projection,
                                  const glm::mat4& view, float sceneElapsedTime,
-                                 int maxLightSources, int lightCount,
-                                 const std::vector<glm::vec3>& lightPositions,
-                                 const std::vector<glm::vec3>& lightColors)
+                                 int maxLightSources,
+                                 const PerFrameLightUniforms& perFrameLightUniforms)
 {
-    static std::vector<std::string> lightPosUniformNames;
-    static std::vector<std::string> lightColorUniformNames;
-    static int                      cachedUniformLightCapacity = 0;
-    if (cachedUniformLightCapacity != maxLightSources)
-    {
-        // Only rebuild the names when the light-array size changes.
-        lightPosUniformNames.resize(static_cast<std::size_t>(maxLightSources));
-        lightColorUniformNames.resize(
-            static_cast<std::size_t>(maxLightSources));
-        for (int i = 0; i < maxLightSources; ++i)
-        {
-            const std::size_t idx     = static_cast<std::size_t>(i);
-            lightPosUniformNames[idx] = "lightPos[" + std::to_string(i) + "]";
-            lightColorUniformNames[idx] =
-                "lightColor[" + std::to_string(i) + "]";
-        }
-        cachedUniformLightCapacity = maxLightSources;
-    }
+    ensureLightUniformNameTable(maxLightSources);
 
     std::unordered_set<unsigned int> configuredLitPrograms;
     std::unordered_set<unsigned int> configuredUnlitPrograms;
@@ -210,7 +220,6 @@ void Scene::renderRuntimeObjects(const Camera&    camera,
     for (const auto& entry : runtimeObjects)
     {
         const RuntimeSceneObject& runtimeObject = entry.second;
-        std::shared_ptr<Object>   object        = runtimeObject.object;
 
         std::shared_ptr<RuntimeMaterial> material = runtimeObject.material;
         material->shader->use();
@@ -222,30 +231,9 @@ void Scene::renderRuntimeObjects(const Camera&    camera,
                 configuredLitPrograms.insert(shaderProgramId).second;
             if (firstUseThisFrame)
             {
-                // These values are frame-wide, so upload them once per shader
-                // program rather than once per object.
-                material->shader->setMat4("projection", projection);
-                material->shader->setMat4("view", view);
-                material->shader->setFloat("uTime", sceneElapsedTime);
-                material->shader->setVec3("viewPos", camera.getPosition());
-                material->shader->setInt("lightCount", lightCount);
-
-                if (lightCount > 0)
-                {
-                    // Backward-compatible single-light uniforms for legacy
-                    // shaders.
-                    material->shader->setVec3("lightColor", lightColors[0]);
-                    material->shader->setVec3("lightPos", lightPositions[0]);
-                }
-
-                for (int i = 0; i < lightCount; ++i)
-                {
-                    const std::size_t idx = static_cast<std::size_t>(i);
-                    material->shader->setVec3(lightPosUniformNames[idx],
-                                              lightPositions[idx]);
-                    material->shader->setVec3(lightColorUniformNames[idx],
-                                              lightColors[idx]);
-                }
+                configureLitShaderPerFrame(material, camera, projection, view,
+                                           sceneElapsedTime,
+                                           perFrameLightUniforms);
             }
 
             material->shader->setVec3("objectColor", material->objectColor);
@@ -256,10 +244,8 @@ void Scene::renderRuntimeObjects(const Camera&    camera,
                 configuredUnlitPrograms.insert(shaderProgramId).second;
             if (firstUseThisFrame)
             {
-                // Unlit objects still share the camera matrices and time.
-                material->shader->setMat4("projection", projection);
-                material->shader->setMat4("view", view);
-                material->shader->setFloat("uTime", sceneElapsedTime);
+                configureLightSourceShaderPerFrame(material, projection, view,
+                                                   sceneElapsedTime);
             }
 
             // Visualize each emitter with its configured light tint and
@@ -269,16 +255,52 @@ void Scene::renderRuntimeObjects(const Camera&    camera,
                                           runtimeObject.lightIntensity);
         }
 
-        glBindVertexArray(object->getVAO());
-        glm::mat4 model = object->getModelMatrix();
-        material->shader->setMat4("model", model);
-        const glm::mat3 normalMatrix =
-            glm::mat3(glm::transpose(glm::inverse(model)));
-        material->shader->setMat3("normalMatrix", normalMatrix);
-        glDrawElements(GL_TRIANGLES,
-                       static_cast<GLsizei>(runtimeObject.indexCount),
-                       GL_UNSIGNED_INT, nullptr);
+        drawRuntimeObject(runtimeObject);
     }
+}
+
+void Scene::configureLitShaderPerFrame(
+    const std::shared_ptr<RuntimeMaterial>& material,
+    const Camera& camera, const glm::mat4& projection,
+    const glm::mat4& view, float sceneElapsedTime,
+    const PerFrameLightUniforms& perFrameLightUniforms) const
+{
+    // These values are frame-wide, so upload them once per shader program
+    // rather than once per object.
+    material->shader->setMat4("projection", projection);
+    material->shader->setMat4("view", view);
+    material->shader->setFloat("uTime", sceneElapsedTime);
+    material->shader->setVec3("viewPos", camera.getPosition());
+    material->shader->setInt("lightCount", perFrameLightUniforms.lightCount);
+
+    if (perFrameLightUniforms.lightCount > 0)
+    {
+        // Backward-compatible single-light uniforms for legacy shaders.
+        material->shader->setVec3("lightColor",
+                                  perFrameLightUniforms.lightColors[0]);
+        material->shader->setVec3("lightPos",
+                                  perFrameLightUniforms.lightPositions[0]);
+    }
+
+    for (int i = 0; i < perFrameLightUniforms.lightCount; ++i)
+    {
+        const std::size_t idx = static_cast<std::size_t>(i);
+        material->shader->setVec3(lightUniformNameTable.lightPosNames[idx],
+                                  perFrameLightUniforms.lightPositions[idx]);
+        material->shader->setVec3(lightUniformNameTable.lightColorNames[idx],
+                                  perFrameLightUniforms.lightColors[idx]);
+    }
+}
+
+void Scene::configureLightSourceShaderPerFrame(
+    const std::shared_ptr<RuntimeMaterial>& material,
+    const glm::mat4& projection, const glm::mat4& view,
+    float sceneElapsedTime) const
+{
+    // Unlit objects still share the camera matrices and time.
+    material->shader->setMat4("projection", projection);
+    material->shader->setMat4("view", view);
+    material->shader->setFloat("uTime", sceneElapsedTime);
 }
 
 void Scene::update(float sceneElapsedTime)
@@ -287,33 +309,72 @@ void Scene::update(float sceneElapsedTime)
     // deterministic and avoids accumulating floating-point drift.
     for (auto& entry : runtimeObjects)
     {
-        RuntimeSceneObject&     runtimeObject = entry.second;
-        std::shared_ptr<Object> object        = runtimeObject.object;
-
-        if (runtimeObject.behavior == BehaviorType::Oscillate)
-        {
-            const float delta =
-                std::sin(sceneElapsedTime * runtimeObject.behaviorSpeed) *
-                runtimeObject.behaviorAmplitude;
-            object->setPosition(runtimeObject.initialPosition +
-                                runtimeObject.behaviorAxis * delta);
-        }
-        else if (runtimeObject.behavior == BehaviorType::Spin)
-        {
-            object->setRotation(runtimeObject.initialRotationAngle +
-                                    runtimeObject.behaviorSpeed *
-                                        sceneElapsedTime,
-                                runtimeObject.behaviorAxis);
-        }
-        else if (runtimeObject.behavior == BehaviorType::Fly)
-        {
-            const glm::vec3 direction =
-                glm::normalize(runtimeObject.behaviorAxis);
-            const glm::vec3 displacement =
-                direction * (runtimeObject.behaviorSpeed * sceneElapsedTime);
-            object->setPosition(runtimeObject.initialPosition + displacement);
-        }
+        updateRuntimeObjectBehavior(entry.second, sceneElapsedTime);
     }
+}
+
+void Scene::updateRuntimeObjectBehavior(RuntimeSceneObject& runtimeObject,
+                                        float               sceneElapsedTime)
+{
+    std::size_t behaviorIndex = static_cast<std::size_t>(runtimeObject.behavior);
+    if (behaviorIndex >= behaviorHandlers.size())
+    {
+        behaviorIndex = 0;
+    }
+
+    const BehaviorHandler handler = behaviorHandlers[behaviorIndex];
+    (this->*handler)(runtimeObject, sceneElapsedTime);
+}
+
+void Scene::applyBehaviorNone(RuntimeSceneObject& runtimeObject,
+                              float               sceneElapsedTime)
+{
+    (void)runtimeObject;
+    (void)sceneElapsedTime;
+}
+
+void Scene::applyBehaviorOscillate(RuntimeSceneObject& runtimeObject,
+                                   float               sceneElapsedTime)
+{
+    std::shared_ptr<Object> object = runtimeObject.object;
+    const float             delta =
+        std::sin(sceneElapsedTime * runtimeObject.behaviorSpeed) *
+        runtimeObject.behaviorAmplitude;
+    object->setPosition(runtimeObject.initialPosition +
+                        runtimeObject.behaviorAxis * delta);
+}
+
+void Scene::applyBehaviorSpin(RuntimeSceneObject& runtimeObject,
+                              float               sceneElapsedTime)
+{
+    std::shared_ptr<Object> object = runtimeObject.object;
+    object->setRotation(runtimeObject.initialRotationAngle +
+                            runtimeObject.behaviorSpeed * sceneElapsedTime,
+                        runtimeObject.behaviorAxis);
+}
+
+void Scene::applyBehaviorFly(RuntimeSceneObject& runtimeObject,
+                             float               sceneElapsedTime)
+{
+    std::shared_ptr<Object> object    = runtimeObject.object;
+    const glm::vec3         direction =
+        glm::normalize(runtimeObject.behaviorAxis);
+    const glm::vec3 displacement =
+        direction * (runtimeObject.behaviorSpeed * sceneElapsedTime);
+    object->setPosition(runtimeObject.initialPosition + displacement);
+}
+
+void Scene::drawRuntimeObject(const RuntimeSceneObject& runtimeObject) const
+{
+    std::shared_ptr<Object> object   = runtimeObject.object;
+    std::shared_ptr<RuntimeMaterial> material = runtimeObject.material;
+    glBindVertexArray(object->getVAO());
+    glm::mat4 model = object->getModelMatrix();
+    material->shader->setMat4("model", model);
+    const glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
+    material->shader->setMat3("normalMatrix", normalMatrix);
+    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(runtimeObject.indexCount),
+                   GL_UNSIGNED_INT, nullptr);
 }
 
 void Scene::render(const Camera& camera, const glm::mat4& projection,
@@ -327,16 +388,12 @@ void Scene::render(const Camera& camera, const glm::mat4& projection,
     const int            maxLightSources =
         std::max(runtimeConfig.rendering.maxLightSources, 1);
 
-    int                    lightCount = 0;
-    std::vector<glm::vec3> lightPositions;
-    std::vector<glm::vec3> lightColors;
-    computeLightUniformData(maxLightSources, lightCount, lightPositions,
-                            lightColors);
+    const PerFrameLightUniforms perFrameLightUniforms =
+        buildPerFrameLightUniforms(maxLightSources);
 
     // Draw visible scene objects.
     renderRuntimeObjects(camera, projection, view, sceneElapsedTime,
-                         maxLightSources, lightCount, lightPositions,
-                         lightColors);
+                         maxLightSources, perFrameLightUniforms);
 
     // Render scene text overlays
     renderTextOverlay(overlayConfig, infoOverlayEnabled, fps, sceneElapsedTime,

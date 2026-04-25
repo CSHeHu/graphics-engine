@@ -8,10 +8,15 @@
 
 struct InputActions
 {
+	/** Toggle scripted/manual camera mode. */
 	bool toggleCameraMode;
+	/** Toggle info overlay visibility. */
 	bool toggleInfoOverlay;
+	/** Toggle simulation pause state. */
 	bool togglePause;
+	/** Step simulation time forward by fixed increment. */
 	bool stepTimeForward;
+	/** Step simulation time backward by fixed increment. */
 	bool stepTimeBackward;
 };
 

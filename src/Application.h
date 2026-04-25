@@ -23,6 +23,7 @@ struct TimeState
   float lastRealTimeSeconds;
   bool  paused;
 
+  /** @brief Reset simulation and delta timing from current real time. */
   void initialize(float nowRealTimeSeconds)
   {
     currentTimeSeconds  = 0.0f;
@@ -31,6 +32,7 @@ struct TimeState
     paused              = false;
   }
 
+  /** @brief Compute non-negative real-time delta and advance real clock. */
   float computeRealDelta(float nowRealTimeSeconds)
   {
     float realDeltaSeconds = nowRealTimeSeconds - lastRealTimeSeconds;
@@ -42,11 +44,13 @@ struct TimeState
     return realDeltaSeconds;
   }
 
+  /** @brief Step simulation time forward by a fixed amount. */
   void stepForward(float stepSeconds)
   {
     currentTimeSeconds += stepSeconds;
   }
 
+  /** @brief Step simulation time backward, clamping to zero. */
   void stepBackward(float stepSeconds)
   {
     currentTimeSeconds -= stepSeconds;
@@ -56,6 +60,7 @@ struct TimeState
     }
   }
 
+  /** @brief Advance simulation when unpaused and update frame delta state. */
   void advance(float realDeltaSeconds)
   {
     if (!paused)
@@ -82,6 +87,7 @@ struct ScenePlaylist
   SceneId                      activeSceneId;
   float                        activeSceneStartTimeSeconds;
 
+  /** @brief Initialize playlist from configured scene cycle. */
   bool initialize(const std::vector<SceneCycleEntry>& configuredCycle)
   {
     cycle = configuredCycle;
@@ -96,6 +102,7 @@ struct ScenePlaylist
     return true;
   }
 
+  /** @brief Resolve active scene index and scene-local start time for timeline. */
   SceneTimelinePosition resolve(float timelineTimeSeconds) const
   {
     if (cycle.empty())
@@ -132,16 +139,19 @@ struct ScenePlaylist
     return {cycle.size() - 1, accumulatedStartTime};
   }
 
+  /** @brief Return scene id located at a resolved cycle index. */
   SceneId sceneIdAt(std::size_t index) const
   {
     return cycle[index].id;
   }
 
+  /** @brief Check whether resolved timeline points to a different scene. */
   bool needsSwitch(const SceneTimelinePosition& timelinePosition) const
   {
     return timelinePosition.index != position;
   }
 
+  /** @brief Commit resolved timeline as active playlist state. */
   void commit(const SceneTimelinePosition& timelinePosition)
   {
     position                    = timelinePosition.index;
