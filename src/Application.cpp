@@ -6,8 +6,8 @@
 #include <iostream>
 
 #include "AssetManager.h"
-#include "CameraRouteController.h"
 #include "Camera.h"
+#include "CameraRouteController.h"
 #include "InputManager.h"
 #include "Scene.h"
 #include "SceneDefinitions.h"
@@ -15,10 +15,9 @@
 
 Application::Application()
     : window(nullptr, glfwDestroyWindow), camera(nullptr),
-    scriptedCameraEnabled(false), activeSceneDefinition(),
-    scene(nullptr), assetManager(nullptr), textManager(nullptr),
-    inputManager(nullptr), infoOverlayEnabled(false),
-    cameraRouteController(nullptr)
+      scriptedCameraEnabled(false), activeSceneDefinition(), scene(nullptr),
+      assetManager(nullptr), textManager(nullptr), inputManager(nullptr),
+      infoOverlayEnabled(false), cameraRouteController(nullptr)
 {
 }
 
@@ -184,7 +183,7 @@ bool Application::initSystems(const RuntimeConfig& runtimeConfig,
 bool Application::loadInitialScene()
 {
     timeState.initialize(static_cast<float>(glfwGetTime()));
-    if (!loadSceneById(scenePlaylist.activeSceneId))
+    if (!loadSceneById(scenePlaylist.activeSceneId()))
     {
         std::cout << "Failed to initialize scene" << std::endl;
         return false;
@@ -219,7 +218,7 @@ void Application::run()
 
         if (actions.togglePause)
         {
-            timeState.paused = !timeState.paused;
+            timeState.setPaused(!timeState.isPaused());
         }
 
         if (actions.stepTimeForward)
@@ -235,7 +234,7 @@ void Application::run()
         timeState.advance(realDeltaSeconds);
 
         const SceneTimelinePosition timelinePosition =
-            scenePlaylist.resolve(timeState.currentTimeSeconds);
+            scenePlaylist.resolve(timeState.currentTimeSeconds());
         if (scenePlaylist.needsSwitch(timelinePosition))
         {
             const SceneId targetSceneId =
@@ -257,8 +256,8 @@ void Application::run()
         if (scriptedCameraEnabled)
         {
             const float sceneElapsed =
-                timeState.currentTimeSeconds -
-                scenePlaylist.activeSceneStartTimeSeconds;
+                timeState.currentTimeSeconds() -
+                scenePlaylist.activeSceneStartTimeSeconds();
             cameraRouteController->apply(*camera, activeSceneDefinition->camera,
                                          sceneElapsed);
         }
@@ -295,18 +294,18 @@ void Application::renderFrame()
     glm::mat4 view = glm::mat4(1.0f);
     view           = camera->GetViewMatrix();
 
-    float fps = (timeState.deltaTimeSeconds > 0.0f)
-                    ? 1.0f / timeState.deltaTimeSeconds
-                    : 0.0f;
-    float sceneElapsedTime =
-        timeState.currentTimeSeconds - scenePlaylist.activeSceneStartTimeSeconds;
+    float fps              = (timeState.deltaTimeSeconds() > 0.0f)
+                                 ? 1.0f / timeState.deltaTimeSeconds()
+                                 : 0.0f;
+    float sceneElapsedTime = timeState.currentTimeSeconds() -
+                             scenePlaylist.activeSceneStartTimeSeconds();
     const UIOverlayConfig& overlayConfig =
         SceneDefinitions::getUIOverlayConfig();
 
     scene->update(sceneElapsedTime);
     scene->render(*camera, projection, view, fps, sceneElapsedTime,
                   overlayConfig, infoOverlayEnabled,
-                  timeState.currentTimeSeconds);
+                  timeState.currentTimeSeconds());
 }
 
 bool Application::loadSceneById(SceneId id)

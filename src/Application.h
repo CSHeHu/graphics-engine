@@ -6,10 +6,11 @@
 #include <cstddef>
 #include <glm.hpp>
 #include <memory>
-#include <vector>
 
 #include "SceneDefinition.h"
 #include "SceneDefinitions.h"
+#include "ScenePlaylist.h"
+#include "TimeState.h"
 
 class Camera;
 class Scene;
@@ -17,150 +18,6 @@ class AssetManager;
 class TextManager;
 class InputManager;
 class CameraRouteController;
-
-struct TimeState
-{
-  float currentTimeSeconds;
-  float deltaTimeSeconds;
-  float lastRealTimeSeconds;
-  bool  paused;
-
-  /** @brief Reset simulation and delta timing from current real time. */
-  void initialize(float nowRealTimeSeconds)
-  {
-    currentTimeSeconds  = 0.0f;
-    deltaTimeSeconds    = 0.0f;
-    lastRealTimeSeconds = nowRealTimeSeconds;
-    paused              = false;
-  }
-
-  /** @brief Compute non-negative real-time delta and advance real clock. */
-  float computeRealDelta(float nowRealTimeSeconds)
-  {
-    float realDeltaSeconds = nowRealTimeSeconds - lastRealTimeSeconds;
-    if (realDeltaSeconds < 0.0f)
-    {
-      realDeltaSeconds = 0.0f;
-    }
-    lastRealTimeSeconds = nowRealTimeSeconds;
-    return realDeltaSeconds;
-  }
-
-  /** @brief Step simulation time forward by a fixed amount. */
-  void stepForward(float stepSeconds)
-  {
-    currentTimeSeconds += stepSeconds;
-  }
-
-  /** @brief Step simulation time backward, clamping to zero. */
-  void stepBackward(float stepSeconds)
-  {
-    currentTimeSeconds -= stepSeconds;
-    if (currentTimeSeconds < 0.0f)
-    {
-      currentTimeSeconds = 0.0f;
-    }
-  }
-
-  /** @brief Advance simulation when unpaused and update frame delta state. */
-  void advance(float realDeltaSeconds)
-  {
-    if (!paused)
-    {
-      currentTimeSeconds += realDeltaSeconds;
-      deltaTimeSeconds = realDeltaSeconds;
-      return;
-    }
-
-    deltaTimeSeconds = 0.0f;
-  }
-};
-
-struct SceneTimelinePosition
-{
-  std::size_t index;
-  float       sceneStartTimeSeconds;
-};
-
-struct ScenePlaylist
-{
-  std::vector<SceneCycleEntry> cycle;
-  std::size_t                  position;
-  SceneId                      activeSceneId;
-  float                        activeSceneStartTimeSeconds;
-
-  /** @brief Initialize playlist from configured scene cycle. */
-  bool initialize(const std::vector<SceneCycleEntry>& configuredCycle)
-  {
-    cycle = configuredCycle;
-    if (cycle.empty())
-    {
-      return false;
-    }
-
-    position                    = 0;
-    activeSceneId               = cycle[position].id;
-    activeSceneStartTimeSeconds = 0.0f;
-    return true;
-  }
-
-  /** @brief Resolve active scene index and scene-local start time for timeline. */
-  SceneTimelinePosition resolve(float timelineTimeSeconds) const
-  {
-    if (cycle.empty())
-    {
-      return {0, 0.0f};
-    }
-
-    float accumulatedStartTime = 0.0f;
-    for (std::size_t i = 0; i < cycle.size(); ++i)
-    {
-      const bool  isLastScene     = (i + 1 == cycle.size());
-      const float durationSeconds = cycle[i].durationSeconds;
-
-      if (isLastScene)
-      {
-        return {i, accumulatedStartTime};
-      }
-
-      // Non-positive duration means stay on this scene indefinitely.
-      if (durationSeconds <= 0.0f)
-      {
-        return {i, accumulatedStartTime};
-      }
-
-      const float nextSceneStartTime = accumulatedStartTime + durationSeconds;
-      if (timelineTimeSeconds < nextSceneStartTime)
-      {
-        return {i, accumulatedStartTime};
-      }
-
-      accumulatedStartTime = nextSceneStartTime;
-    }
-
-    return {cycle.size() - 1, accumulatedStartTime};
-  }
-
-  /** @brief Return scene id located at a resolved cycle index. */
-  SceneId sceneIdAt(std::size_t index) const
-  {
-    return cycle[index].id;
-  }
-
-  /** @brief Check whether resolved timeline points to a different scene. */
-  bool needsSwitch(const SceneTimelinePosition& timelinePosition) const
-  {
-    return timelinePosition.index != position;
-  }
-
-  /** @brief Commit resolved timeline as active playlist state. */
-  void commit(const SceneTimelinePosition& timelinePosition)
-  {
-    position                    = timelinePosition.index;
-    activeSceneId               = cycle[position].id;
-    activeSceneStartTimeSeconds = timelinePosition.sceneStartTimeSeconds;
-  }
-};
 
 /**
  * @brief Main application controller for initialization, update loop and
@@ -191,21 +48,21 @@ class Application
     TimeState     timeState;
     ScenePlaylist scenePlaylist;
 
-    std::unique_ptr<Scene>        scene;
-    std::unique_ptr<AssetManager> assetManager;
-    std::unique_ptr<TextManager>  textManager;
-    std::unique_ptr<InputManager> inputManager;
-    bool                          infoOverlayEnabled;
+    std::unique_ptr<Scene>                 scene;
+    std::unique_ptr<AssetManager>          assetManager;
+    std::unique_ptr<TextManager>           textManager;
+    std::unique_ptr<InputManager>          inputManager;
+    bool                                   infoOverlayEnabled;
     std::unique_ptr<CameraRouteController> cameraRouteController;
 
     /** @brief Load and activate scene runtime objects for a scene id. */
     bool loadSceneById(SceneId id);
     /** @brief Initialize GLFW window and OpenGL context. */
     bool initWindowAndContext(const RuntimeConfig& runtimeConfig,
-                  const WindowConfig&  windowConfig);
+                              const WindowConfig&  windowConfig);
     /** @brief Initialize camera, input, render state, and shared managers. */
     bool initSystems(const RuntimeConfig& runtimeConfig,
-             const WindowConfig&  windowConfig);
+                     const WindowConfig&  windowConfig);
     /** @brief Initialize simulation time and load the initial scene. */
     bool loadInitialScene();
     /** @brief Render one frame for the active scene. */
