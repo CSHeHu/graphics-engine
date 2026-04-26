@@ -17,31 +17,6 @@ class AssetManager;
 class TextManager;
 class SceneOverlayRenderer;
 
-/** @brief Runtime material state resolved from scene configuration. */
-struct RuntimeMaterial
-{
-    std::shared_ptr<Shader> shader;
-    RenderMode              renderMode;
-    glm::vec3               objectColor;
-};
-
-/** @brief Runtime object state used for rendering and behavior updates. */
-struct RuntimeSceneObject
-{
-    std::shared_ptr<Object>          object;
-    std::shared_ptr<RuntimeMaterial> material;
-    std::size_t                      indexCount;
-    SceneRole                        role;
-    BehaviorType                     behavior;
-    float                            behaviorSpeed;
-    glm::vec3                        behaviorAxis;
-    float                            behaviorAmplitude;
-    glm::vec3                        initialPosition;
-    float                            initialRotationAngle;
-    glm::vec3                        lightColor;
-    float                            lightIntensity;
-};
-
 /**
  * @brief Runtime scene container that updates behaviors and renders scene
  * content.
@@ -69,6 +44,72 @@ class Scene
                 float currentTimeSeconds);
 
   private:
+    /** @brief Runtime material state resolved from scene configuration. */
+    struct RuntimeMaterial
+    {
+        std::shared_ptr<Shader> shader;
+        RenderMode              renderMode;
+        glm::vec3               objectColor;
+    };
+
+    /** @brief Runtime render/object data shared by all scene objects. */
+    struct RuntimeSceneObjectCore
+    {
+        std::shared_ptr<Object>          object;
+        std::shared_ptr<RuntimeMaterial> material;
+        std::size_t                      indexCount;
+        SceneRole                        role;
+    };
+
+    /** @brief Runtime light-emitter parameters for a scene object. */
+    struct RuntimeLightState
+    {
+        glm::vec3 color;
+        float     intensity;
+    };
+
+    /** @brief Per-behavior runtime state for oscillation. */
+    struct OscillateBehaviorState
+    {
+        float     speed;
+        glm::vec3 axis;
+        float     amplitude;
+        glm::vec3 initialPosition;
+    };
+
+    /** @brief Per-behavior runtime state for spinning. */
+    struct SpinBehaviorState
+    {
+        float     speed;
+        glm::vec3 axis;
+        float     initialRotationAngle;
+    };
+
+    /** @brief Per-behavior runtime state for flying. */
+    struct FlyBehaviorState
+    {
+        float     speed;
+        glm::vec3 direction;
+        glm::vec3 initialPosition;
+    };
+
+    /** @brief Runtime behavior state containing behavior kind and payloads. */
+    struct RuntimeBehaviorState
+    {
+        BehaviorType           type;
+        OscillateBehaviorState oscillate;
+        SpinBehaviorState      spin;
+        FlyBehaviorState       fly;
+    };
+
+    /** @brief Runtime object state used for rendering and behavior updates. */
+    struct RuntimeSceneObject
+    {
+        RuntimeSceneObjectCore core;
+        RuntimeBehaviorState   behavior;
+        RuntimeLightState      light;
+    };
+
     struct PerFrameLightUniforms
     {
         /** Number of active lights written into uniform arrays this frame. */

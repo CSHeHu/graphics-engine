@@ -10,6 +10,8 @@
 #include "SceneDefinitions.h"
 #include "Shader.h"
 
+namespace
+{
 struct Vec3
 {
     float x;
@@ -23,13 +25,13 @@ struct FaceVertex
     int normalIndex;
 };
 
-static uint64_t packVertexKey(int positionIndex, int normalIndex)
+uint64_t packVertexKey(int positionIndex, int normalIndex)
 {
     return (static_cast<uint64_t>(static_cast<uint32_t>(positionIndex)) << 32) |
            static_cast<uint32_t>(normalIndex);
 }
 
-static int resolveIndex(int index, int size)
+int resolveIndex(int index, int size)
 {
     if (index > 0)
     {
@@ -42,7 +44,7 @@ static int resolveIndex(int index, int size)
     return 0;
 }
 
-static FaceVertex parseFaceToken(const std::string& token)
+FaceVertex parseFaceToken(const std::string& token)
 {
     FaceVertex fv{0, 0};
 
@@ -71,6 +73,7 @@ static FaceVertex parseFaceToken(const std::string& token)
 
     throw std::runtime_error("Unsupported face token: " + token);
 }
+} // namespace
 
 const std::vector<float>&
 AssetManager::getMeshVertices(const std::string& meshName)

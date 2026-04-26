@@ -122,18 +122,29 @@ bool Scene::initializeRuntimeObjects()
         }
 
         RuntimeSceneObject runtimeObject;
-        runtimeObject.object               = object;
-        runtimeObject.material             = material;
-        runtimeObject.indexCount           = indexCount;
-        runtimeObject.role                 = objectDef.role;
-        runtimeObject.behavior             = objectDef.behavior;
-        runtimeObject.behaviorSpeed        = objectDef.behaviorSpeed;
-        runtimeObject.behaviorAxis         = objectDef.behaviorAxis;
-        runtimeObject.behaviorAmplitude    = objectDef.behaviorAmplitude;
-        runtimeObject.initialPosition      = objectDef.position;
-        runtimeObject.initialRotationAngle = object->getRotationAngle();
-        runtimeObject.lightColor           = objectDef.lightColor;
-        runtimeObject.lightIntensity       = objectDef.lightIntensity;
+        runtimeObject.core.object     = object;
+        runtimeObject.core.material   = material;
+        runtimeObject.core.indexCount = indexCount;
+        runtimeObject.core.role       = objectDef.role;
+
+        runtimeObject.behavior.type            = objectDef.behavior;
+        runtimeObject.behavior.oscillate.speed = objectDef.behaviorSpeed;
+        runtimeObject.behavior.oscillate.axis  = objectDef.behaviorAxis;
+        runtimeObject.behavior.oscillate.amplitude =
+            objectDef.behaviorAmplitude;
+        runtimeObject.behavior.oscillate.initialPosition = objectDef.position;
+
+        runtimeObject.behavior.spin.speed = objectDef.behaviorSpeed;
+        runtimeObject.behavior.spin.axis  = objectDef.behaviorAxis;
+        runtimeObject.behavior.spin.initialRotationAngle =
+            object->getRotationAngle();
+
+        runtimeObject.behavior.fly.speed           = objectDef.behaviorSpeed;
+        runtimeObject.behavior.fly.direction       = objectDef.behaviorAxis;
+        runtimeObject.behavior.fly.initialPosition = objectDef.position;
+
+        runtimeObject.light.color     = objectDef.lightColor;
+        runtimeObject.light.intensity = objectDef.lightIntensity;
 
         runtimeObjects[objectDef.id] = runtimeObject;
         runtimeObjectOrder.push_back(objectDef.id);
@@ -149,7 +160,7 @@ void Scene::refreshActiveLightSources()
     for (const std::string& objectId : runtimeObjectOrder)
     {
         RuntimeSceneObject& runtimeObject = runtimeObjects.at(objectId);
-        if (runtimeObject.role == SceneRole::LightSource)
+        if (runtimeObject.core.role == SceneRole::LightSource)
         {
             activeLightSources.push_back(&runtimeObject);
         }
@@ -171,9 +182,9 @@ Scene::buildPerFrameLightUniforms(int maxLightSources) const
         const RuntimeSceneObject* light =
             activeLightSources[static_cast<std::size_t>(i)];
         perFrameLightUniforms.lightPositions[static_cast<std::size_t>(i)] =
-            light->object->getPosition();
+            light->core.object->getPosition();
         perFrameLightUniforms.lightColors[static_cast<std::size_t>(i)] =
-            light->lightColor * light->lightIntensity;
+            light->light.color * light->light.intensity;
     }
 
     return perFrameLightUniforms;
@@ -217,7 +228,7 @@ void Scene::renderRuntimeObjects(
     {
         const RuntimeSceneObject& runtimeObject = runtimeObjects.at(objectId);
 
-        std::shared_ptr<RuntimeMaterial> material = runtimeObject.material;
+        std::shared_ptr<RuntimeMaterial> material = runtimeObject.core.material;
         material->shader->use();
         const unsigned int shaderProgramId = material->shader->ID;
 
@@ -247,8 +258,8 @@ void Scene::renderRuntimeObjects(
             // Visualize each emitter with its configured light tint and
             // intensity.
             material->shader->setVec3("objectColor",
-                                      runtimeObject.lightColor *
-                                          runtimeObject.lightIntensity);
+                                      runtimeObject.light.color *
+                                          runtimeObject.light.intensity);
         }
 
         drawRuntimeObject(runtimeObject);
@@ -312,7 +323,7 @@ void Scene::update(float sceneElapsedTime)
 void Scene::updateRuntimeObjectBehavior(RuntimeSceneObject& runtimeObject,
                                         float               sceneElapsedTime)
 {
-    switch (runtimeObject.behavior)
+    switch (runtimeObject.behavior.type)
     {
         case BehaviorType::None:
             applyBehaviorNone(runtimeObject, sceneElapsedTime);
@@ -342,44 +353,48 @@ void Scene::applyBehaviorNone(RuntimeSceneObject& runtimeObject,
 void Scene::applyBehaviorOscillate(RuntimeSceneObject& runtimeObject,
                                    float               sceneElapsedTime)
 {
-    std::shared_ptr<Object> object = runtimeObject.object;
+    std::shared_ptr<Object> object = runtimeObject.core.object;
     const float             delta =
-        std::sin(sceneElapsedTime * runtimeObject.behaviorSpeed) *
-        runtimeObject.behaviorAmplitude;
-    object->setPosition(runtimeObject.initialPosition +
-                        runtimeObject.behaviorAxis * delta);
+        std::sin(sceneElapsedTime * runtimeObject.behavior.oscillate.speed) *
+        runtimeObject.behavior.oscillate.amplitude;
+    object->setPosition(runtimeObject.behavior.oscillate.initialPosition +
+                        runtimeObject.behavior.oscillate.axis * delta);
 }
 
 void Scene::applyBehaviorSpin(RuntimeSceneObject& runtimeObject,
                               float               sceneElapsedTime)
 {
-    std::shared_ptr<Object> object = runtimeObject.object;
-    object->setRotation(runtimeObject.initialRotationAngle +
-                            runtimeObject.behaviorSpeed * sceneElapsedTime,
-                        runtimeObject.behaviorAxis);
+    std::shared_ptr<Object> object = runtimeObject.core.object;
+    object->setRotation(runtimeObject.behavior.spin.initialRotationAngle +
+                            runtimeObject.behavior.spin.speed *
+                                sceneElapsedTime,
+                        runtimeObject.behavior.spin.axis);
 }
 
 void Scene::applyBehaviorFly(RuntimeSceneObject& runtimeObject,
                              float               sceneElapsedTime)
 {
-    std::shared_ptr<Object> object = runtimeObject.object;
-    const glm::vec3 direction      = glm::normalize(runtimeObject.behaviorAxis);
+    std::shared_ptr<Object> object = runtimeObject.core.object;
+    const glm::vec3         direction =
+        glm::normalize(runtimeObject.behavior.fly.direction);
     const glm::vec3 displacement =
-        direction * (runtimeObject.behaviorSpeed * sceneElapsedTime);
-    object->setPosition(runtimeObject.initialPosition + displacement);
+        direction * (runtimeObject.behavior.fly.speed * sceneElapsedTime);
+    object->setPosition(runtimeObject.behavior.fly.initialPosition +
+                        displacement);
 }
 
 void Scene::drawRuntimeObject(const RuntimeSceneObject& runtimeObject) const
 {
-    std::shared_ptr<Object>          object   = runtimeObject.object;
-    std::shared_ptr<RuntimeMaterial> material = runtimeObject.material;
+    std::shared_ptr<Object>          object   = runtimeObject.core.object;
+    std::shared_ptr<RuntimeMaterial> material = runtimeObject.core.material;
     glBindVertexArray(object->getVAO());
     glm::mat4 model = object->getModelMatrix();
     material->shader->setMat4("model", model);
     const glm::mat3 normalMatrix =
         glm::mat3(glm::transpose(glm::inverse(model)));
     material->shader->setMat3("normalMatrix", normalMatrix);
-    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(runtimeObject.indexCount),
+    glDrawElements(GL_TRIANGLES,
+                   static_cast<GLsizei>(runtimeObject.core.indexCount),
                    GL_UNSIGNED_INT, nullptr);
 }
 
