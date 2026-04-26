@@ -1,7 +1,6 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-#include <array>
 #include <cstddef>
 #include <glm.hpp>
 #include <memory>
@@ -70,12 +69,10 @@ class Scene
                 float currentTimeSeconds);
 
   private:
-    static constexpr std::size_t kBehaviorTypeCount = 4;
-
     struct PerFrameLightUniforms
     {
         /** Number of active lights written into uniform arrays this frame. */
-        int                    lightCount;
+        int lightCount;
         /** World-space light positions padded to max light count. */
         std::vector<glm::vec3> lightPositions;
         /** Final light colors (tint * intensity) padded to max light count. */
@@ -85,14 +82,12 @@ class Scene
     struct LightUniformNameTable
     {
         /** Last configured max light source capacity. */
-        int                      capacity;
+        int capacity;
         /** Cached uniform names for light position array entries. */
         std::vector<std::string> lightPosNames;
         /** Cached uniform names for light color array entries. */
         std::vector<std::string> lightColorNames;
     };
-
-    using BehaviorHandler = void (Scene::*)(RuntimeSceneObject&, float);
 
     AssetManager&                    assets;
     TextManager&                     textRenderer;
@@ -104,11 +99,10 @@ class Scene
     /** Runtime object map keyed by object id. */
     std::unordered_map<std::string, RuntimeSceneObject> runtimeObjects;
     /** Deterministic object iteration order matching scene definition order. */
-    std::vector<std::string>                            runtimeObjectOrder;
-    std::vector<RuntimeSceneObject*>                    activeLightSources;
-    LightUniformNameTable                               lightUniformNameTable;
-    std::array<BehaviorHandler, kBehaviorTypeCount>    behaviorHandlers;
-    std::unique_ptr<SceneOverlayRenderer>               overlayRenderer;
+    std::vector<std::string>              runtimeObjectOrder;
+    std::vector<RuntimeSceneObject*>      activeLightSources;
+    LightUniformNameTable                 lightUniformNameTable;
+    std::unique_ptr<SceneOverlayRenderer> overlayRenderer;
 
     /** Build shader-backed material instances for the current scene. */
     bool initializeRuntimeMaterials();
@@ -137,15 +131,16 @@ class Scene
     void applyBehaviorFly(RuntimeSceneObject& runtimeObject,
                           float               sceneElapsedTime);
     /** Draw all scene objects with per-shader uniform setup. */
-    void renderRuntimeObjects(const Camera& camera, const glm::mat4& projection,
-                              const glm::mat4& view, float sceneElapsedTime,
-                              int maxLightSources,
-                              const PerFrameLightUniforms& perFrameLightUniforms);
+    void
+    renderRuntimeObjects(const Camera& camera, const glm::mat4& projection,
+                         const glm::mat4& view, float sceneElapsedTime,
+                         int                          maxLightSources,
+                         const PerFrameLightUniforms& perFrameLightUniforms);
     /** Configure shared per-frame uniforms for lit material shaders. */
     void configureLitShaderPerFrame(
-        const std::shared_ptr<RuntimeMaterial>& material,
-        const Camera& camera, const glm::mat4& projection,
-        const glm::mat4& view, float sceneElapsedTime,
+        const std::shared_ptr<RuntimeMaterial>& material, const Camera& camera,
+        const glm::mat4& projection, const glm::mat4& view,
+        float                        sceneElapsedTime,
         const PerFrameLightUniforms& perFrameLightUniforms) const;
     /** Configure shared per-frame uniforms for light-source shaders. */
     void configureLightSourceShaderPerFrame(
@@ -157,4 +152,3 @@ class Scene
 };
 
 #endif // SCENE_H
-

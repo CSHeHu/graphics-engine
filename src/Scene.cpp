@@ -20,13 +20,8 @@ Scene::Scene(AssetManager&                    assetManager,
              std::shared_ptr<SceneDefinition> definitionValue,
              TextManager&                     textManager)
     : assets(assetManager), textRenderer(textManager),
-    definition(std::move(definitionValue)),
-    lightUniformNameTable{0, {}, {}},
-    behaviorHandlers{&Scene::applyBehaviorNone,
-                     &Scene::applyBehaviorOscillate,
-                     &Scene::applyBehaviorSpin,
-                     &Scene::applyBehaviorFly},
-    overlayRenderer(std::make_unique<SceneOverlayRenderer>())
+      definition(std::move(definitionValue)), lightUniformNameTable{0, {}, {}},
+      overlayRenderer(std::make_unique<SceneOverlayRenderer>())
 {
 }
 
@@ -73,10 +68,10 @@ bool Scene::initializeRuntimeMaterials()
     {
         std::shared_ptr<RuntimeMaterial> material =
             std::make_shared<RuntimeMaterial>();
-        material->shader = assets.getShader(materialDef.vertexShaderPath,
-                                            materialDef.fragmentShaderPath,
-                                            materialDef.geometryShaderPath);
-        material->renderMode  = materialDef.renderMode;
+        material->shader     = assets.getShader(materialDef.vertexShaderPath,
+                                                materialDef.fragmentShaderPath,
+                                                materialDef.geometryShaderPath);
+        material->renderMode = materialDef.renderMode;
         material->objectColor = materialDef.objectColor;
 
         runtimeMaterials[materialDef.id] = material;
@@ -315,37 +310,48 @@ void Scene::update(float sceneElapsedTime)
 }
 
 void Scene::updateRuntimeObjectBehavior(RuntimeSceneObject& runtimeObject,
-                                        float sceneElapsedTime)
+                                        float               sceneElapsedTime)
 {
-    std::size_t behaviorIndex = static_cast<std::size_t>(runtimeObject.behavior);
-    if (behaviorIndex >= behaviorHandlers.size())
+    switch (runtimeObject.behavior)
     {
-        behaviorIndex = 0;
+        case BehaviorType::None:
+            applyBehaviorNone(runtimeObject, sceneElapsedTime);
+            break;
+        case BehaviorType::Oscillate:
+            applyBehaviorOscillate(runtimeObject, sceneElapsedTime);
+            break;
+        case BehaviorType::Spin:
+            applyBehaviorSpin(runtimeObject, sceneElapsedTime);
+            break;
+        case BehaviorType::Fly:
+            applyBehaviorFly(runtimeObject, sceneElapsedTime);
+            break;
+        default:
+            applyBehaviorNone(runtimeObject, sceneElapsedTime);
+            break;
     }
-
-    const BehaviorHandler handler = behaviorHandlers[behaviorIndex];
-    (this->*handler)(runtimeObject, sceneElapsedTime);
 }
 
 void Scene::applyBehaviorNone(RuntimeSceneObject& runtimeObject,
-                              float sceneElapsedTime)
+                              float               sceneElapsedTime)
 {
     (void)runtimeObject;
     (void)sceneElapsedTime;
 }
 
 void Scene::applyBehaviorOscillate(RuntimeSceneObject& runtimeObject,
-                                   float sceneElapsedTime)
+                                   float               sceneElapsedTime)
 {
     std::shared_ptr<Object> object = runtimeObject.object;
-    const float delta = std::sin(sceneElapsedTime * runtimeObject.behaviorSpeed) *
-                        runtimeObject.behaviorAmplitude;
+    const float             delta =
+        std::sin(sceneElapsedTime * runtimeObject.behaviorSpeed) *
+        runtimeObject.behaviorAmplitude;
     object->setPosition(runtimeObject.initialPosition +
                         runtimeObject.behaviorAxis * delta);
 }
 
 void Scene::applyBehaviorSpin(RuntimeSceneObject& runtimeObject,
-                              float sceneElapsedTime)
+                              float               sceneElapsedTime)
 {
     std::shared_ptr<Object> object = runtimeObject.object;
     object->setRotation(runtimeObject.initialRotationAngle +
@@ -354,7 +360,7 @@ void Scene::applyBehaviorSpin(RuntimeSceneObject& runtimeObject,
 }
 
 void Scene::applyBehaviorFly(RuntimeSceneObject& runtimeObject,
-                             float sceneElapsedTime)
+                             float               sceneElapsedTime)
 {
     std::shared_ptr<Object> object = runtimeObject.object;
     const glm::vec3 direction      = glm::normalize(runtimeObject.behaviorAxis);
@@ -365,12 +371,13 @@ void Scene::applyBehaviorFly(RuntimeSceneObject& runtimeObject,
 
 void Scene::drawRuntimeObject(const RuntimeSceneObject& runtimeObject) const
 {
-    std::shared_ptr<Object> object           = runtimeObject.object;
+    std::shared_ptr<Object>          object   = runtimeObject.object;
     std::shared_ptr<RuntimeMaterial> material = runtimeObject.material;
     glBindVertexArray(object->getVAO());
     glm::mat4 model = object->getModelMatrix();
     material->shader->setMat4("model", model);
-    const glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
+    const glm::mat3 normalMatrix =
+        glm::mat3(glm::transpose(glm::inverse(model)));
     material->shader->setMat3("normalMatrix", normalMatrix);
     glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(runtimeObject.indexCount),
                    GL_UNSIGNED_INT, nullptr);
@@ -384,7 +391,8 @@ void Scene::render(const Camera& camera, const glm::mat4& projection,
     // Runtime rendering limits and bindings are centralized in
     // scene_config.json.
     const RuntimeConfig& runtimeConfig = SceneDefinitions::getRuntimeConfig();
-    const int maxLightSources = std::max(runtimeConfig.rendering.maxLightSources, 1);
+    const int            maxLightSources =
+        std::max(runtimeConfig.rendering.maxLightSources, 1);
 
     const PerFrameLightUniforms perFrameLightUniforms =
         buildPerFrameLightUniforms(maxLightSources);
