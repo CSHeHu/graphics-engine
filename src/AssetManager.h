@@ -20,27 +20,28 @@ struct MeshData
  */
 class AssetManager
 {
-public:
-    AssetManager() = default;
+  public:
+    AssetManager()  = default;
     ~AssetManager() = default;
 
     /** @brief Get mesh vertex buffer data by mesh file name. */
-    const std::vector<float> &getMeshVertices(const std::string &meshName);
+    const std::vector<float>& getMeshVertices(const std::string& meshName);
     /** @brief Get vertex count for a mesh. */
-    std::size_t getMeshVertexCount(const std::string &meshName);
+    std::size_t getMeshVertexCount(const std::string& meshName);
     /** @brief Get mesh index buffer data by mesh file name. */
-    const std::vector<unsigned int> &getMeshIndices(const std::string &meshName);
+    const std::vector<unsigned int>&
+    getMeshIndices(const std::string& meshName);
     /** @brief Get index count for a mesh. */
-    std::size_t getMeshIndexCount(const std::string &meshName);
+    std::size_t getMeshIndexCount(const std::string& meshName);
 
     /** @brief Get or create a shader program for the provided shader paths. */
-    std::shared_ptr<Shader> getShader(const std::string &vertexPath,
-                                      const std::string &fragmentPath,
-                                      const std::string &geometryPath = "");
+    std::shared_ptr<Shader> getShader(const std::string& vertexPath,
+                                      const std::string& fragmentPath,
+                                      const std::string& geometryPath = "");
 
-private:
+  private:
     /** @brief Parse OBJ mesh data into position+normal packed vertices. */
-    MeshData loadObjPositionNormal(const std::string &meshName) const;
+    MeshData loadObjPositionNormal(const std::string& meshName) const;
 
     /** Mesh cache keyed by mesh file name. */
     std::unordered_map<std::string, MeshData> meshCache;
