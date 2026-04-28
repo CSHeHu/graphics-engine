@@ -14,15 +14,15 @@ namespace
 {
 struct Vec3
 {
-    float x;
-    float y;
-    float z;
+        float x;
+        float y;
+        float z;
 };
 
 struct FaceVertex
 {
-    int positionIndex;
-    int normalIndex;
+        int positionIndex;
+        int normalIndex;
 };
 
 uint64_t packVertexKey(int positionIndex, int normalIndex)

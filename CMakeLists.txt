@@ -23,6 +23,9 @@ if(NOT nlohmann_json_FOUND)
 	FetchContent_MakeAvailable(nlohmann_json)
 endif()
 
+find_package(SDL2 REQUIRED)
+find_package(SDL2_mixer REQUIRED)
+
 # Include directories
 include_directories(${GLFW_INCLUDE_DIRS} ${FREETYPE_INCLUDE_DIRS} /usr/include/glm ${CMAKE_SOURCE_DIR}/include)
 
@@ -43,5 +46,5 @@ add_custom_target(copy_assets ALL
 add_dependencies(OpenGLEngine copy_assets)
 
 # Link libraries
-target_link_libraries(OpenGLEngine ${GLFW_LIBRARIES} ${FREETYPE_LIBRARIES} nlohmann_json::nlohmann_json GL m dl pthread)
+target_link_libraries(OpenGLEngine ${GLFW_LIBRARIES} ${FREETYPE_LIBRARIES} SDL2::SDL2 SDL2_mixer::SDL2_mixer nlohmann_json::nlohmann_json GL m dl pthread)
 
