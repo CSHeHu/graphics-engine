@@ -24,4 +24,5 @@ SpacesInParentheses: false
 AlignConsecutiveAssignments: true
 AlignConsecutiveDeclarations: true
 
+IndentAccessModifiers: true
 ContinuationIndentWidth: 4
