@@ -1,6 +1,5 @@
 #include "AssetManager.h"
 
-#include <cstdio>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -75,48 +74,60 @@ FaceVertex parseFaceToken(const std::string& token)
 }
 } // namespace
 
-const std::vector<float>&
-AssetManager::getMeshVertices(const std::string& meshName)
+// Explicit load: parses and caches mesh data, returning a reference into the
+// internal cache.
+const MeshData& AssetManager::loadMesh(const std::string& meshName)
 {
     auto it = meshCache.find(meshName);
     if (it != meshCache.end())
     {
-        return it->second.vertices;
+        return it->second;
     }
 
     auto inserted =
         meshCache.emplace(meshName, loadObjPositionNormal(meshName));
-    return inserted.first->second.vertices;
+    return inserted.first->second;
 }
 
-std::size_t AssetManager::getMeshVertexCount(const std::string& meshName)
+const std::vector<float>&
+AssetManager::getMeshVertices(const std::string& meshName) const
 {
-    return getMeshIndexCount(meshName);
+    auto it = meshCache.find(meshName);
+    if (it == meshCache.end())
+    {
+        throw std::runtime_error("Mesh not loaded: " + meshName);
+    }
+    return it->second.vertices;
+}
+
+std::size_t AssetManager::getMeshVertexCount(const std::string& meshName) const
+{
+    const auto&           verts           = getMeshVertices(meshName);
+    constexpr std::size_t floatsPerVertex = 6; // x,y,z + nx,ny,nz
+    return verts.size() / floatsPerVertex;
 }
 
 const std::vector<unsigned int>&
-AssetManager::getMeshIndices(const std::string& meshName)
+AssetManager::getMeshIndices(const std::string& meshName) const
 {
     auto it = meshCache.find(meshName);
-    if (it != meshCache.end())
+    if (it == meshCache.end())
     {
-        return it->second.indices;
+        throw std::runtime_error("Mesh not loaded: " + meshName);
     }
-
-    auto inserted =
-        meshCache.emplace(meshName, loadObjPositionNormal(meshName));
-    return inserted.first->second.indices;
+    return it->second.indices;
 }
 
-std::size_t AssetManager::getMeshIndexCount(const std::string& meshName)
+std::size_t AssetManager::getMeshIndexCount(const std::string& meshName) const
 {
-    const std::vector<unsigned int>& indices = getMeshIndices(meshName);
+    const auto& indices = getMeshIndices(meshName);
     return indices.size();
 }
 
-std::shared_ptr<Shader> AssetManager::getShader(const std::string& vertexPath,
-                                                const std::string& fragmentPath,
-                                                const std::string& geometryPath)
+std::shared_ptr<Shader>
+AssetManager::loadShader(const std::string& vertexPath,
+                         const std::string& fragmentPath,
+                         const std::string& geometryPath)
 {
     const std::string key =
         vertexPath + "|" + fragmentPath + "|" + geometryPath;
@@ -133,6 +144,21 @@ std::shared_ptr<Shader> AssetManager::getShader(const std::string& vertexPath,
         vertexPath.c_str(), fragmentPath.c_str(), geometryPathCStr);
     shaderCache.emplace(key, shader);
     return shader;
+}
+
+std::shared_ptr<Shader>
+AssetManager::getShader(const std::string& vertexPath,
+                        const std::string& fragmentPath,
+                        const std::string& geometryPath) const
+{
+    const std::string key =
+        vertexPath + "|" + fragmentPath + "|" + geometryPath;
+    auto it = shaderCache.find(key);
+    if (it == shaderCache.end())
+    {
+        throw std::runtime_error("Shader not loaded: " + key);
+    }
+    return it->second;
 }
 
 MeshData AssetManager::loadObjPositionNormal(const std::string& meshName) const

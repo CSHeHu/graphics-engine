@@ -24,21 +24,36 @@ class AssetManager
         AssetManager()  = default;
         ~AssetManager() = default;
 
-        /** @brief Get mesh vertex buffer data by mesh file name. */
-        const std::vector<float>& getMeshVertices(const std::string& meshName);
-        /** @brief Get vertex count for a mesh. */
-        std::size_t getMeshVertexCount(const std::string& meshName);
-        /** @brief Get mesh index buffer data by mesh file name. */
-        const std::vector<unsigned int>&
-        getMeshIndices(const std::string& meshName);
-        /** @brief Get index count for a mesh. */
-        std::size_t getMeshIndexCount(const std::string& meshName);
-
-        /** @brief Get or create a shader program for the provided shader paths.
+        /** @brief Load and return mesh data for `meshName`. This explicitly
+         *  loads (and caches) the mesh; callers should call this before using
+         *  non-mutating getters. */
+        const MeshData& loadMesh(const std::string& meshName);
+        /** @brief Get vertex buffer data for a mesh. Requires the mesh to be
+         *  already loaded via `loadMesh`. Throws if not loaded. */
+        const std::vector<float>&
+        getMeshVertices(const std::string& meshName) const;
+        /** @brief Get vertex count (number of vertices). Requires mesh loaded.
          */
-        std::shared_ptr<Shader> getShader(const std::string& vertexPath,
-                                          const std::string& fragmentPath,
-                                          const std::string& geometryPath = "");
+        std::size_t getMeshVertexCount(const std::string& meshName) const;
+        /** @brief Get index buffer data for a mesh. Requires the mesh to be
+         *  already loaded via `loadMesh`. Throws if not loaded. */
+        const std::vector<unsigned int>&
+        getMeshIndices(const std::string& meshName) const;
+        /** @brief Get index count for a mesh. Requires mesh loaded. */
+        std::size_t getMeshIndexCount(const std::string& meshName) const;
+
+        /** @brief Load and cache a shader program for the provided shader paths
+         *  and return it. */
+        std::shared_ptr<Shader>
+        loadShader(const std::string& vertexPath,
+                   const std::string& fragmentPath,
+                   const std::string& geometryPath = "");
+        /** @brief Retrieve a previously loaded shader. Throws if not loaded.
+         */
+        std::shared_ptr<Shader>
+        getShader(const std::string& vertexPath,
+                  const std::string& fragmentPath,
+                  const std::string& geometryPath = "") const;
 
     private:
         /** @brief Parse OBJ mesh data into position+normal packed vertices. */

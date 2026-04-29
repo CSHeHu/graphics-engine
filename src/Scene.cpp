@@ -68,10 +68,10 @@ bool Scene::initializeRuntimeMaterials()
     {
         std::shared_ptr<RuntimeMaterial> material =
             std::make_shared<RuntimeMaterial>();
-        material->shader     = assets.getShader(materialDef.vertexShaderPath,
-                                                materialDef.fragmentShaderPath,
-                                                materialDef.geometryShaderPath);
-        material->renderMode = materialDef.renderMode;
+        material->shader = assets.loadShader(materialDef.vertexShaderPath,
+                                             materialDef.fragmentShaderPath,
+                                             materialDef.geometryShaderPath);
+        material->renderMode  = materialDef.renderMode;
         material->objectColor = materialDef.objectColor;
 
         runtimeMaterials[materialDef.id] = material;
@@ -94,13 +94,11 @@ bool Scene::initializeRuntimeObjects()
             return false;
         }
 
-        const std::vector<float>& vertices =
-            assets.getMeshVertices(objectDef.meshName);
-        const std::vector<unsigned int>& indices =
-            assets.getMeshIndices(objectDef.meshName);
-        const std::size_t indexCount =
-            assets.getMeshIndexCount(objectDef.meshName);
-        std::shared_ptr<RuntimeMaterial> material = materialIt->second;
+        const MeshData&           mesh = assets.loadMesh(objectDef.meshName);
+        const std::vector<float>& vertices          = mesh.vertices;
+        const std::vector<unsigned int>& indices    = mesh.indices;
+        const std::size_t                indexCount = mesh.indices.size();
+        std::shared_ptr<RuntimeMaterial> material   = materialIt->second;
 
         std::shared_ptr<Object> object = std::make_shared<Object>(
             material->shader, vertices, indices, objectDef.position,
