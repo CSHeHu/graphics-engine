@@ -11,16 +11,16 @@
 #include "Camera.h"
 #include "Object.h"
 #include "SceneDefinition.h"
-#include "SceneDefinitions.h"
 #include "SceneOverlayRenderer.h"
 #include "Shader.h"
 #include "TextManager.h"
 
 Scene::Scene(AssetManager&                    assetManager,
              std::shared_ptr<SceneDefinition> definitionValue,
-             TextManager&                     textManager)
+             TextManager& textManager, RenderingConfig renderingConfigValue)
     : assets(assetManager), textRenderer(textManager),
-      definition(std::move(definitionValue)), lightUniformNameTable{0, {}, {}},
+      definition(std::move(definitionValue)),
+      renderingConfig(renderingConfigValue), lightUniformNameTable{0, {}, {}},
       overlayRenderer(std::make_unique<SceneOverlayRenderer>())
 {
 }
@@ -403,9 +403,7 @@ void Scene::render(const Camera& camera, const glm::mat4& projection,
 {
     // Runtime rendering limits and bindings are centralized in
     // scene_config.json.
-    const RuntimeConfig& runtimeConfig = SceneDefinitions::getRuntimeConfig();
-    const int            maxLightSources =
-        std::max(runtimeConfig.rendering.maxLightSources, 1);
+    const int maxLightSources = std::max(renderingConfig.maxLightSources, 1);
 
     const PerFrameLightUniforms perFrameLightUniforms =
         buildPerFrameLightUniforms(maxLightSources);

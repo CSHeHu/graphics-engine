@@ -10,7 +10,7 @@
 #include "CameraRouteController.h"
 #include "InputManager.h"
 #include "Scene.h"
-#include "SceneDefinitions.h"
+#include "SceneConfigLoader.h"
 #include "TextManager.h"
 
 Application::Application()
@@ -35,8 +35,10 @@ Application::~Application()
 
 bool Application::init()
 {
-    const RuntimeConfig& runtimeConfig = SceneDefinitions::getRuntimeConfig();
-    const WindowConfig&  windowConfig  = SceneDefinitions::getWindowConfig();
+    runtimeConfig   = sceneConfigLoader.getRuntimeConfig();
+    windowConfig    = sceneConfigLoader.getWindowConfig();
+    uiOverlayConfig = sceneConfigLoader.getUIOverlayConfig();
+    sceneCycle      = sceneConfigLoader.getDefaultSceneCycle();
 
     if (!initWindowAndContext(runtimeConfig, windowConfig))
     {
@@ -111,7 +113,7 @@ bool Application::initSystems(const RuntimeConfig& runtimeConfig,
     camera->setMovementSpeed(runtimeConfig.camera.speed);
     camera->setMouseSensitivity(runtimeConfig.camera.sensitivity);
     camera->setZoom(runtimeConfig.camera.zoom);
-    inputManager = std::make_unique<InputManager>();
+    inputManager = std::make_unique<InputManager>(runtimeConfig.input);
     inputManager->registerAsCallbackTarget();
     inputManager->setCamera(camera.get());
     inputManager->setCameraControlEnabled(
@@ -158,24 +160,25 @@ bool Application::initSystems(const RuntimeConfig& runtimeConfig,
     }
 
     // Scene order comes from content config instead of app lifecycle code.
-    if (!scenePlaylist.initialize(SceneDefinitions::getDefaultSceneCycle()))
+    if (!scenePlaylist.initialize(sceneCycle))
     {
         std::cout << "No scenes configured for scene cycle" << std::endl;
         return false;
     }
 
-    assetManager = std::make_unique<AssetManager>();
+    assetManager =
+        std::make_unique<AssetManager>(runtimeConfig.assets.meshesPath);
 
     // Initialize text manager with config
-    const UIOverlayConfig& uiConfig = SceneDefinitions::getUIOverlayConfig();
-    textManager                     = std::make_unique<TextManager>();
-    if (!textManager->init(uiConfig.fontPath, uiConfig.vertexShaderPath,
-                           uiConfig.fragmentShaderPath))
+    textManager = std::make_unique<TextManager>();
+    if (!textManager->init(uiOverlayConfig.fontPath,
+                           uiOverlayConfig.vertexShaderPath,
+                           uiOverlayConfig.fragmentShaderPath))
     {
         std::cout << "Failed to initialize text manager" << std::endl;
         return false;
     }
-    infoOverlayEnabled = uiConfig.enabled;
+    infoOverlayEnabled = uiOverlayConfig.enabled;
 
     return true;
 }
@@ -280,7 +283,6 @@ void Application::renderFrame()
     int framebufferHeight = 0;
     glfwGetFramebufferSize(window.get(), &framebufferWidth, &framebufferHeight);
 
-    const RuntimeConfig& runtimeConfig = SceneDefinitions::getRuntimeConfig();
     const float aspectRatio = (framebufferHeight > 0)
                                   ? static_cast<float>(framebufferWidth) /
                                         static_cast<float>(framebufferHeight)
@@ -299,12 +301,9 @@ void Application::renderFrame()
                                  : 0.0f;
     float sceneElapsedTime = timeState.currentTimeSeconds() -
                              scenePlaylist.activeSceneStartTimeSeconds();
-    const UIOverlayConfig& overlayConfig =
-        SceneDefinitions::getUIOverlayConfig();
-
     scene->update(sceneElapsedTime);
     scene->render(*camera, projection, view, fps, sceneElapsedTime,
-                  overlayConfig, infoOverlayEnabled,
+                  uiOverlayConfig, infoOverlayEnabled,
                   timeState.currentTimeSeconds());
 }
 
@@ -316,7 +315,7 @@ bool Application::loadSceneById(SceneId id)
     }
 
     std::shared_ptr<SceneDefinition> definition;
-    if (!SceneDefinitions::tryCreateSceneDefinition(id, definition))
+    if (!sceneConfigLoader.tryCreateSceneDefinition(id, definition))
     {
         return false;
     }
@@ -334,8 +333,8 @@ bool Application::loadSceneById(SceneId id)
         camera->SetPoseLookAt(startKeyframe.position, startKeyframe.lookAt);
     }
 
-    std::unique_ptr<Scene> nextScene =
-        std::make_unique<Scene>(*assetManager, definition, *textManager);
+    std::unique_ptr<Scene> nextScene = std::make_unique<Scene>(
+        *assetManager, definition, *textManager, runtimeConfig.rendering);
     if (!nextScene->init())
     {
         return false;

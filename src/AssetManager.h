@@ -21,7 +21,7 @@ struct MeshData
 class AssetManager
 {
     public:
-        AssetManager()  = default;
+        explicit AssetManager(std::string meshesPath);
         ~AssetManager() = default;
 
         /** @brief Load and return mesh data for `meshName`. This explicitly
@@ -58,6 +58,8 @@ class AssetManager
     private:
         /** @brief Parse OBJ mesh data into position+normal packed vertices. */
         MeshData loadObjPositionNormal(const std::string& meshName) const;
+
+        std::string meshesPath;
 
         /** Mesh cache keyed by mesh file name. */
         std::unordered_map<std::string, MeshData> meshCache;

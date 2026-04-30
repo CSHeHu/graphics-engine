@@ -4,8 +4,8 @@
 #include <cstddef>
 #include <vector>
 
+#include "SceneConfigLoader.h"
 #include "SceneDefinition.h"
-#include "SceneDefinitions.h"
 
 struct SceneTimelinePosition
 {

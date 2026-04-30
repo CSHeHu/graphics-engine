@@ -3,15 +3,15 @@
 
 #include <glad/glad.h>
 
-#include "SceneDefinitions.h"
-
 InputManager* InputManager::callbackTarget = nullptr;
 
-InputManager::InputManager()
+InputManager::InputManager(const InputConfig& inputConfigValue)
     : lastX(0.0f), lastY(0.0f), firstMouse(true), cameraControlEnabled(true),
       cameraModeToggleLatch(false), infoOverlayToggleLatch(false),
-      pauseToggleLatch(false), stepForwardLatch(false), stepBackwardLatch(false),
-      pendingActions{false, false, false, false, false}, camera(nullptr)
+      pauseToggleLatch(false), stepForwardLatch(false),
+      stepBackwardLatch(false),
+      pendingActions{false, false, false, false, false},
+      inputConfig(inputConfigValue), camera(nullptr)
 {
 }
 
@@ -30,40 +30,45 @@ void InputManager::registerAsCallbackTarget()
 
 void InputManager::processInput(GLFWwindow* window, float deltaTime)
 {
-    const InputConfig& input = SceneDefinitions::getRuntimeConfig().input;
+    const InputConfig& input = inputConfig;
 
     if (glfwGetKey(window, input.keyEscape) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
-    const bool cameraTogglePressed = glfwGetKey(window, input.keyToggleCameraMode) == GLFW_PRESS;
+    const bool cameraTogglePressed =
+        glfwGetKey(window, input.keyToggleCameraMode) == GLFW_PRESS;
     if (cameraTogglePressed && !cameraModeToggleLatch)
     {
         pendingActions.toggleCameraMode = true;
     }
     cameraModeToggleLatch = cameraTogglePressed;
 
-    const bool infoOverlayTogglePressed = glfwGetKey(window, input.keyToggleInfoOverlay) == GLFW_PRESS;
+    const bool infoOverlayTogglePressed =
+        glfwGetKey(window, input.keyToggleInfoOverlay) == GLFW_PRESS;
     if (infoOverlayTogglePressed && !infoOverlayToggleLatch)
     {
         pendingActions.toggleInfoOverlay = true;
     }
     infoOverlayToggleLatch = infoOverlayTogglePressed;
 
-    const bool pauseTogglePressed = glfwGetKey(window, input.keyTogglePause) == GLFW_PRESS;
+    const bool pauseTogglePressed =
+        glfwGetKey(window, input.keyTogglePause) == GLFW_PRESS;
     if (pauseTogglePressed && !pauseToggleLatch)
     {
         pendingActions.togglePause = true;
     }
     pauseToggleLatch = pauseTogglePressed;
 
-    const bool stepForwardPressed = glfwGetKey(window, input.keyStepTimeForward) == GLFW_PRESS;
+    const bool stepForwardPressed =
+        glfwGetKey(window, input.keyStepTimeForward) == GLFW_PRESS;
     if (stepForwardPressed && !stepForwardLatch)
     {
         pendingActions.stepTimeForward = true;
     }
     stepForwardLatch = stepForwardPressed;
 
-    const bool stepBackwardPressed = glfwGetKey(window, input.keyStepTimeBackward) == GLFW_PRESS;
+    const bool stepBackwardPressed =
+        glfwGetKey(window, input.keyStepTimeBackward) == GLFW_PRESS;
     if (stepBackwardPressed && !stepBackwardLatch)
     {
         pendingActions.stepTimeBackward = true;
@@ -92,8 +97,9 @@ void InputManager::framebufferSizeCallback(GLFWwindow* window, int width,
                                            int height)
 {
     (void)window;
-    // make sure the viewport matches the new window dimensions; note that width and
-    // height will be significantly larger than specified on retina displays.
+    // make sure the viewport matches the new window dimensions; note that width
+    // and height will be significantly larger than specified on retina
+    // displays.
     glViewport(0, 0, width, height);
 }
 
@@ -106,7 +112,8 @@ void InputManager::mouseCallback(GLFWwindow* window, double xposIn,
         return;
     }
 
-    if (!callbackTarget->cameraControlEnabled || callbackTarget->camera == nullptr)
+    if (!callbackTarget->cameraControlEnabled ||
+        callbackTarget->camera == nullptr)
     {
         return;
     }
@@ -116,13 +123,14 @@ void InputManager::mouseCallback(GLFWwindow* window, double xposIn,
 
     if (callbackTarget->firstMouse)
     {
-        callbackTarget->lastX = xpos;
-        callbackTarget->lastY = ypos;
+        callbackTarget->lastX      = xpos;
+        callbackTarget->lastY      = ypos;
         callbackTarget->firstMouse = false;
     }
 
     float xoffset = xpos - callbackTarget->lastX;
-    float yoffset = callbackTarget->lastY - ypos; // reversed since y-coordinates go from bottom to top
+    float yoffset = callbackTarget->lastY -
+                    ypos; // reversed since y-coordinates go from bottom to top
 
     callbackTarget->lastX = xpos;
     callbackTarget->lastY = ypos;
@@ -138,13 +146,13 @@ void InputManager::setCamera(Camera* cameraPtr)
 void InputManager::setCameraControlEnabled(bool enabled)
 {
     cameraControlEnabled = enabled;
-    firstMouse = true;
+    firstMouse           = true;
 }
 
 InputActions InputManager::consumeActions()
 {
     const InputActions actions = pendingActions;
-    pendingActions = {false, false, false, false, false};
+    pendingActions             = {false, false, false, false, false};
     return actions;
 }
 
@@ -158,7 +166,8 @@ void InputManager::scrollCallback(GLFWwindow* window, double xoffset,
         return;
     }
 
-    if (!callbackTarget->cameraControlEnabled || callbackTarget->camera == nullptr)
+    if (!callbackTarget->cameraControlEnabled ||
+        callbackTarget->camera == nullptr)
     {
         return;
     }

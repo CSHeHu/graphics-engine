@@ -5,8 +5,8 @@
 #include <sstream>
 #include <stdexcept>
 #include <unordered_map>
+#include <utility>
 
-#include "SceneDefinitions.h"
 #include "Shader.h"
 
 namespace
@@ -76,6 +76,11 @@ FaceVertex parseFaceToken(const std::string& token)
 
 // Explicit load: parses and caches mesh data, returning a reference into the
 // internal cache.
+AssetManager::AssetManager(std::string meshesPathValue)
+    : meshesPath(std::move(meshesPathValue))
+{
+}
+
 const MeshData& AssetManager::loadMesh(const std::string& meshName)
 {
     auto it = meshCache.find(meshName);
@@ -163,8 +168,6 @@ AssetManager::getShader(const std::string& vertexPath,
 
 MeshData AssetManager::loadObjPositionNormal(const std::string& meshName) const
 {
-    const std::string& meshesPath =
-        SceneDefinitions::getRuntimeConfig().assets.meshesPath;
     const std::vector<std::string> candidatePaths = {
         meshesPath + "/" + meshName,
         "../" + meshesPath + "/" + meshName,
