@@ -1,5 +1,6 @@
 #include "AssetManager.h"
 
+#include <cstdio>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -9,28 +10,13 @@
 
 #include "Shader.h"
 
-namespace
-{
-struct Vec3
-{
-        float x;
-        float y;
-        float z;
-};
-
-struct FaceVertex
-{
-        int positionIndex;
-        int normalIndex;
-};
-
-uint64_t packVertexKey(int positionIndex, int normalIndex)
+uint64_t AssetManager::packVertexKey(int positionIndex, int normalIndex)
 {
     return (static_cast<uint64_t>(static_cast<uint32_t>(positionIndex)) << 32) |
            static_cast<uint32_t>(normalIndex);
 }
 
-int resolveIndex(int index, int size)
+int AssetManager::resolveIndex(int index, int size)
 {
     if (index > 0)
     {
@@ -43,7 +29,7 @@ int resolveIndex(int index, int size)
     return 0;
 }
 
-FaceVertex parseFaceToken(const std::string& token)
+AssetManager::FaceVertex AssetManager::parseFaceToken(const std::string& token)
 {
     FaceVertex fv{0, 0};
 
@@ -72,7 +58,17 @@ FaceVertex parseFaceToken(const std::string& token)
 
     throw std::runtime_error("Unsupported face token: " + token);
 }
-} // namespace
+
+const MeshData&
+AssetManager::getLoadedMeshOrThrow(const std::string& meshName) const
+{
+    auto it = meshCache.find(meshName);
+    if (it == meshCache.end())
+    {
+        throw std::runtime_error("Mesh not loaded: " + meshName);
+    }
+    return it->second;
+}
 
 // Explicit load: parses and caches mesh data, returning a reference into the
 // internal cache.
@@ -97,12 +93,7 @@ const MeshData& AssetManager::loadMesh(const std::string& meshName)
 const std::vector<float>&
 AssetManager::getMeshVertices(const std::string& meshName) const
 {
-    auto it = meshCache.find(meshName);
-    if (it == meshCache.end())
-    {
-        throw std::runtime_error("Mesh not loaded: " + meshName);
-    }
-    return it->second.vertices;
+    return getLoadedMeshOrThrow(meshName).vertices;
 }
 
 std::size_t AssetManager::getMeshVertexCount(const std::string& meshName) const
@@ -115,12 +106,7 @@ std::size_t AssetManager::getMeshVertexCount(const std::string& meshName) const
 const std::vector<unsigned int>&
 AssetManager::getMeshIndices(const std::string& meshName) const
 {
-    auto it = meshCache.find(meshName);
-    if (it == meshCache.end())
-    {
-        throw std::runtime_error("Mesh not loaded: " + meshName);
-    }
-    return it->second.indices;
+    return getLoadedMeshOrThrow(meshName).indices;
 }
 
 std::size_t AssetManager::getMeshIndexCount(const std::string& meshName) const
