@@ -16,6 +16,8 @@ class Shader;
 class AssetManager;
 class TextManager;
 class SceneOverlayRenderer;
+class AudioManager;
+struct Mix_Music;
 
 /**
  * @brief Runtime scene container that updates behaviors and renders scene
@@ -28,7 +30,8 @@ class Scene
          * managers. */
         Scene(AssetManager&                    assetManager,
               std::shared_ptr<SceneDefinition> definition,
-              TextManager& textManager, RenderingConfig renderingConfig);
+              TextManager& textManager, RenderingConfig renderingConfig,
+              AudioManager& audioManager);
         /** @brief Destroy scene runtime resources. */
         ~Scene();
 
@@ -137,8 +140,10 @@ class Scene
 
         AssetManager&                    assets;
         TextManager&                     textRenderer;
+        AudioManager&                    audio;
         std::shared_ptr<SceneDefinition> definition;
         RenderingConfig                  renderingConfig;
+        std::shared_ptr<Mix_Music>       sceneMusic;
 
         /** Runtime material map keyed by material id. */
         std::unordered_map<std::string, std::shared_ptr<RuntimeMaterial>>

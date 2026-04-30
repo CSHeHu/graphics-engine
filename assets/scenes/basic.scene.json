@@ -6,25 +6,61 @@
     "keyframes": [
       {
         "t": 0.0,
-        "position": [0.0, 2.0, 6.0],
-        "lookAt": [0.0, 0.5, -6.0]
+        "position": [
+          0.0,
+          2.0,
+          6.0
+        ],
+        "lookAt": [
+          0.0,
+          0.5,
+          -6.0
+        ]
       },
       {
         "t": 10.0,
-        "position": [5.0, 3.0, 0.0],
-        "lookAt": [0.0, 0.5, -6.0]
+        "position": [
+          5.0,
+          3.0,
+          0.0
+        ],
+        "lookAt": [
+          0.0,
+          0.5,
+          -6.0
+        ]
       },
       {
         "t": 20.0,
-        "position": [0.0, 2.5, -10.0],
-        "lookAt": [0.0, 1.0, -6.0]
+        "position": [
+          0.0,
+          2.5,
+          -10.0
+        ],
+        "lookAt": [
+          0.0,
+          1.0,
+          -6.0
+        ]
       },
       {
         "t": 30.0,
-        "position": [-5.0, 3.0, 0.0],
-        "lookAt": [0.0, 0.5, -6.0]
+        "position": [
+          -5.0,
+          3.0,
+          0.0
+        ],
+        "lookAt": [
+          0.0,
+          0.5,
+          -6.0
+        ]
       }
     ]
+  },
+  "audio": {
+    "musicPath": "assets/audio/babydoll.mp3",
+    "loops": -1
   },
   "materials": [
     {
@@ -33,7 +69,11 @@
       "fragmentShaderPath": "assets/shaders/lightSource.fs",
       "geometryShaderPath": "",
       "renderMode": "LightSource",
-      "objectColor": [1.0, 1.0, 1.0]
+      "objectColor": [
+        1.0,
+        1.0,
+        1.0
+      ]
     },
     {
       "id": "litOrangeMaterial",
@@ -41,7 +81,11 @@
       "fragmentShaderPath": "assets/shaders/lightTarget.fs",
       "geometryShaderPath": "",
       "renderMode": "Lit",
-      "objectColor": [1.0, 0.5, 0.31]
+      "objectColor": [
+        1.0,
+        0.5,
+        0.31
+      ]
     },
     {
       "id": "litGroundMaterial",
@@ -49,7 +93,11 @@
       "fragmentShaderPath": "assets/shaders/lightTarget.fs",
       "geometryShaderPath": "",
       "renderMode": "Lit",
-      "objectColor": [0.2, 0.7, 0.2]
+      "objectColor": [
+        0.2,
+        0.7,
+        0.2
+      ]
     },
     {
       "id": "litTreeMaterial",
@@ -57,7 +105,11 @@
       "fragmentShaderPath": "assets/shaders/lightTarget.fs",
       "geometryShaderPath": "",
       "renderMode": "Lit",
-      "objectColor": [0.12, 0.65, 0.1]
+      "objectColor": [
+        0.12,
+        0.65,
+        0.1
+      ]
     }
   ],
   "objects": [
@@ -66,14 +118,26 @@
       "role": "LightSource",
       "meshName": "cube.obj",
       "layout": "PositionNormal",
-      "position": [0.0, 2.0, -4.0],
+      "position": [
+        0.0,
+        2.0,
+        -4.0
+      ],
       "materialId": "lightSourceMaterial",
       "castsShadow": false,
       "behavior": "Oscillate",
       "behaviorSpeed": 0.9,
-      "behaviorAxis": [0.0, 1.0, 0.0],
+      "behaviorAxis": [
+        0.0,
+        1.0,
+        0.0
+      ],
       "behaviorAmplitude": 0.9,
-      "lightColor": [1.0, 0.95, 0.85],
+      "lightColor": [
+        1.0,
+        0.95,
+        0.85
+      ],
       "lightIntensity": 1.25
     },
     {
@@ -81,13 +145,25 @@
       "role": "LightTarget",
       "meshName": "cube.obj",
       "layout": "PositionNormal",
-      "position": [1.0, 0.8, -4.4],
-      "scale": [0.25, 0.25, 0.25],
+      "position": [
+        1.0,
+        0.8,
+        -4.4
+      ],
+      "scale": [
+        0.25,
+        0.25,
+        0.25
+      ],
       "materialId": "litOrangeMaterial",
       "castsShadow": true,
       "behavior": "None",
       "behaviorSpeed": 0.0,
-      "behaviorAxis": [0.0, 1.0, 0.0],
+      "behaviorAxis": [
+        0.0,
+        1.0,
+        0.0
+      ],
       "behaviorAmplitude": 0.0
     },
     {
@@ -95,13 +171,25 @@
       "role": "LightTarget",
       "meshName": "cube.obj",
       "layout": "PositionNormal",
-      "position": [-1.0, 0.8, -3.7],
-      "scale": [0.25, 0.25, 0.25],
+      "position": [
+        -1.0,
+        0.8,
+        -3.7
+      ],
+      "scale": [
+        0.25,
+        0.25,
+        0.25
+      ],
       "materialId": "litOrangeMaterial",
       "castsShadow": true,
       "behavior": "None",
       "behaviorSpeed": 0.0,
-      "behaviorAxis": [0.0, 1.0, 0.0],
+      "behaviorAxis": [
+        0.0,
+        1.0,
+        0.0
+      ],
       "behaviorAmplitude": 0.0
     },
     {
@@ -109,12 +197,20 @@
       "role": "LightTarget",
       "meshName": "cube.obj",
       "layout": "PositionNormal",
-      "position": [-8, 2.0, -6.0],
+      "position": [
+        -8,
+        2.0,
+        -6.0
+      ],
       "materialId": "litOrangeMaterial",
       "castsShadow": true,
       "behavior": "Spin",
       "behaviorSpeed": 0.34906585,
-      "behaviorAxis": [1.0, 0.0, 1.0],
+      "behaviorAxis": [
+        1.0,
+        0.0,
+        1.0
+      ],
       "behaviorAmplitude": 0.0
     },
     {
@@ -122,12 +218,20 @@
       "role": "Ground",
       "meshName": "ground.obj",
       "layout": "PositionNormal",
-      "position": [0.0, 0.0, 0.0],
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ],
       "materialId": "litGroundMaterial",
       "castsShadow": false,
       "behavior": "None",
       "behaviorSpeed": 0.0,
-      "behaviorAxis": [0.0, 1.0, 0.0],
+      "behaviorAxis": [
+        0.0,
+        1.0,
+        0.0
+      ],
       "behaviorAmplitude": 0.0
     },
     {
@@ -135,13 +239,25 @@
       "role": "None",
       "meshName": "Tree.obj",
       "layout": "PositionNormal",
-      "position": [-3.0, 0.01, -6.0],
-      "scale": [0.12, 0.12, 0.12],
+      "position": [
+        -3.0,
+        0.01,
+        -6.0
+      ],
+      "scale": [
+        0.12,
+        0.12,
+        0.12
+      ],
       "materialId": "litTreeMaterial",
       "castsShadow": false,
       "behavior": "None",
       "behaviorSpeed": 0.0,
-      "behaviorAxis": [0.0, 1.0, 0.0],
+      "behaviorAxis": [
+        0.0,
+        1.0,
+        0.0
+      ],
       "behaviorAmplitude": 0.0
     }
   ],

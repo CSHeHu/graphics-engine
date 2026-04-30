@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "AssetManager.h"
+#include "AudioManager.h"
 #include "Camera.h"
 #include "Object.h"
 #include "SceneDefinition.h"
@@ -17,8 +18,9 @@
 
 Scene::Scene(AssetManager&                    assetManager,
              std::shared_ptr<SceneDefinition> definitionValue,
-             TextManager& textManager, RenderingConfig renderingConfigValue)
-    : assets(assetManager), textRenderer(textManager),
+             TextManager& textManager, RenderingConfig renderingConfigValue,
+             AudioManager& audioManager)
+    : assets(assetManager), textRenderer(textManager), audio(audioManager),
       definition(std::move(definitionValue)),
       renderingConfig(renderingConfigValue), lightUniformNameTable{0, {}, {}},
       overlayRenderer(std::make_unique<SceneOverlayRenderer>())
@@ -31,6 +33,7 @@ Scene::~Scene()
     runtimeObjects.clear();
     runtimeObjectOrder.clear();
     activeLightSources.clear();
+    sceneMusic.reset();
 }
 
 bool Scene::init()
@@ -57,6 +60,21 @@ bool Scene::init()
             << "Scene definition must include an object with role: LightSource"
             << std::endl;
         return false;
+    }
+
+    if (!definition->audio.musicPath.empty())
+    {
+        sceneMusic = assets.loadAudio(definition->audio.musicPath);
+        if (audio.play(sceneMusic, definition->audio.loops) != 0)
+        {
+            std::cout << "Failed to start scene music: "
+                      << definition->audio.musicPath << std::endl;
+            return false;
+        }
+    }
+    else
+    {
+        audio.stop();
     }
 
     return true;

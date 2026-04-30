@@ -137,6 +137,13 @@ SceneConfigLoader::parseSceneDefinition(const std::string& sceneFilePath)
         }
     }
 
+    if (root.contains("audio"))
+    {
+        const nlohmann::json& audioJson = root.at("audio");
+        definition.audio.musicPath      = audioJson.value("musicPath", "");
+        definition.audio.loops          = audioJson.value("loops", -1);
+    }
+
     for (const nlohmann::json& materialJson : root.at("materials"))
     {
         MaterialDefinition material;

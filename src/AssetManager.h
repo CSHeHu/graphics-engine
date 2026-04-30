@@ -8,6 +8,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include <SDL_mixer.h>
+
 class Shader;
 
 struct MeshData
@@ -85,6 +87,13 @@ class AssetManager
                   const std::string& fragmentPath,
                   const std::string& geometryPath = "") const;
 
+        /**
+         * @brief Load and cache a music track by file path.
+         * @param file Music file path.
+         * @return Shared music instance from cache.
+         */
+        std::shared_ptr<Mix_Music> loadAudio(const std::string& file);
+
     private:
         struct Vec3
         {
@@ -143,6 +152,8 @@ class AssetManager
         std::unordered_map<std::string, MeshData> meshCache;
         /** Shader cache keyed by combined shader path signature. */
         std::unordered_map<std::string, std::shared_ptr<Shader>> shaderCache;
+
+        std::unordered_map<std::string, std::shared_ptr<Mix_Music>> audioCache;
 };
 
 #endif // ASSETMANAGER_H

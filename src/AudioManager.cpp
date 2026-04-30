@@ -1,5 +1,6 @@
 #include "AudioManager.h"
 #include <SDL_mixer.h>
+#include <cstdio>
 
 AudioManager::AudioManager()
 {
@@ -7,8 +8,13 @@ AudioManager::AudioManager()
 
 AudioManager::~AudioManager()
 {
-    Mix_CloseAudio();
-    SDL_Quit();
+    if (initialized)
+    {
+        Mix_HaltMusic();
+        Mix_CloseAudio();
+        Mix_Quit();
+        SDL_Quit();
+    }
 }
 
 int AudioManager::init()
@@ -25,23 +31,25 @@ int AudioManager::init()
     {
         printf("Failed to initialize SDL_mixer! SDL_mixer Error: %s\n",
                Mix_GetError());
+        SDL_Quit();
         return -1;
     }
+    initialized = true;
     return 0;
 }
 
-std::shared_ptr<Mix_Music> AudioManager::load(const char* file)
+int AudioManager::play(const std::shared_ptr<Mix_Music>& music, int loops)
 {
-    Mix_Music* music = Mix_LoadMUS(file);
-    if (music == NULL)
+    if (!initialized)
     {
-        printf("Failed to load music! SDL_mixer Error: %s\n", Mix_GetError());
+        return -1;
     }
 
-    return std::shared_ptr<Mix_Music>(music, Mix_FreeMusic);
-}
-int AudioManager::play(const std::shared_ptr<Mix_Music> music, int loops)
-{
+    if (!music)
+    {
+        printf("Failed to play music: null music handle\n");
+        return -1;
+    }
 
     int isPlaying = Mix_PlayMusic(music.get(), loops);
     if (isPlaying != 0)
@@ -51,4 +59,12 @@ int AudioManager::play(const std::shared_ptr<Mix_Music> music, int loops)
     }
 
     return 0;
+}
+
+void AudioManager::stop()
+{
+    if (initialized)
+    {
+        Mix_HaltMusic();
+    }
 }

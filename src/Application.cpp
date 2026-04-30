@@ -17,7 +17,8 @@ Application::Application()
     : window(nullptr, glfwDestroyWindow), camera(nullptr),
       scriptedCameraEnabled(false), activeSceneDefinition(), scene(nullptr),
       assetManager(nullptr), textManager(nullptr), inputManager(nullptr),
-      infoOverlayEnabled(false), cameraRouteController(nullptr)
+      infoOverlayEnabled(false), cameraRouteController(nullptr),
+      audioManager(nullptr)
 {
 }
 
@@ -180,6 +181,13 @@ bool Application::initSystems(const RuntimeConfig& runtimeConfig,
     }
     infoOverlayEnabled = uiOverlayConfig.enabled;
 
+    audioManager = std::make_unique<AudioManager>();
+    if (audioManager->init() != 0)
+    {
+        std::cout << "Failed to initialize audio manager" << std::endl;
+        return false;
+    }
+
     return true;
 }
 
@@ -333,8 +341,9 @@ bool Application::loadSceneById(SceneId id)
         camera->SetPoseLookAt(startKeyframe.position, startKeyframe.lookAt);
     }
 
-    std::unique_ptr<Scene> nextScene = std::make_unique<Scene>(
-        *assetManager, definition, *textManager, runtimeConfig.rendering);
+    std::unique_ptr<Scene> nextScene =
+        std::make_unique<Scene>(*assetManager, definition, *textManager,
+                                runtimeConfig.rendering, *audioManager);
     if (!nextScene->init())
     {
         return false;

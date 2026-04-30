@@ -10,11 +10,12 @@ class AudioManager
     public:
         AudioManager();
         ~AudioManager();
-        int                        init();
-        std::shared_ptr<Mix_Music> load(const char* file);
-        int play(const std::shared_ptr<Mix_Music> music, int loops = -1);
+        int  init();
+        int  play(const std::shared_ptr<Mix_Music>& music, int loops = -1);
+        void stop();
 
     private:
+        bool initialized = false;
 };
 
 #endif // !AUDIOMANAGER_H

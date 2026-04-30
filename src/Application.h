@@ -3,10 +3,11 @@
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
-#include <cstddef>
 #include <glm.hpp>
 #include <memory>
+#include <vector>
 
+#include "AudioManager.h"
 #include "SceneConfigLoader.h"
 #include "SceneDefinition.h"
 #include "ScenePlaylist.h"
@@ -42,12 +43,12 @@ class Application
 
         WindowHandle window;
 
-        SceneConfigLoader            sceneConfigLoader;
-        RuntimeConfig                runtimeConfig;
-        WindowConfig                 windowConfig;
-        UIOverlayConfig              uiOverlayConfig;
-        std::vector<SceneCycleEntry> sceneCycle;
-
+        SceneConfigLoader                sceneConfigLoader;
+        RuntimeConfig                    runtimeConfig;
+        WindowConfig                     windowConfig;
+        UIOverlayConfig                  uiOverlayConfig;
+        std::vector<SceneCycleEntry>     sceneCycle;
+        std::unique_ptr<AudioManager>    audioManager;
         std::unique_ptr<Camera>          camera;
         bool                             scriptedCameraEnabled;
         std::shared_ptr<SceneDefinition> activeSceneDefinition;

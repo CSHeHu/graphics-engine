@@ -115,6 +115,25 @@ std::size_t AssetManager::getMeshIndexCount(const std::string& meshName) const
     return indices.size();
 }
 
+std::shared_ptr<Mix_Music> AssetManager::loadAudio(const std::string& file)
+{
+    auto it = audioCache.find(file);
+    if (it != audioCache.end())
+    {
+        return it->second;
+    }
+
+    Mix_Music* music = Mix_LoadMUS(file.c_str());
+    if (music == nullptr)
+    {
+        throw std::runtime_error("Failed to load audio: " + file);
+    }
+
+    std::shared_ptr<Mix_Music> cachedMusic(music, Mix_FreeMusic);
+    audioCache.emplace(file, cachedMusic);
+    return cachedMusic;
+}
+
 std::shared_ptr<Shader>
 AssetManager::loadShader(const std::string& vertexPath,
                          const std::string& fragmentPath,
