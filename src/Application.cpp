@@ -230,6 +230,7 @@ void Application::run()
         if (actions.togglePause)
         {
             timeState.setPaused(!timeState.isPaused());
+            audioManager->pause();
         }
 
         if (actions.stepTimeForward)

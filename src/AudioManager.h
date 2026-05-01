@@ -13,6 +13,7 @@ class AudioManager
         int  init();
         int  play(const std::shared_ptr<Mix_Music>& music, int loops = -1);
         void stop();
+        void pause();
 
     private:
         bool initialized = false;

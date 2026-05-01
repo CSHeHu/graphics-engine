@@ -68,3 +68,18 @@ void AudioManager::stop()
         Mix_HaltMusic();
     }
 }
+
+void AudioManager::pause()
+{
+    if (initialized)
+    {
+        if (Mix_PausedMusic())
+        {
+            Mix_ResumeMusic();
+        }
+        else
+        {
+            Mix_PauseMusic();
+        }
+    }
+}
