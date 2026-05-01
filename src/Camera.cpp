@@ -3,6 +3,25 @@
 #include <algorithm>
 #include <cmath>
 
+// constructor with vectors
+Camera::Camera(glm::vec3 position, glm::vec3 up, float yaw, float pitch)
+    : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(2.5f),
+      MouseSensitivity(0.1f), Zoom(45.0f), Position(position), WorldUp(up),
+      Yaw(yaw), Pitch(pitch)
+{
+    updateCameraVectors();
+}
+// constructor with scalar values
+Camera::Camera(float posX, float posY, float posZ, float upX, float upY,
+               float upZ, float yaw, float pitch)
+    : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(2.5f),
+      MouseSensitivity(0.1f), Zoom(45.0f),
+      Position(glm::vec3(posX, posY, posZ)), WorldUp(glm::vec3(upX, upY, upZ)),
+      Yaw(yaw), Pitch(pitch)
+{
+    updateCameraVectors();
+}
+
 glm::mat4 Camera::GetViewMatrix()
 {
     return glm::lookAt(Position, Position + Front, Up);
@@ -25,7 +44,8 @@ void Camera::ProcessKeyboard(Camera_Movement direction, float deltaTime)
         Position -= Up * velocity;
 }
 
-void Camera::ProcessMouseMovement(float xoffset, float yoffset, GLboolean constrainPitch)
+void Camera::ProcessMouseMovement(float xoffset, float yoffset,
+                                  GLboolean constrainPitch)
 {
     xoffset *= MouseSensitivity;
     yoffset *= MouseSensitivity;
@@ -55,7 +75,8 @@ void Camera::ProcessMouseScroll(float yoffset)
         Zoom = 45.0f;
 }
 
-void Camera::SetPoseLookAt(const glm::vec3 &position, const glm::vec3 &lookAtTarget)
+void Camera::SetPoseLookAt(const glm::vec3& position,
+                           const glm::vec3& lookAtTarget)
 {
     Position = position;
 
@@ -66,7 +87,7 @@ void Camera::SetPoseLookAt(const glm::vec3 &position, const glm::vec3 &lookAtTar
     }
 
     const glm::vec3 normalized = glm::normalize(direction);
-    Yaw = glm::degrees(std::atan2(normalized.z, normalized.x));
+    Yaw   = glm::degrees(std::atan2(normalized.z, normalized.x));
     Pitch = glm::degrees(std::asin(std::clamp(normalized.y, -1.0f, 1.0f)));
     updateCameraVectors();
 }
@@ -78,9 +99,12 @@ void Camera::updateCameraVectors()
     front.x = cos(glm::radians(Yaw)) * cos(glm::radians(Pitch));
     front.y = sin(glm::radians(Pitch));
     front.z = sin(glm::radians(Yaw)) * cos(glm::radians(Pitch));
-    Front = glm::normalize(front);
+    Front   = glm::normalize(front);
     // also re-calculate the Right and Up vector
-    Right = glm::normalize(glm::cross(Front, WorldUp)); // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
+    Right = glm::normalize(glm::cross(
+        Front, WorldUp)); // normalize the vectors, because their length gets
+                          // closer to 0 the more you look up or down which
+                          // results in slower movement.
     Up = glm::normalize(glm::cross(Right, Front));
 }
 
@@ -108,5 +132,3 @@ void Camera::setZoom(float zoom)
 {
     Zoom = zoom;
 }
-
-
