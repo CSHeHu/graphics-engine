@@ -11,9 +11,11 @@ class AudioManager
         AudioManager();
         ~AudioManager();
         int  init();
-        int  play(const std::shared_ptr<Mix_Music>& music, int loops = -1);
-        void stop();
-        void pause();
+            int  play(const std::shared_ptr<Mix_Music>& music, int loops = -1);
+            void stop();
+            void pause(); // Make pause non-toggle
+            void resume();
+            int  setPosition(double seconds);
 
     private:
         bool initialized = false;

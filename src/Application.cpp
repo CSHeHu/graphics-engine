@@ -229,18 +229,48 @@ void Application::run()
 
         if (actions.togglePause)
         {
-            timeState.setPaused(!timeState.isPaused());
-            audioManager->pause();
+            const bool newPaused = !timeState.isPaused();
+            timeState.setPaused(newPaused);
+            if (newPaused)
+            {
+                if (audioManager)
+                    audioManager->pause();
+            }
+            else
+            {
+                // When unpausing, sync music to the current scene timeline
+                const float sceneElapsed =
+                    timeState.currentTimeSeconds() -
+                    scenePlaylist.activeSceneStartTimeSeconds();
+                if (audioManager)
+                {
+                    audioManager->setPosition(
+                        static_cast<double>(sceneElapsed));
+                    audioManager->resume();
+                }
+            }
         }
 
         if (actions.stepTimeForward)
         {
             timeState.stepForward(TIME_STEP_SECONDS);
+            if (audioManager)
+            {
+                audioManager->setPosition(static_cast<double>(
+                    timeState.currentTimeSeconds() -
+                    scenePlaylist.activeSceneStartTimeSeconds()));
+            }
         }
 
         if (actions.stepTimeBackward)
         {
             timeState.stepBackward(TIME_STEP_SECONDS);
+            if (audioManager)
+            {
+                audioManager->setPosition(static_cast<double>(
+                    timeState.currentTimeSeconds() -
+                    scenePlaylist.activeSceneStartTimeSeconds()));
+            }
         }
 
         timeState.advance(realDeltaSeconds);

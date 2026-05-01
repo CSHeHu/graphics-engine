@@ -73,13 +73,31 @@ void AudioManager::pause()
 {
     if (initialized)
     {
-        if (Mix_PausedMusic())
-        {
-            Mix_ResumeMusic();
-        }
-        else
-        {
-            Mix_PauseMusic();
-        }
+        Mix_PauseMusic();
     }
+}
+
+void AudioManager::resume()
+{
+    if (initialized)
+    {
+        Mix_ResumeMusic();
+    }
+}
+
+int AudioManager::setPosition(double seconds)
+{
+    if (!initialized)
+    {
+        return -1;
+    }
+
+    // Mix_SetMusicPosition returns 0 on success, -1 on error.
+    int res = Mix_SetMusicPosition(seconds);
+    if (res != 0)
+    {
+        printf("Failed to set music position: %s\n", Mix_GetError());
+        return -1;
+    }
+    return 0;
 }
