@@ -67,7 +67,7 @@ AssetManager::getLoadedMeshOrThrow(const std::string& meshName) const
     {
         throw std::runtime_error("Mesh not loaded: " + meshName);
     }
-    return it->second;
+    return *it->second;
 }
 
 // Explicit load: parses and caches mesh data, returning a reference into the
@@ -82,12 +82,12 @@ const MeshData& AssetManager::loadMesh(const std::string& meshName)
     auto it = meshCache.find(meshName);
     if (it != meshCache.end())
     {
-        return it->second;
+        return *it->second;
     }
 
-    auto inserted =
-        meshCache.emplace(meshName, loadObjPositionNormal(meshName));
-    return inserted.first->second;
+    auto inserted = meshCache.emplace(
+        meshName, std::make_shared<MeshData>(loadObjPositionNormal(meshName)));
+    return *inserted.first->second;
 }
 
 const std::vector<float>&

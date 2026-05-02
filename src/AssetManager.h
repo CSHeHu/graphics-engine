@@ -149,7 +149,7 @@ class AssetManager
         std::string meshesPath;
 
         /** Mesh cache keyed by mesh file name. */
-        std::unordered_map<std::string, MeshData> meshCache;
+        std::unordered_map<std::string, std::shared_ptr<MeshData>> meshCache;
         /** Shader cache keyed by combined shader path signature. */
         std::unordered_map<std::string, std::shared_ptr<Shader>> shaderCache;
 
