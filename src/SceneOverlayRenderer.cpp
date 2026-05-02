@@ -4,7 +4,7 @@
 
 #include "TextManager.h"
 
-void SceneOverlayRenderer::render(TextManager& textRenderer,
+void SceneOverlayRenderer::render(TextManager&           textRenderer,
                                   const SceneDefinition& definition,
                                   const UIOverlayConfig& overlayConfig,
                                   bool infoOverlayEnabled, float fps,
@@ -27,9 +27,8 @@ void SceneOverlayRenderer::render(TextManager& textRenderer,
 
     for (const std::string& stat : overlayConfig.stats)
     {
-        const std::string statLine =
-            buildStatLine(stat, definition, fps, sceneElapsedTime,
-                          currentTimeSeconds);
+        const std::string statLine = buildStatLine(
+            stat, definition, fps, sceneElapsedTime, currentTimeSeconds);
         if (statLine.empty())
         {
             continue;
@@ -91,6 +90,11 @@ std::string SceneOverlayRenderer::buildStatLine(
             statLine += " " + material.id;
         }
         return statLine;
+    }
+
+    if (stat == "audio")
+    {
+        return "Audio: " + definition.audio.musicPath;
     }
 
     return std::string();
