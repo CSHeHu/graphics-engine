@@ -142,6 +142,8 @@ SceneConfigLoader::parseSceneDefinition(const std::string& sceneFilePath)
         const nlohmann::json& audioJson = root.at("audio");
         definition.audio.musicPath      = audioJson.value("musicPath", "");
         definition.audio.loops          = audioJson.value("loops", -1);
+        definition.audio.continueOnSceneChange =
+            audioJson.value("continueOnSceneChange", false);
     }
 
     for (const nlohmann::json& materialJson : root.at("materials"))

@@ -60,7 +60,8 @@
   },
   "audio": {
     "musicPath": "assets/audio/babydoll.mp3",
-    "loops": -1
+    "loops": -1,
+    "continueOnSceneChange": false
   },
   "materials": [
     {

@@ -62,7 +62,11 @@ bool Scene::init()
         return false;
     }
 
-    if (!definition->audio.musicPath.empty())
+    if (definition->audio.musicPath.empty())
+    {
+        audio.stop();
+    }
+    else if (!definition->audio.continueOnSceneChange)
     {
         sceneMusic = assets.loadAudio(definition->audio.musicPath);
         if (audio.play(sceneMusic, definition->audio.loops) != 0)
@@ -71,10 +75,6 @@ bool Scene::init()
                       << definition->audio.musicPath << std::endl;
             return false;
         }
-    }
-    else
-    {
-        audio.stop();
     }
 
     return true;

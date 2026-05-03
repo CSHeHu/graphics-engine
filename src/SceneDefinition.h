@@ -127,7 +127,8 @@ struct TextDefinition
 struct SceneAudioDefinition
 {
         std::string musicPath;
-        int         loops = -1;
+        int         loops                 = -1;
+        bool        continueOnSceneChange = false;
 };
 
 struct UIOverlayConfig
