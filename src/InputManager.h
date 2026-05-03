@@ -19,6 +19,7 @@ struct InputActions
         bool stepTimeForward;
         /** Step simulation time backward by fixed increment. */
         bool stepTimeBackward;
+        bool resetTime;
 };
 
 /**

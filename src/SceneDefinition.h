@@ -192,6 +192,7 @@ struct InputConfig
         int  keyTogglePause;
         int  keyStepTimeBackward;
         int  keyStepTimeForward;
+        int  keyResetTime;
 };
 
 struct RenderingConfig

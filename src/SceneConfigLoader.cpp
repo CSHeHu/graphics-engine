@@ -354,6 +354,7 @@ RuntimeConfig SceneConfigLoader::parseRuntimeConfig(const nlohmann::json& json)
         inputJson.at("stepTimeBackward").get<int>();
     config.input.keyStepTimeForward =
         inputJson.at("stepTimeForward").get<int>();
+    config.input.keyResetTime = inputJson.at("resetTime").get<int>();
 
     const nlohmann::json& renderingJson = json.at("rendering");
     config.rendering.positionNormalStride =

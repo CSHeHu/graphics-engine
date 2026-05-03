@@ -251,6 +251,16 @@ void Application::run()
             }
         }
 
+        if (actions.resetTime)
+        {
+            timeState.initialize(nowRealSeconds);
+            if (audioManager)
+            {
+                audioManager->setPosition(0.0);
+                audioManager->resume();
+            }
+        }
+
         if (actions.stepTimeForward)
         {
             timeState.stepForward(TIME_STEP_SECONDS);

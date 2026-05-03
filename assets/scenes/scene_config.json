@@ -1,6 +1,7 @@
 {
   "config": {
-    "windowTitle": "LearnOpenGL",
+    "windowTitle": "Graphics Engine Demo 1.0",
+    "version": "1.0",
     "opengl": {
       "contextVersionMajor": 3,
       "contextVersionMinor": 3
@@ -31,7 +32,8 @@
       "toggleInfoOverlay": 73,
       "togglePause": 80,
       "stepTimeBackward": 263,
-      "stepTimeForward": 262
+      "stepTimeForward": 262,
+      "resetTime": 82
     },
     "rendering": {
       "positionNormalStride": 6,

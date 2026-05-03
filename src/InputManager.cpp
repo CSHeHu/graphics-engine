@@ -32,6 +32,11 @@ void InputManager::processInput(GLFWwindow* window, float deltaTime)
 {
     const InputConfig& input = inputConfig;
 
+    if (glfwGetKey(window, input.keyResetTime) == GLFW_PRESS)
+    {
+        pendingActions.resetTime = true;
+    }
+
     if (glfwGetKey(window, input.keyEscape) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
