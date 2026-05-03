@@ -8,75 +8,103 @@
 
 #include "Object.h"
 
+/**
+ * @brief Roles that a scene object can play in the scene.
+ */
 enum class SceneRole
 {
-    None,
-    LightSource,
-    LightTarget,
-    Ground,
+    None,        /**< No special role. */
+    LightSource, /**< Acts as a light source. */
+    LightTarget, /**< Target for light. */
+    Ground,      /**< Ground object. */
 };
 
+/**
+ * @brief Rendering modes for scene objects.
+ */
 enum class RenderMode
 {
-    LightSource,
-    Lit,
+    LightSource, /**< Render as a light source. */
+    Lit,         /**< Render as a lit object. */
 };
 
+/**
+ * @brief Types of behavior that can be applied to scene objects.
+ */
 enum class BehaviorType
 {
-    None,
-    Oscillate,
-    Spin,
-    Fly,
+    None,      /**< No behavior. */
+    Oscillate, /**< Oscillating movement. */
+    Spin,      /**< Spinning behavior. */
+    Fly,       /**< Flying behavior. */
 };
 
+/**
+ * @brief Camera control modes.
+ */
 enum class CameraMode
 {
-    Manual,
-    Scripted,
+    Manual,   /**< Manual camera control. */
+    Scripted, /**< Scripted camera route. */
 };
 
+/**
+ * @brief Window display modes.
+ */
 enum class WindowMode
 {
-    Windowed,
-    Fullscreen,
+    Windowed,   /**< Windowed mode. */
+    Fullscreen, /**< Fullscreen mode. */
 };
 
+/**
+ * @brief Represents a single camera keyframe for scripted camera movement.
+ */
 struct CameraKeyframe
 {
-        float     timeSeconds;
-        glm::vec3 position;
-        glm::vec3 lookAt;
+        float     timeSeconds; /**< Time of the keyframe in seconds. */
+        glm::vec3 position;    /**< Camera position at this keyframe. */
+        glm::vec3 lookAt;      /**< Target point to look at. */
 };
 
+/**
+ * @brief Defines a camera route for scripted camera movement.
+ */
 struct CameraRouteDefinition
 {
-        CameraMode mode = CameraMode::Manual;
-        bool       loop = true;
+        CameraMode mode =
+            CameraMode::Manual; /**< Camera mode (manual/scripted). */
+        bool loop = true;       /**< Whether the route should loop. */
         /** Time-ordered camera keyframes for scripted mode. */
         std::vector<CameraKeyframe> keyframes;
 };
 
+/**
+ * @brief Material definition for scene objects.
+ */
 struct MaterialDefinition
 {
-        std::string id;
-        std::string vertexShaderPath;
-        std::string fragmentShaderPath;
-        std::string geometryShaderPath;
-        RenderMode  renderMode;
-        glm::vec3   objectColor;
+        std::string id;                 /**< Material identifier. */
+        std::string vertexShaderPath;   /**< Path to vertex shader. */
+        std::string fragmentShaderPath; /**< Path to fragment shader. */
+        std::string geometryShaderPath; /**< Path to geometry shader. */
+        RenderMode  renderMode;         /**< Rendering mode. */
+        glm::vec3   objectColor;        /**< Base color. */
 };
 
+/**
+ * @brief Definition of an object in the scene.
+ */
 struct SceneObjectDefinition
 {
-        std::string          id;
-        SceneRole            role;
-        std::string          meshName;
-        Object::VertexLayout layout;
-        glm::vec3            position;
-        glm::vec3   rotation; // Euler angles in radians (pitch, yaw, roll)
-        glm::vec3   scale;
-        std::string materialId;
+        std::string          id;       /**< Object identifier. */
+        SceneRole            role;     /**< Role in the scene. */
+        std::string          meshName; /**< Mesh file name. */
+        Object::VertexLayout layout;   /**< Vertex layout type. */
+        glm::vec3            position; /**< Initial position. */
+        glm::vec3 rotation; /**< Euler angles in radians (pitch, yaw, roll). */
+        glm::vec3 scale;    /**< Scale vector. */
+        std::string materialId; /**< Material identifier. */
 
         BehaviorType behavior;
         float        behaviorSpeed;

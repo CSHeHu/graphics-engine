@@ -7,16 +7,32 @@
 
 class Camera;
 
+/**
+ * @brief Controls scripted camera routes and applies them to a Camera instance.
+ */
 class CameraRouteController
 {
-  public:
-    /** @brief Apply scripted camera route at scene-local elapsed time. */
-    void apply(Camera& camera, const CameraRouteDefinition& route,
-               float sceneElapsedTimeSeconds) const;
+    public:
+        /**
+         * @brief Apply a scripted camera route at a given scene-local elapsed
+         * time.
+         * @param camera Camera instance to modify.
+         * @param route Camera route definition to follow.
+         * @param sceneElapsedTimeSeconds Elapsed time in the scene (seconds).
+         */
+        void apply(Camera& camera, const CameraRouteDefinition& route,
+                   float sceneElapsedTimeSeconds) const;
 
-  private:
-    /** @brief Linear interpolation helper for camera path blending. */
-    static glm::vec3 lerpVec3(const glm::vec3& a, const glm::vec3& b, float t);
+    private:
+        /**
+         * @brief Linear interpolation helper for camera path blending.
+         * @param a Start vector.
+         * @param b End vector.
+         * @param t Interpolation factor [0, 1].
+         * @return Interpolated vector between a and b.
+         */
+        static glm::vec3 lerpVec3(const glm::vec3& a, const glm::vec3& b,
+                                  float t);
 };
 
 #endif // CAMERAROUTECONTROLLER_H
