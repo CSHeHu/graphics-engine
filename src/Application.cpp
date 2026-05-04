@@ -193,13 +193,15 @@ bool Application::initSystems(const RuntimeConfig& runtimeConfig,
 
 bool Application::loadInitialScene()
 {
-    timeState.initialize(static_cast<float>(glfwGetTime()));
     if (!loadSceneById(scenePlaylist.activeSceneId()))
     {
         std::cout << "Failed to initialize scene" << std::endl;
         return false;
     }
 
+    // Initialize timeline after scene (and its assets) has been loaded so
+    // that real-time spent loading doesn't advance the scene timeline.
+    timeState.initialize(static_cast<float>(glfwGetTime()));
     return true;
 }
 

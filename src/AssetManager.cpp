@@ -3,18 +3,13 @@
 #include <cstdio>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <sstream>
 #include <stdexcept>
 #include <unordered_map>
 #include <utility>
 
 #include "Shader.h"
-
-uint64_t AssetManager::packVertexKey(int positionIndex, int normalIndex)
-{
-    return (static_cast<uint64_t>(static_cast<uint32_t>(positionIndex)) << 32) |
-           static_cast<uint32_t>(normalIndex);
-}
 
 int AssetManager::resolveIndex(int index, int size)
 {
@@ -31,7 +26,7 @@ int AssetManager::resolveIndex(int index, int size)
 
 AssetManager::FaceVertex AssetManager::parseFaceToken(const std::string& token)
 {
-    FaceVertex fv{0, 0};
+    AssetManager::FaceVertex fv{0, 0};
 
     int p = 0;
     int t = 0;
@@ -196,11 +191,24 @@ MeshData AssetManager::loadObjPositionNormal(const std::string& meshName) const
         throw std::runtime_error("Failed to open mesh file for " + meshName);
     }
 
-    std::vector<Vec3>                          positions(1, {0.0f, 0.0f, 0.0f});
-    std::vector<Vec3>                          normals(1, {0.0f, 0.0f, 0.0f});
-    const Vec3                                 defaultNormal{0.0f, 1.0f, 0.0f};
-    MeshData                                   mesh;
-    std::unordered_map<uint64_t, unsigned int> vertexMap;
+    std::vector<AssetManager::Vec3> positions(1, {0.0f, 0.0f, 0.0f});
+    std::vector<AssetManager::Vec3> normals(1, {0.0f, 0.0f, 0.0f});
+    const AssetManager::Vec3        defaultNormal{0.0f, 1.0f, 0.0f};
+    MeshData                        mesh;
+
+    struct VertexKey
+    {
+            int  p;
+            int  n;
+            bool operator<(VertexKey const& o) const
+            {
+                if (p != o.p)
+                    return p < o.p;
+                return n < o.n;
+            }
+    };
+
+    std::map<VertexKey, unsigned int> vertexMap;
 
     std::string line;
     while (std::getline(file, line))
@@ -216,23 +224,23 @@ MeshData AssetManager::loadObjPositionNormal(const std::string& meshName) const
 
         if (type == "v")
         {
-            Vec3 p{};
+            AssetManager::Vec3 p{};
             lineStream >> p.x >> p.y >> p.z;
             positions.push_back(p);
         }
         else if (type == "vn")
         {
-            Vec3 n{};
+            AssetManager::Vec3 n{};
             lineStream >> n.x >> n.y >> n.z;
             normals.push_back(n);
         }
         else if (type == "f")
         {
-            std::vector<FaceVertex> face;
-            std::string             token;
+            std::vector<AssetManager::FaceVertex> face;
+            std::string                           token;
             while (lineStream >> token)
             {
-                face.push_back(parseFaceToken(token));
+                face.push_back(AssetManager::parseFaceToken(token));
             }
 
             if (face.size() < 3)
@@ -242,13 +250,14 @@ MeshData AssetManager::loadObjPositionNormal(const std::string& meshName) const
 
             for (size_t i = 1; i + 1 < face.size(); ++i)
             {
-                const FaceVertex tri[3] = {face[0], face[i], face[i + 1]};
-                for (const FaceVertex& fv : tri)
+                const AssetManager::FaceVertex tri[3] = {face[0], face[i],
+                                                         face[i + 1]};
+                for (const AssetManager::FaceVertex& fv : tri)
                 {
-                    const int pi =
-                        resolveIndex(fv.positionIndex,
-                                     static_cast<int>(positions.size()) - 1);
-                    const int ni = resolveIndex(
+                    const int pi = AssetManager::resolveIndex(
+                        fv.positionIndex,
+                        static_cast<int>(positions.size()) - 1);
+                    const int ni = AssetManager::resolveIndex(
                         fv.normalIndex, static_cast<int>(normals.size()) - 1);
 
                     if (pi <= 0 || pi >= static_cast<int>(positions.size()))
@@ -261,8 +270,9 @@ MeshData AssetManager::loadObjPositionNormal(const std::string& meshName) const
                     const int safeNormalIndex =
                         (ni > 0 && ni < static_cast<int>(normals.size())) ? ni
                                                                           : 0;
-                    const uint64_t key    = packVertexKey(pi, safeNormalIndex);
-                    auto           mapped = vertexMap.find(key);
+
+                    VertexKey vk{pi, safeNormalIndex};
+                    auto      mapped = vertexMap.find(vk);
                     if (mapped == vertexMap.end())
                     {
                         const Vec3& p = positions[pi];
@@ -279,7 +289,7 @@ MeshData AssetManager::loadObjPositionNormal(const std::string& meshName) const
 
                         const unsigned int newIndex = static_cast<unsigned int>(
                             (mesh.vertices.size() / 6) - 1);
-                        vertexMap.emplace(key, newIndex);
+                        vertexMap.emplace(vk, newIndex);
                         mesh.indices.push_back(newIndex);
                     }
                     else

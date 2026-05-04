@@ -109,13 +109,6 @@ class AssetManager
         };
 
         /**
-         * @brief Pack OBJ position/normal indices into a single map key.
-         * @param positionIndex Resolved OBJ position index.
-         * @param normalIndex Resolved OBJ normal index.
-         * @return Combined 64-bit key suitable for unordered_map lookup.
-         */
-        static uint64_t packVertexKey(int positionIndex, int normalIndex);
-        /**
          * @brief Resolve positive/negative OBJ indices into absolute index
          * form.
          * @param index OBJ index token value.
@@ -123,6 +116,7 @@ class AssetManager
          * @return Resolved one-based index or zero if unresolved.
          */
         static int resolveIndex(int index, int size);
+
         /**
          * @brief Parse one OBJ face token into position/normal indices.
          * @param token Face token such as v//n or v/t/n.
