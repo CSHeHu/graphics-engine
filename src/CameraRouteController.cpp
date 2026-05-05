@@ -4,7 +4,7 @@
 
 #include "Camera.h"
 
-void CameraRouteController::apply(Camera& camera,
+void CameraRouteController::apply(Camera&                      camera,
                                   const CameraRouteDefinition& route,
                                   float sceneElapsedTimeSeconds) const
 {
@@ -62,7 +62,7 @@ void CameraRouteController::apply(Camera& camera,
 }
 
 glm::vec3 CameraRouteController::lerpVec3(const glm::vec3& a,
-                                          const glm::vec3& b, float t)
+                                          const glm::vec3& b, float t) const
 {
     return a + (b - a) * t;
 }

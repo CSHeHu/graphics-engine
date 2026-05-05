@@ -4,7 +4,8 @@
 #include <cmath>
 
 // constructor with vectors
-Camera::Camera(glm::vec3 position, glm::vec3 up, float yaw, float pitch)
+Camera::Camera(const glm::vec3& position, const glm::vec3& up, float yaw,
+               float pitch)
     : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(2.5f),
       MouseSensitivity(0.1f), Zoom(45.0f), Position(position), WorldUp(up),
       Yaw(yaw), Pitch(pitch)
@@ -22,7 +23,7 @@ Camera::Camera(float posX, float posY, float posZ, float upX, float upY,
     updateCameraVectors();
 }
 
-glm::mat4 Camera::GetViewMatrix()
+glm::mat4 Camera::GetViewMatrix() const
 {
     return glm::lookAt(Position, Position + Front, Up);
 }
@@ -108,7 +109,7 @@ void Camera::updateCameraVectors()
     Up = glm::normalize(glm::cross(Right, Front));
 }
 
-glm::vec3 Camera::getPosition() const
+const glm::vec3& Camera::getPosition() const
 {
     return Position;
 }

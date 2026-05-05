@@ -13,7 +13,12 @@
 
 #include "Shader.h"
 
-int AssetManager::resolveObjIndex(int index, int size)
+AssetManager::AssetManager(const std::string& meshesPathValue)
+    : meshesPath(std::move(meshesPathValue))
+{
+}
+
+int AssetManager::resolveObjIndex(int index, int size) const
 {
     // OBJ indices are 1-based. Positive values are absolute, negative values
     // are relative to the end of the array (e.g., -1 = last element).
@@ -29,7 +34,7 @@ int AssetManager::resolveObjIndex(int index, int size)
 }
 
 AssetManager::FaceVertex
-AssetManager::parseObjFaceToken(const std::string& token)
+AssetManager::parseObjFaceToken(const std::string& token) const
 {
     // OBJ face token formats: v, v/t, v//n, v/t/n
     // We extract position and normal indices; texture coordinates are ignored.
@@ -70,7 +75,7 @@ AssetManager::parseObjFaceToken(const std::string& token)
     return FaceVertex{posIndex, normIndex};
 }
 
-const MeshData&
+const AssetManager::MeshData&
 AssetManager::requireCachedMeshData(const std::string& meshName) const
 {
     auto it = meshCache.find(meshName);
@@ -81,12 +86,8 @@ AssetManager::requireCachedMeshData(const std::string& meshName) const
     return *it->second;
 }
 
-AssetManager::AssetManager(std::string meshesPathValue)
-    : meshesPath(std::move(meshesPathValue))
-{
-}
-
-const MeshData& AssetManager::loadMeshData(const std::string& meshName)
+const AssetManager::MeshData&
+AssetManager::loadMeshData(const std::string& meshName)
 {
     auto it = meshCache.find(meshName);
     if (it != meshCache.end())
@@ -180,7 +181,7 @@ AssetManager::getShader(const std::string& vertexPath,
     return it->second;
 }
 
-MeshData
+AssetManager::MeshData
 AssetManager::parseObjMeshDataPositionNormal(const std::string& meshName) const
 {
     const std::vector<std::string> candidatePaths = {

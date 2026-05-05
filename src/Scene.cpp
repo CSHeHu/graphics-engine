@@ -112,8 +112,9 @@ bool Scene::initializeRuntimeObjects()
             return false;
         }
 
-        const MeshData&           meshData = assets.loadMeshData(objectDef.meshName);
-        const std::vector<float>& vertices          = meshData.vertices;
+        const AssetManager::MeshData& meshData =
+            assets.loadMeshData(objectDef.meshName);
+        const std::vector<float>&        vertices   = meshData.vertices;
         const std::vector<unsigned int>& indices    = meshData.indices;
         const std::size_t                indexCount = meshData.indices.size();
         std::shared_ptr<RuntimeMaterial> material   = materialIt->second;

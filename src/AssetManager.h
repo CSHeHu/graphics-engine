@@ -2,7 +2,6 @@
 #define ASSETMANAGER_H
 
 #include <cstddef>
-#include <cstdint>
 #include <map>
 #include <memory>
 #include <string>
@@ -13,23 +12,23 @@
 
 class Shader;
 
-struct MeshData
-{
-        std::vector<float>        vertices;
-        std::vector<unsigned int> indices;
-};
-
 /**
  * @brief Lazy-loading cache for meshes and shader programs.
  */
 class AssetManager
 {
     public:
+        struct MeshData
+        {
+                std::vector<float>        vertices;
+                std::vector<unsigned int> indices;
+        };
+
         /**
          * @brief Construct an asset manager with a mesh base path.
          * @param meshesPath Base directory used to resolve mesh file names.
          */
-        explicit AssetManager(std::string meshesPath);
+        AssetManager(const std::string& meshesPath);
         ~AssetManager() = default;
 
         /**
@@ -43,8 +42,8 @@ class AssetManager
          * @param meshName Mesh file name used as cache key.
          * @return Vertex data array in position-normal interleaved format.
          */
-        const std::vector<float>& getMeshVertexBuffer(
-            const std::string& meshName) const;
+        const std::vector<float>&
+        getMeshVertexBuffer(const std::string& meshName) const;
         /**
          * @brief Get number of vertices for an already loaded mesh.
          * @param meshName Mesh file name used as cache key.
@@ -56,8 +55,8 @@ class AssetManager
          * @param meshName Mesh file name used as cache key.
          * @return Index data array used for indexed drawing.
          */
-        const std::vector<unsigned int>& getMeshIndexBuffer(
-            const std::string& meshName) const;
+        const std::vector<unsigned int>&
+        getMeshIndexBuffer(const std::string& meshName) const;
         /**
          * @brief Get number of indices for an already loaded mesh.
          * @param meshName Mesh file name used as cache key.
@@ -130,7 +129,7 @@ class AssetManager
          * @param size Maximum element count for the target array.
          * @return Resolved absolute array index, or zero if invalid.
          */
-        static int resolveObjIndex(int index, int size);
+        int resolveObjIndex(int index, int size) const;
 
         /**
          * @brief Parse one OBJ face token into position/normal indices.
@@ -138,15 +137,15 @@ class AssetManager
          * v/t/n).
          * @return Parsed position and normal indices.
          */
-        static FaceVertex parseObjFaceToken(const std::string& token);
+        FaceVertex parseObjFaceToken(const std::string& token) const;
 
         /**
          * @brief Get cached mesh data or throw if mesh is not loaded.
          * @param meshName Mesh file name used as cache key.
          * @return Const reference to cached mesh data.
          */
-        const MeshData& requireCachedMeshData(
-            const std::string& meshName) const;
+        const MeshData&
+        requireCachedMeshData(const std::string& meshName) const;
 
         /**
          * @brief Parse OBJ mesh file into packed position-normal vertex/index
@@ -155,7 +154,8 @@ class AssetManager
          * path.
          * @return Parsed mesh data ready for GPU buffer creation.
          */
-        MeshData parseObjMeshDataPositionNormal(const std::string& meshName) const;
+        MeshData
+        parseObjMeshDataPositionNormal(const std::string& meshName) const;
 
         std::string meshesPath;
 

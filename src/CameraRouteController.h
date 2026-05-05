@@ -31,8 +31,8 @@ class CameraRouteController
          * @param t Interpolation factor [0, 1].
          * @return Interpolated vector between a and b.
          */
-        static glm::vec3 lerpVec3(const glm::vec3& a, const glm::vec3& b,
-                                  float t);
+        glm::vec3 lerpVec3(const glm::vec3& a, const glm::vec3& b,
+                           float t) const;
 };
 
 #endif // CAMERAROUTECONTROLLER_H

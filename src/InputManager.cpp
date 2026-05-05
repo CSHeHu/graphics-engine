@@ -85,17 +85,17 @@ void InputManager::processInput(GLFWwindow* window, float deltaTime)
 
     // Camera movement
     if (glfwGetKey(window, input.keyMoveForward) == GLFW_PRESS)
-        camera->ProcessKeyboard(FORWARD, deltaTime);
+        camera->ProcessKeyboard(Camera::FORWARD, deltaTime);
     if (glfwGetKey(window, input.keyMoveBackward) == GLFW_PRESS)
-        camera->ProcessKeyboard(BACKWARD, deltaTime);
+        camera->ProcessKeyboard(Camera::BACKWARD, deltaTime);
     if (glfwGetKey(window, input.keyMoveLeft) == GLFW_PRESS)
-        camera->ProcessKeyboard(LEFT, deltaTime);
+        camera->ProcessKeyboard(Camera::LEFT, deltaTime);
     if (glfwGetKey(window, input.keyMoveRight) == GLFW_PRESS)
-        camera->ProcessKeyboard(RIGHT, deltaTime);
+        camera->ProcessKeyboard(Camera::RIGHT, deltaTime);
     if (glfwGetKey(window, input.keyMoveUp) == GLFW_PRESS)
-        camera->ProcessKeyboard(UP, deltaTime);
+        camera->ProcessKeyboard(Camera::UP, deltaTime);
     if (glfwGetKey(window, input.keyMoveDown) == GLFW_PRESS)
-        camera->ProcessKeyboard(DOWN, deltaTime);
+        camera->ProcessKeyboard(Camera::DOWN, deltaTime);
 }
 
 void InputManager::framebufferSizeCallback(GLFWwindow* window, int width,
