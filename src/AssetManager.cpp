@@ -71,7 +71,7 @@ AssetManager::parseObjFaceToken(const std::string& token)
 }
 
 const MeshData&
-AssetManager::getLoadedMeshOrThrow(const std::string& meshName) const
+AssetManager::requireCachedMeshData(const std::string& meshName) const
 {
     auto it = meshCache.find(meshName);
     if (it == meshCache.end())
@@ -86,7 +86,7 @@ AssetManager::AssetManager(std::string meshesPathValue)
 {
 }
 
-const MeshData& AssetManager::loadMesh(const std::string& meshName)
+const MeshData& AssetManager::loadMeshData(const std::string& meshName)
 {
     auto it = meshCache.find(meshName);
     if (it != meshCache.end())
@@ -95,32 +95,33 @@ const MeshData& AssetManager::loadMesh(const std::string& meshName)
     }
 
     auto inserted = meshCache.emplace(
-        meshName, std::make_shared<MeshData>(loadObjPositionNormal(meshName)));
+        meshName,
+        std::make_shared<MeshData>(parseObjMeshDataPositionNormal(meshName)));
     return *inserted.first->second;
 }
 
 const std::vector<float>&
-AssetManager::getMeshVertices(const std::string& meshName) const
+AssetManager::getMeshVertexBuffer(const std::string& meshName) const
 {
-    return getLoadedMeshOrThrow(meshName).vertices;
+    return requireCachedMeshData(meshName).vertices;
 }
 
 std::size_t AssetManager::getMeshVertexCount(const std::string& meshName) const
 {
-    const auto&           verts           = getMeshVertices(meshName);
+    const auto&           verts           = getMeshVertexBuffer(meshName);
     constexpr std::size_t floatsPerVertex = 6; // x,y,z + nx,ny,nz
     return verts.size() / floatsPerVertex;
 }
 
 const std::vector<unsigned int>&
-AssetManager::getMeshIndices(const std::string& meshName) const
+AssetManager::getMeshIndexBuffer(const std::string& meshName) const
 {
-    return getLoadedMeshOrThrow(meshName).indices;
+    return requireCachedMeshData(meshName).indices;
 }
 
 std::size_t AssetManager::getMeshIndexCount(const std::string& meshName) const
 {
-    const auto& indices = getMeshIndices(meshName);
+    const auto& indices = getMeshIndexBuffer(meshName);
     return indices.size();
 }
 
@@ -179,7 +180,8 @@ AssetManager::getShader(const std::string& vertexPath,
     return it->second;
 }
 
-MeshData AssetManager::loadObjPositionNormal(const std::string& meshName) const
+MeshData
+AssetManager::parseObjMeshDataPositionNormal(const std::string& meshName) const
 {
     const std::vector<std::string> candidatePaths = {
         meshesPath + "/" + meshName,

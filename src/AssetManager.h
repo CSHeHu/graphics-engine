@@ -37,14 +37,14 @@ class AssetManager
          * @param meshName Mesh file name as referenced by scene content.
          * @return Cached mesh data for the requested mesh.
          */
-        const MeshData& loadMesh(const std::string& meshName);
+        const MeshData& loadMeshData(const std::string& meshName);
         /**
          * @brief Get vertex buffer data for an already loaded mesh.
          * @param meshName Mesh file name used as cache key.
          * @return Vertex data array in position-normal interleaved format.
          */
-        const std::vector<float>&
-        getMeshVertices(const std::string& meshName) const;
+        const std::vector<float>& getMeshVertexBuffer(
+            const std::string& meshName) const;
         /**
          * @brief Get number of vertices for an already loaded mesh.
          * @param meshName Mesh file name used as cache key.
@@ -56,8 +56,8 @@ class AssetManager
          * @param meshName Mesh file name used as cache key.
          * @return Index data array used for indexed drawing.
          */
-        const std::vector<unsigned int>&
-        getMeshIndices(const std::string& meshName) const;
+        const std::vector<unsigned int>& getMeshIndexBuffer(
+            const std::string& meshName) const;
         /**
          * @brief Get number of indices for an already loaded mesh.
          * @param meshName Mesh file name used as cache key.
@@ -145,7 +145,8 @@ class AssetManager
          * @param meshName Mesh file name used as cache key.
          * @return Const reference to cached mesh data.
          */
-        const MeshData& getLoadedMeshOrThrow(const std::string& meshName) const;
+        const MeshData& requireCachedMeshData(
+            const std::string& meshName) const;
 
         /**
          * @brief Parse OBJ mesh file into packed position-normal vertex/index
@@ -154,7 +155,7 @@ class AssetManager
          * path.
          * @return Parsed mesh data ready for GPU buffer creation.
          */
-        MeshData loadObjPositionNormal(const std::string& meshName) const;
+        MeshData parseObjMeshDataPositionNormal(const std::string& meshName) const;
 
         std::string meshesPath;
 
