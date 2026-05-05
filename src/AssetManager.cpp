@@ -134,8 +134,7 @@ AssetManager::loadShader(const std::string& vertexPath,
                          const std::string& fragmentPath,
                          const std::string& geometryPath)
 {
-    const std::string key =
-        vertexPath + "|" + fragmentPath + "|" + geometryPath;
+    const ShaderKey key{vertexPath, fragmentPath, geometryPath};
 
     auto it = shaderCache.find(key);
     if (it != shaderCache.end())
@@ -156,12 +155,12 @@ AssetManager::getShader(const std::string& vertexPath,
                         const std::string& fragmentPath,
                         const std::string& geometryPath) const
 {
-    const std::string key =
-        vertexPath + "|" + fragmentPath + "|" + geometryPath;
-    auto it = shaderCache.find(key);
+    const ShaderKey key{vertexPath, fragmentPath, geometryPath};
+    auto            it = shaderCache.find(key);
     if (it == shaderCache.end())
     {
-        throw std::runtime_error("Shader not loaded: " + key);
+        throw std::runtime_error("Shader not loaded: " + vertexPath + " | " +
+                                 fragmentPath + " | " + geometryPath);
     }
     return it->second;
 }

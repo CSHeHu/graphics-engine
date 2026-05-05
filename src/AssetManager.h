@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -108,6 +109,26 @@ class AssetManager
                 int normalIndex;
         };
 
+        struct ShaderKey
+        {
+                std::string vertexPath;
+                std::string fragmentPath;
+                std::string geometryPath;
+
+                bool operator<(const ShaderKey& other) const
+                {
+                    if (vertexPath != other.vertexPath)
+                    {
+                        return vertexPath < other.vertexPath;
+                    }
+                    if (fragmentPath != other.fragmentPath)
+                    {
+                        return fragmentPath < other.fragmentPath;
+                    }
+                    return geometryPath < other.geometryPath;
+                }
+        };
+
         /**
          * @brief Resolve positive/negative OBJ indices into absolute index
          * form.
@@ -144,8 +165,8 @@ class AssetManager
 
         /** Mesh cache keyed by mesh file name. */
         std::unordered_map<std::string, std::shared_ptr<MeshData>> meshCache;
-        /** Shader cache keyed by combined shader path signature. */
-        std::unordered_map<std::string, std::shared_ptr<Shader>> shaderCache;
+        /** Shader cache keyed by explicit shader paths. */
+        std::map<ShaderKey, std::shared_ptr<Shader>> shaderCache;
 
         std::unordered_map<std::string, std::shared_ptr<Mix_Music>> audioCache;
 };
