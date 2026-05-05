@@ -96,13 +96,6 @@ class AssetManager
         std::shared_ptr<Mix_Music> loadAudio(const std::string& file);
 
     private:
-        struct Vec3
-        {
-                float x;
-                float y;
-                float z;
-        };
-
         struct FaceVertex
         {
                 int positionIndex;
@@ -132,18 +125,20 @@ class AssetManager
         /**
          * @brief Resolve positive/negative OBJ indices into absolute index
          * form.
-         * @param index OBJ index token value.
+         * @param index OBJ index token value (1-based positive or negative
+         * relative).
          * @param size Maximum element count for the target array.
-         * @return Resolved one-based index or zero if unresolved.
+         * @return Resolved absolute array index, or zero if invalid.
          */
-        static int resolveIndex(int index, int size);
+        static int resolveObjIndex(int index, int size);
 
         /**
          * @brief Parse one OBJ face token into position/normal indices.
-         * @param token Face token such as v//n or v/t/n.
+         * @param token Face token such as v//n or v/t/n (supports v, v/t, v//n,
+         * v/t/n).
          * @return Parsed position and normal indices.
          */
-        static FaceVertex parseFaceToken(const std::string& token);
+        static FaceVertex parseObjFaceToken(const std::string& token);
 
         /**
          * @brief Get cached mesh data or throw if mesh is not loaded.

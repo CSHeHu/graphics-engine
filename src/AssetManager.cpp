@@ -9,10 +9,14 @@
 #include <unordered_map>
 #include <utility>
 
+#include <glm.hpp>
+
 #include "Shader.h"
 
-int AssetManager::resolveIndex(int index, int size)
+int AssetManager::resolveObjIndex(int index, int size)
 {
+    // OBJ indices are 1-based. Positive values are absolute, negative values
+    // are relative to the end of the array (e.g., -1 = last element).
     if (index > 0)
     {
         return index;
@@ -24,34 +28,46 @@ int AssetManager::resolveIndex(int index, int size)
     return 0;
 }
 
-AssetManager::FaceVertex AssetManager::parseFaceToken(const std::string& token)
+AssetManager::FaceVertex
+AssetManager::parseObjFaceToken(const std::string& token)
 {
-    AssetManager::FaceVertex fv{0, 0};
+    // OBJ face token formats: v, v/t, v//n, v/t/n
+    // We extract position and normal indices; texture coordinates are ignored.
 
-    int p = 0;
-    int t = 0;
-    int n = 0;
-    if (std::sscanf(token.c_str(), "%d//%d", &p, &n) == 2)
+    // Find the first '/' delimiter (if it exists)
+    size_t slash1 = token.find('/');
+
+    // Extract position index (always present, before first '/')
+    int posIndex = std::stoi(
+        token.substr(0, slash1 == std::string::npos ? token.length() : slash1));
+
+    // If no '/', format is simply "v" (position only)
+    if (slash1 == std::string::npos)
     {
-        fv.positionIndex = p;
-        fv.normalIndex   = n;
-        return fv;
-    }
-    if (std::sscanf(token.c_str(), "%d/%d/%d", &p, &t, &n) == 3)
-    {
-        (void)t;
-        fv.positionIndex = p;
-        fv.normalIndex   = n;
-        return fv;
-    }
-    if (std::sscanf(token.c_str(), "%d", &p) == 1)
-    {
-        fv.positionIndex = p;
-        fv.normalIndex   = 0;
-        return fv;
+        return FaceVertex{posIndex, 0};
     }
 
-    throw std::runtime_error("Unsupported face token: " + token);
+    // Find the second '/' delimiter (if it exists)
+    size_t slash2 = token.find('/', slash1 + 1);
+
+    // If no second '/', format is "v/t" (position and texture, no normal)
+    if (slash2 == std::string::npos)
+    {
+        return FaceVertex{posIndex, 0};
+    }
+
+    // Extract normal index (after second '/')
+    // Format is either "v/t/n" or "v//n"
+    std::string normalStr = token.substr(slash2 + 1);
+
+    // If empty, format was "v/t/" or "v//" with no normal provided
+    if (normalStr.empty())
+    {
+        return FaceVertex{posIndex, 0};
+    }
+
+    int normIndex = std::stoi(normalStr);
+    return FaceVertex{posIndex, normIndex};
 }
 
 const MeshData&
@@ -65,8 +81,6 @@ AssetManager::getLoadedMeshOrThrow(const std::string& meshName) const
     return *it->second;
 }
 
-// Explicit load: parses and caches mesh data, returning a reference into the
-// internal cache.
 AssetManager::AssetManager(std::string meshesPathValue)
     : meshesPath(std::move(meshesPathValue))
 {
@@ -190,10 +204,10 @@ MeshData AssetManager::loadObjPositionNormal(const std::string& meshName) const
         throw std::runtime_error("Failed to open mesh file for " + meshName);
     }
 
-    std::vector<AssetManager::Vec3> positions(1, {0.0f, 0.0f, 0.0f});
-    std::vector<AssetManager::Vec3> normals(1, {0.0f, 0.0f, 0.0f});
-    const AssetManager::Vec3        defaultNormal{0.0f, 1.0f, 0.0f};
-    MeshData                        mesh;
+    std::vector<glm::vec3> positions(1, {0.0f, 0.0f, 0.0f});
+    std::vector<glm::vec3> normals(1, {0.0f, 0.0f, 0.0f});
+    const glm::vec3        defaultNormal{0.0f, 1.0f, 0.0f};
+    MeshData               mesh;
 
     struct VertexKey
     {
@@ -223,13 +237,13 @@ MeshData AssetManager::loadObjPositionNormal(const std::string& meshName) const
 
         if (type == "v")
         {
-            AssetManager::Vec3 p{};
+            glm::vec3 p{};
             lineStream >> p.x >> p.y >> p.z;
             positions.push_back(p);
         }
         else if (type == "vn")
         {
-            AssetManager::Vec3 n{};
+            glm::vec3 n{};
             lineStream >> n.x >> n.y >> n.z;
             normals.push_back(n);
         }
@@ -239,7 +253,7 @@ MeshData AssetManager::loadObjPositionNormal(const std::string& meshName) const
             std::string                           token;
             while (lineStream >> token)
             {
-                face.push_back(AssetManager::parseFaceToken(token));
+                face.push_back(AssetManager::parseObjFaceToken(token));
             }
 
             if (face.size() < 3)
@@ -253,10 +267,12 @@ MeshData AssetManager::loadObjPositionNormal(const std::string& meshName) const
                                                          face[i + 1]};
                 for (const AssetManager::FaceVertex& fv : tri)
                 {
-                    const int pi = AssetManager::resolveIndex(
+                    // Resolve OBJ indices (1-based or negative-relative) to
+                    // absolute array indices.
+                    const int pi = AssetManager::resolveObjIndex(
                         fv.positionIndex,
                         static_cast<int>(positions.size()) - 1);
-                    const int ni = AssetManager::resolveIndex(
+                    const int ni = AssetManager::resolveObjIndex(
                         fv.normalIndex, static_cast<int>(normals.size()) - 1);
 
                     if (pi <= 0 || pi >= static_cast<int>(positions.size()))
@@ -274,10 +290,10 @@ MeshData AssetManager::loadObjPositionNormal(const std::string& meshName) const
                     auto      mapped = vertexMap.find(vk);
                     if (mapped == vertexMap.end())
                     {
-                        const Vec3& p = positions[pi];
-                        const Vec3& n = (safeNormalIndex > 0)
-                                            ? normals[safeNormalIndex]
-                                            : defaultNormal;
+                        const glm::vec3& p = positions[pi];
+                        const glm::vec3& n = (safeNormalIndex > 0)
+                                                 ? normals[safeNormalIndex]
+                                                 : defaultNormal;
 
                         mesh.vertices.push_back(p.x);
                         mesh.vertices.push_back(p.y);
