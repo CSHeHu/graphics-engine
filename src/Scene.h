@@ -216,12 +216,13 @@ class Scene
             const glm::mat4& view, float sceneElapsedTime, int maxLightSources,
             const PerFrameLightUniforms& perFrameLightUniforms);
         /** Build view frustum planes for optional CPU culling. */
-                std::array<FrustumPlane, kFrustumPlaneCount>
-                buildFrustumPlanes(const glm::mat4& viewProjection) const;
-                /** Test whether one runtime object intersects the current frustum. */
-                bool isRuntimeObjectVisible(
-                        const RuntimeSceneObject&                    runtimeObject,
-                        const std::array<FrustumPlane, kFrustumPlaneCount>& frustumPlanes) const;
+        std::array<FrustumPlane, kFrustumPlaneCount>
+        buildFrustumPlanes(const glm::mat4& viewProjection) const;
+        /** Test whether one runtime object intersects the current frustum. */
+        bool isRuntimeObjectVisible(
+            const RuntimeSceneObject&                           runtimeObject,
+            const std::array<FrustumPlane, kFrustumPlaneCount>& frustumPlanes)
+            const;
         /** Compute a conservative bounding sphere radius from object scale. */
         float computeBoundingRadius(const Object& object) const;
         /** Configure shared per-frame uniforms for lit material shaders. */
