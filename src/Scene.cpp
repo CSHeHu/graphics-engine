@@ -160,6 +160,7 @@ bool Scene::initializeRuntimeObjects()
         runtimeObject.core.object         = object;
         runtimeObject.core.material       = material;
         runtimeObject.core.role           = objectDef.role;
+        runtimeObject.core.meshName       = objectDef.meshName;
         runtimeObject.core.instanceIndex  = instanceIndex;
         runtimeObject.core.instanceBuffer = instanceBuffer;
 
@@ -258,13 +259,43 @@ void Scene::renderRuntimeObjects(
     std::unordered_set<unsigned int> configuredLitPrograms;
     std::unordered_set<unsigned int> configuredUnlitPrograms;
 
-    // Render all objects with shared camera matrices and mode-specific
-    // uniforms.
+    // Group objects by (mesh name, material id) for efficient batching.
+    // This reduces shader/material binding overhead.
+    struct MeshMaterialGroup
+    {
+            std::string              meshName;
+            std::string              materialId;
+            std::vector<std::string> objectIds;
+    };
+    std::unordered_map<std::string, MeshMaterialGroup> groups;
+
     for (const std::string& objectId : runtimeObjectOrder)
     {
         const RuntimeSceneObject& runtimeObject = runtimeObjects.at(objectId);
+        const std::string         groupKey =
+            runtimeObject.core.meshName + "/" +
+            std::to_string(runtimeObject.core.material->shader->ID);
 
-        std::shared_ptr<RuntimeMaterial> material = runtimeObject.core.material;
+        if (groups.find(groupKey) == groups.end())
+        {
+            groups[groupKey] = {runtimeObject.core.meshName, groupKey, {}};
+        }
+        groups[groupKey].objectIds.push_back(objectId);
+    }
+
+    // Render groups with shared mesh/material state.
+    for (auto& [groupKey, group] : groups)
+    {
+        if (group.objectIds.empty())
+            continue;
+
+        // Fetch first object to get mesh and material references
+        const RuntimeSceneObject& firstObject =
+            runtimeObjects.at(group.objectIds[0]);
+        std::shared_ptr<GpuMesh>         mesh     = firstObject.core.mesh;
+        std::shared_ptr<RuntimeMaterial> material = firstObject.core.material;
+
+        mesh->bind();
         material->shader->use();
         const unsigned int shaderProgramId = material->shader->ID;
 
@@ -290,15 +321,34 @@ void Scene::renderRuntimeObjects(
                 configureEmitterShaderUniforms(material, projection, view,
                                                sceneElapsedTime);
             }
-
-            // Visualize each emitter with its configured light tint and
-            // intensity.
-            material->shader->setVec3("objectColor",
-                                      runtimeObject.light.color *
-                                          runtimeObject.light.intensity);
         }
 
-        drawRuntimeObject(runtimeObject);
+        // Draw all objects in this group with shared mesh/material state.
+        for (const std::string& objectId : group.objectIds)
+        {
+            const RuntimeSceneObject& runtimeObject =
+                runtimeObjects.at(objectId);
+
+            // Set per-object uniforms and emit indexed draw.
+            std::shared_ptr<Object> object = runtimeObject.core.object;
+            glm::mat4               model  = object->getModelMatrix();
+            material->shader->setMat4("model", model);
+            const glm::mat3 normalMatrix =
+                glm::mat3(glm::transpose(glm::inverse(model)));
+            material->shader->setMat3("normalMatrix", normalMatrix);
+
+            // For light sources, set per-instance color.
+            if (material->renderMode == RenderMode::LightSource)
+            {
+                material->shader->setVec3("objectColor",
+                                          runtimeObject.light.color *
+                                              runtimeObject.light.intensity);
+            }
+
+            glDrawElements(GL_TRIANGLES,
+                           static_cast<GLsizei>(mesh->getIndexCount()),
+                           GL_UNSIGNED_INT, nullptr);
+        }
     }
 }
 

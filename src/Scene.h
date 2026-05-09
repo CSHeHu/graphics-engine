@@ -64,6 +64,7 @@ class Scene
                 std::shared_ptr<Object>          object;
                 std::shared_ptr<RuntimeMaterial> material;
                 SceneRole                        role;
+                std::string meshName;      // For grouping during render
                 std::size_t instanceIndex; // Index in InstanceBuffer
                 std::shared_ptr<InstanceBuffer>
                     instanceBuffer; // Per-mesh instance storage
