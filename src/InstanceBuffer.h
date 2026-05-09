@@ -28,6 +28,7 @@ class InstanceBuffer
         std::size_t            activeCount;
 
         void uploadMatricesToGpu();
+        void uploadInstanceToGpu(std::size_t index);
 };
 
 #endif // INSTANCEBUFFER_H

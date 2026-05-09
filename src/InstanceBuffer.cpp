@@ -28,7 +28,7 @@ void InstanceBuffer::updateInstance(std::size_t      index,
     if (index < matrices.size())
     {
         matrices[index] = modelMatrix;
-        uploadMatricesToGpu();
+        uploadInstanceToGpu(index);
     }
 }
 
@@ -39,7 +39,7 @@ void InstanceBuffer::removeInstance(std::size_t index)
         matrices[index] = glm::mat4(1.0f);
         if (activeCount > 0)
             --activeCount;
-        uploadMatricesToGpu();
+        uploadInstanceToGpu(index);
     }
 }
 
@@ -76,5 +76,19 @@ void InstanceBuffer::uploadMatricesToGpu()
     glBindBuffer(GL_ARRAY_BUFFER, instanceVbo);
     glBufferData(GL_ARRAY_BUFFER, matrices.size() * sizeof(glm::mat4),
                  matrices.data(), GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+void InstanceBuffer::uploadInstanceToGpu(std::size_t index)
+{
+    if (index >= matrices.size())
+    {
+        return;
+    }
+
+    glBindBuffer(GL_ARRAY_BUFFER, instanceVbo);
+    glBufferSubData(GL_ARRAY_BUFFER,
+                    static_cast<GLintptr>(index * sizeof(glm::mat4)),
+                    sizeof(glm::mat4), &matrices[index]);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
