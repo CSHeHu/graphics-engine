@@ -11,6 +11,7 @@
 #include "AudioManager.h"
 #include "Camera.h"
 #include "GpuMesh.h"
+#include "InstanceBuffer.h"
 #include "Object.h"
 #include "SceneDefinition.h"
 #include "SceneOverlayRenderer.h"
@@ -121,6 +122,17 @@ bool Scene::initializeRuntimeObjects()
             assets.loadGpuMesh(objectDef.meshName, objectDef.layout);
         std::shared_ptr<RuntimeMaterial> material = materialIt->second;
 
+        // Get or create InstanceBuffer for this mesh
+        auto instanceBufferIt = instanceBuffers.find(objectDef.meshName);
+        if (instanceBufferIt == instanceBuffers.end())
+        {
+            instanceBuffers[objectDef.meshName] =
+                std::make_shared<InstanceBuffer>();
+            instanceBufferIt = instanceBuffers.find(objectDef.meshName);
+        }
+        std::shared_ptr<InstanceBuffer> instanceBuffer =
+            instanceBufferIt->second;
+
         std::shared_ptr<Object> object =
             std::make_shared<Object>(objectDef.position, objectDef.scale);
 
@@ -139,11 +151,17 @@ bool Scene::initializeRuntimeObjects()
             object->rotate(objectDef.rotation.z, glm::vec3(0.0f, 0.0f, 1.0f));
         }
 
+        // Add instance to buffer and track index
+        glm::mat4   modelMatrix   = object->getModelMatrix();
+        std::size_t instanceIndex = instanceBuffer->addInstance(modelMatrix);
+
         RuntimeSceneObject runtimeObject;
-        runtimeObject.core.mesh     = gpuMesh;
-        runtimeObject.core.object   = object;
-        runtimeObject.core.material = material;
-        runtimeObject.core.role     = objectDef.role;
+        runtimeObject.core.mesh           = gpuMesh;
+        runtimeObject.core.object         = object;
+        runtimeObject.core.material       = material;
+        runtimeObject.core.role           = objectDef.role;
+        runtimeObject.core.instanceIndex  = instanceIndex;
+        runtimeObject.core.instanceBuffer = instanceBuffer;
 
         runtimeObject.behavior.type            = objectDef.behavior;
         runtimeObject.behavior.oscillate.speed = objectDef.behaviorSpeed;
@@ -377,6 +395,13 @@ void Scene::applyBehaviorOscillate(RuntimeSceneObject& runtimeObject,
         runtimeObject.behavior.oscillate.amplitude;
     object->setPosition(runtimeObject.behavior.oscillate.initialPosition +
                         runtimeObject.behavior.oscillate.axis * delta);
+
+    // Sync updated transform to instance buffer
+    if (runtimeObject.core.instanceBuffer)
+    {
+        runtimeObject.core.instanceBuffer->updateInstance(
+            runtimeObject.core.instanceIndex, object->getModelMatrix());
+    }
 }
 
 void Scene::applyBehaviorSpin(RuntimeSceneObject& runtimeObject,
@@ -387,6 +412,13 @@ void Scene::applyBehaviorSpin(RuntimeSceneObject& runtimeObject,
                             runtimeObject.behavior.spin.speed *
                                 sceneElapsedTime,
                         runtimeObject.behavior.spin.axis);
+
+    // Sync updated transform to instance buffer
+    if (runtimeObject.core.instanceBuffer)
+    {
+        runtimeObject.core.instanceBuffer->updateInstance(
+            runtimeObject.core.instanceIndex, object->getModelMatrix());
+    }
 }
 
 void Scene::applyBehaviorFly(RuntimeSceneObject& runtimeObject,
@@ -399,6 +431,13 @@ void Scene::applyBehaviorFly(RuntimeSceneObject& runtimeObject,
         direction * (runtimeObject.behavior.fly.speed * sceneElapsedTime);
     object->setPosition(runtimeObject.behavior.fly.initialPosition +
                         displacement);
+
+    // Sync updated transform to instance buffer
+    if (runtimeObject.core.instanceBuffer)
+    {
+        runtimeObject.core.instanceBuffer->updateInstance(
+            runtimeObject.core.instanceIndex, object->getModelMatrix());
+    }
 }
 
 void Scene::drawRuntimeObject(const RuntimeSceneObject& runtimeObject) const

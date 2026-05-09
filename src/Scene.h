@@ -13,6 +13,7 @@
 class Camera;
 class Object;
 class GpuMesh;
+class InstanceBuffer;
 class Shader;
 class AssetManager;
 class TextManager;
@@ -63,6 +64,9 @@ class Scene
                 std::shared_ptr<Object>          object;
                 std::shared_ptr<RuntimeMaterial> material;
                 SceneRole                        role;
+                std::size_t instanceIndex; // Index in InstanceBuffer
+                std::shared_ptr<InstanceBuffer>
+                    instanceBuffer; // Per-mesh instance storage
         };
 
         /** @brief Runtime light-emitter parameters for a scene object. */
@@ -147,6 +151,9 @@ class Scene
         /** Runtime material map keyed by material id. */
         std::unordered_map<std::string, std::shared_ptr<RuntimeMaterial>>
             runtimeMaterials;
+        /** Instance buffer per unique mesh name for GPU-resident transforms. */
+        std::unordered_map<std::string, std::shared_ptr<InstanceBuffer>>
+            instanceBuffers;
         /** Runtime object map keyed by object id. */
         std::unordered_map<std::string, RuntimeSceneObject> runtimeObjects;
         /** Deterministic object iteration order matching scene definition
