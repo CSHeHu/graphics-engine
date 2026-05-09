@@ -18,10 +18,10 @@
 #include "Shader.h"
 #include "TextManager.h"
 
-std::array<Scene::FrustumPlane, 6>
+std::array<Scene::FrustumPlane, Scene::kFrustumPlaneCount>
 Scene::buildFrustumPlanes(const glm::mat4& viewProjection) const
 {
-    std::array<FrustumPlane, 6> planes;
+    std::array<FrustumPlane, kFrustumPlaneCount> planes;
 
     const auto getColumn = [&viewProjection](MatrixColumn column)
     {
@@ -36,9 +36,9 @@ Scene::buildFrustumPlanes(const glm::mat4& viewProjection) const
     const glm::vec4 column2 = getColumn(MatrixColumn::Z);
     const glm::vec4 column3 = getColumn(MatrixColumn::W);
 
-    const glm::vec4 rawPlanes[6] = {column3 + column0, column3 - column0,
-                                    column3 + column1, column3 - column1,
-                                    column3 + column2, column3 - column2};
+    const glm::vec4 rawPlanes[Scene::kFrustumPlaneCount] = {
+        column3 + column0, column3 - column0, column3 + column1,
+        column3 - column1, column3 + column2, column3 - column2};
 
     for (std::size_t i = 0; i < planes.size(); ++i)
     {
