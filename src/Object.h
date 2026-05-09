@@ -1,39 +1,18 @@
 #ifndef OBJECT_H
 #define OBJECT_H
 
-#include "Shader.h"
-#include <glad/glad.h>
 #include <glm.hpp>
-#include <memory>
-#include <string>
-#include <vector>
 
 class Object
 {
     public:
-        enum class VertexLayout
-        {
-            PositionUV,
-            PositionNormal
-        };
-
-        /** @brief Construct renderable object from vertex data and initial
-         * transform. */
-        Object(std::shared_ptr<Shader>          shaderProgram,
-               const std::vector<float>&        vertices,
-               const std::vector<unsigned int>& indices,
-               const glm::vec3& position, const glm::vec3& scale,
-               VertexLayout                    layout,
-               const std::vector<std::string>& texturePaths = {});
-        /** @brief Destroy OpenGL buffers owned by this object. */
-        ~Object();
+        /** @brief Construct lightweight runtime object transform. */
+        Object(const glm::vec3& position, const glm::vec3& scale);
 
         /** @brief Get object world position. */
         const glm::vec3& getPosition() const;
         /** @brief Set object world position. */
         void setPosition(const glm::vec3& position);
-        /** @brief Get object scale. */
-        const glm::vec3& getScale() const;
         /** @brief Set object scale. */
         void setScale(const glm::vec3& scale);
         /** @brief Get rotation angle in radians. */
@@ -46,24 +25,12 @@ class Object
         void rotate(float deltaAngleRadians, const glm::vec3& axis);
         /** @brief Build model matrix from position, rotation and scale. */
         const glm::mat4 getModelMatrix() const;
-        /** @brief Get VAO handle. */
-        unsigned int getVAO() const;
-        /** @brief Get VBO handle. */
-        unsigned int getVBO() const;
-        /** @brief Get EBO handle. */
-        unsigned int getEBO() const;
-        /** @brief Get draw index count. */
-        std::size_t getIndexCount() const;
-
-        std::shared_ptr<Shader> shader;
 
     private:
-        unsigned int VAO, VBO, EBO;
-        std::size_t  indexCount;
-        glm::vec3    pos;
-        glm::vec3    size;
-        float        rotationAngle;
-        glm::vec3    rotationAxis;
+        glm::vec3 pos;
+        glm::vec3 size;
+        float     rotationAngle;
+        glm::vec3 rotationAxis;
 };
 
 #endif // OBJECT_H

@@ -12,12 +12,12 @@
 
 class Camera;
 class Object;
+class GpuMesh;
 class Shader;
 class AssetManager;
 class TextManager;
 class SceneOverlayRenderer;
 class AudioManager;
-struct Mix_Music;
 
 /**
  * @brief Runtime scene container that updates behaviors and renders scene
@@ -59,9 +59,9 @@ class Scene
         /** @brief Runtime render/object data shared by all scene objects. */
         struct RuntimeSceneObjectCore
         {
+                std::shared_ptr<GpuMesh>         mesh;
                 std::shared_ptr<Object>          object;
                 std::shared_ptr<RuntimeMaterial> material;
-                std::size_t                      indexCount;
                 SceneRole                        role;
         };
 
@@ -143,7 +143,6 @@ class Scene
         AudioManager&                    audio;
         std::shared_ptr<SceneDefinition> definition;
         RenderingConfig                  renderingConfig;
-        std::shared_ptr<Mix_Music>       sceneMusic;
 
         /** Runtime material map keyed by material id. */
         std::unordered_map<std::string, std::shared_ptr<RuntimeMaterial>>
@@ -163,14 +162,13 @@ class Scene
          */
         bool initializeRuntimeObjects();
         /** Refresh cached pointers to objects that act as lights. */
-        void refreshActiveLightSources();
+        void collectActiveLightSources();
 
         /** Collect per-frame light uniforms from active light sources. */
-        PerFrameLightUniforms
-        buildPerFrameLightUniforms(int maxLightSources) const;
+        PerFrameLightUniforms collectLightUniforms(int maxLightSources) const;
         /** Ensure shader light uniform names match current light-array
          * capacity. */
-        void ensureLightUniformNameTable(int maxLightSources);
+        void ensureLightUniformNames(int maxLightSources);
         /** Apply configured behavior for one runtime object. */
         void updateRuntimeObjectBehavior(RuntimeSceneObject& runtimeObject,
                                          float               sceneElapsedTime);
@@ -192,13 +190,13 @@ class Scene
             const glm::mat4& view, float sceneElapsedTime, int maxLightSources,
             const PerFrameLightUniforms& perFrameLightUniforms);
         /** Configure shared per-frame uniforms for lit material shaders. */
-        void configureLitShaderPerFrame(
+        void configureLitShaderUniforms(
             const std::shared_ptr<RuntimeMaterial>& material,
             const Camera& camera, const glm::mat4& projection,
             const glm::mat4& view, float sceneElapsedTime,
             const PerFrameLightUniforms& perFrameLightUniforms) const;
-        /** Configure shared per-frame uniforms for light-source shaders. */
-        void configureLightSourceShaderPerFrame(
+        /** Configure shared per-frame uniforms for light-emitter shaders. */
+        void configureEmitterShaderUniforms(
             const std::shared_ptr<RuntimeMaterial>& material,
             const glm::mat4& projection, const glm::mat4& view,
             float sceneElapsedTime) const;

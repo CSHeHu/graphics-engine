@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#include "Object.h"
+#include "VertexLayout.h"
 
 /**
  * @brief Roles that a scene object can play in the scene.
@@ -97,11 +97,11 @@ struct MaterialDefinition
  */
 struct SceneObjectDefinition
 {
-        std::string          id;       /**< Object identifier. */
-        SceneRole            role;     /**< Role in the scene. */
-        std::string          meshName; /**< Mesh file name. */
-        Object::VertexLayout layout;   /**< Vertex layout type. */
-        glm::vec3            position; /**< Initial position. */
+        std::string  id;       /**< Object identifier. */
+        SceneRole    role;     /**< Role in the scene. */
+        std::string  meshName; /**< Mesh file name. */
+        VertexLayout layout;   /**< Vertex layout type. */
+        glm::vec3    position; /**< Initial position. */
         glm::vec3 rotation; /**< Euler angles in radians (pitch, yaw, roll). */
         glm::vec3 scale;    /**< Scale vector. */
         std::string materialId; /**< Material identifier. */

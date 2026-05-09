@@ -11,6 +11,7 @@ AudioManager::~AudioManager()
     if (initialized)
     {
         Mix_HaltMusic();
+        currentMusic.reset();
         Mix_CloseAudio();
         Mix_Quit();
         SDL_Quit();
@@ -51,10 +52,12 @@ int AudioManager::play(const std::shared_ptr<Mix_Music>& music, int loops)
         return -1;
     }
 
+    currentMusic  = music;
     int isPlaying = Mix_PlayMusic(music.get(), loops);
     if (isPlaying != 0)
     {
         printf("Failed to play music! SDL_mixer Error: %s\n", Mix_GetError());
+        currentMusic.reset();
         return -1;
     }
 
@@ -66,6 +69,7 @@ void AudioManager::stop()
     if (initialized)
     {
         Mix_HaltMusic();
+        currentMusic.reset();
     }
 }
 

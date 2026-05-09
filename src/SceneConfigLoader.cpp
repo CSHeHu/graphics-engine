@@ -66,8 +66,7 @@ WindowMode SceneConfigLoader::parseWindowMode(const std::string& value)
     return parseEnumValue(value, windowModeMap, "WindowMode");
 }
 
-Object::VertexLayout
-SceneConfigLoader::parseVertexLayout(const std::string& value)
+VertexLayout SceneConfigLoader::parseVertexLayout(const std::string& value)
 {
     return parseEnumValue(value, vertexLayoutMap, "vertex layout");
 }

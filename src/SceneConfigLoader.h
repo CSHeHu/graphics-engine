@@ -10,6 +10,7 @@
 #include <nlohmann/json.hpp>
 
 #include "SceneDefinition.h"
+#include "VertexLayout.h"
 
 enum class SceneId
 {
@@ -49,15 +50,15 @@ class SceneConfigLoader
                          const std::unordered_map<std::string, T>& mapping,
                          const char* typeName) const;
 
-        std::ifstream        openAssetFile(const std::string& path);
-        SceneId              parseSceneId(const std::string& value);
-        RenderMode           parseRenderMode(const std::string& value);
-        SceneRole            parseSceneRole(const std::string& value);
-        BehaviorType         parseBehaviorType(const std::string& value);
-        CameraMode           parseCameraMode(const std::string& value);
-        WindowMode           parseWindowMode(const std::string& value);
-        Object::VertexLayout parseVertexLayout(const std::string& value);
-        glm::vec3            parseVec3(float x, float y, float z);
+        std::ifstream   openAssetFile(const std::string& path);
+        SceneId         parseSceneId(const std::string& value);
+        RenderMode      parseRenderMode(const std::string& value);
+        SceneRole       parseSceneRole(const std::string& value);
+        BehaviorType    parseBehaviorType(const std::string& value);
+        CameraMode      parseCameraMode(const std::string& value);
+        WindowMode      parseWindowMode(const std::string& value);
+        VertexLayout    parseVertexLayout(const std::string& value);
+        glm::vec3       parseVec3(float x, float y, float z);
         SceneDefinition parseSceneDefinition(const std::string& sceneFilePath);
         UIOverlayConfig parseUIOverlayConfig(const nlohmann::json& json);
         WindowConfig    parseWindowConfig(const nlohmann::json& json);
@@ -102,10 +103,8 @@ class SceneConfigLoader
             {"Windowed", WindowMode::Windowed},
             {"Fullscreen", WindowMode::Fullscreen},
         };
-        const std::unordered_map<std::string, Object::VertexLayout>
-            vertexLayoutMap = {
-                {"PositionUV", Object::VertexLayout::PositionUV},
-                {"PositionNormal", Object::VertexLayout::PositionNormal},
+        const std::unordered_map<std::string, VertexLayout> vertexLayoutMap = {
+            {"PositionNormal", VertexLayout::PositionNormal},
         };
 };
 

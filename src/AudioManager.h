@@ -48,7 +48,8 @@ class AudioManager
         /**
          * @brief Indicates whether the audio system has been initialized.
          */
-        bool initialized = false;
+        bool                       initialized = false;
+        std::shared_ptr<Mix_Music> currentMusic;
 };
 
 #endif // !AUDIOMANAGER_H

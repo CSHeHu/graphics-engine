@@ -10,6 +10,7 @@
 #include "AssetManager.h"
 #include "AudioManager.h"
 #include "Camera.h"
+#include "GpuMesh.h"
 #include "Object.h"
 #include "SceneDefinition.h"
 #include "SceneOverlayRenderer.h"
@@ -33,7 +34,6 @@ Scene::~Scene()
     runtimeObjects.clear();
     runtimeObjectOrder.clear();
     activeLightSources.clear();
-    sceneMusic.reset();
 }
 
 bool Scene::init()
@@ -52,7 +52,7 @@ bool Scene::init()
         return false;
     }
 
-    refreshActiveLightSources();
+    collectActiveLightSources();
 
     if (activeLightSources.empty())
     {
@@ -62,13 +62,18 @@ bool Scene::init()
         return false;
     }
 
-    if (definition->audio.musicPath.empty())
+    if (definition->audio.continueOnSceneChange)
+    {
+        // Keep the current track alive and playing across scene switches.
+    }
+    else if (definition->audio.musicPath.empty())
     {
         audio.stop();
     }
-    else if (!definition->audio.continueOnSceneChange)
+    else
     {
-        sceneMusic = assets.loadAudio(definition->audio.musicPath);
+        std::shared_ptr<Mix_Music> sceneMusic =
+            assets.loadAudio(definition->audio.musicPath);
         if (audio.play(sceneMusic, definition->audio.loops) != 0)
         {
             std::cout << "Failed to start scene music: "
@@ -112,16 +117,12 @@ bool Scene::initializeRuntimeObjects()
             return false;
         }
 
-        const AssetManager::MeshData& meshData =
-            assets.loadMeshData(objectDef.meshName);
-        const std::vector<float>&        vertices   = meshData.vertices;
-        const std::vector<unsigned int>& indices    = meshData.indices;
-        const std::size_t                indexCount = meshData.indices.size();
-        std::shared_ptr<RuntimeMaterial> material   = materialIt->second;
+        const std::shared_ptr<GpuMesh> gpuMesh =
+            assets.loadGpuMesh(objectDef.meshName, objectDef.layout);
+        std::shared_ptr<RuntimeMaterial> material = materialIt->second;
 
-        std::shared_ptr<Object> object = std::make_shared<Object>(
-            material->shader, vertices, indices, objectDef.position,
-            objectDef.scale, objectDef.layout);
+        std::shared_ptr<Object> object =
+            std::make_shared<Object>(objectDef.position, objectDef.scale);
 
         // Apply initial rotations (pitch, yaw, roll)
         if (objectDef.rotation.y != 0.0f)
@@ -139,10 +140,10 @@ bool Scene::initializeRuntimeObjects()
         }
 
         RuntimeSceneObject runtimeObject;
-        runtimeObject.core.object     = object;
-        runtimeObject.core.material   = material;
-        runtimeObject.core.indexCount = indexCount;
-        runtimeObject.core.role       = objectDef.role;
+        runtimeObject.core.mesh     = gpuMesh;
+        runtimeObject.core.object   = object;
+        runtimeObject.core.material = material;
+        runtimeObject.core.role     = objectDef.role;
 
         runtimeObject.behavior.type            = objectDef.behavior;
         runtimeObject.behavior.oscillate.speed = objectDef.behaviorSpeed;
@@ -170,7 +171,7 @@ bool Scene::initializeRuntimeObjects()
     return true;
 }
 
-void Scene::refreshActiveLightSources()
+void Scene::collectActiveLightSources()
 {
     // Resolve active light providers once for lit-object uniforms.
     activeLightSources.clear();
@@ -185,7 +186,7 @@ void Scene::refreshActiveLightSources()
 }
 
 Scene::PerFrameLightUniforms
-Scene::buildPerFrameLightUniforms(int maxLightSources) const
+Scene::collectLightUniforms(int maxLightSources) const
 {
     PerFrameLightUniforms perFrameLightUniforms;
     perFrameLightUniforms.lightCount =
@@ -207,7 +208,7 @@ Scene::buildPerFrameLightUniforms(int maxLightSources) const
     return perFrameLightUniforms;
 }
 
-void Scene::ensureLightUniformNameTable(int maxLightSources)
+void Scene::ensureLightUniformNames(int maxLightSources)
 {
     if (lightUniformNameTable.capacity == maxLightSources)
     {
@@ -234,7 +235,7 @@ void Scene::renderRuntimeObjects(
     float sceneElapsedTime, int maxLightSources,
     const PerFrameLightUniforms& perFrameLightUniforms)
 {
-    ensureLightUniformNameTable(maxLightSources);
+    ensureLightUniformNames(maxLightSources);
 
     std::unordered_set<unsigned int> configuredLitPrograms;
     std::unordered_set<unsigned int> configuredUnlitPrograms;
@@ -255,7 +256,7 @@ void Scene::renderRuntimeObjects(
                 configuredLitPrograms.insert(shaderProgramId).second;
             if (firstUseThisFrame)
             {
-                configureLitShaderPerFrame(material, camera, projection, view,
+                configureLitShaderUniforms(material, camera, projection, view,
                                            sceneElapsedTime,
                                            perFrameLightUniforms);
             }
@@ -268,8 +269,8 @@ void Scene::renderRuntimeObjects(
                 configuredUnlitPrograms.insert(shaderProgramId).second;
             if (firstUseThisFrame)
             {
-                configureLightSourceShaderPerFrame(material, projection, view,
-                                                   sceneElapsedTime);
+                configureEmitterShaderUniforms(material, projection, view,
+                                               sceneElapsedTime);
             }
 
             // Visualize each emitter with its configured light tint and
@@ -283,7 +284,7 @@ void Scene::renderRuntimeObjects(
     }
 }
 
-void Scene::configureLitShaderPerFrame(
+void Scene::configureLitShaderUniforms(
     const std::shared_ptr<RuntimeMaterial>& material, const Camera& camera,
     const glm::mat4& projection, const glm::mat4& view, float sceneElapsedTime,
     const PerFrameLightUniforms& perFrameLightUniforms) const
@@ -315,7 +316,7 @@ void Scene::configureLitShaderPerFrame(
     }
 }
 
-void Scene::configureLightSourceShaderPerFrame(
+void Scene::configureEmitterShaderUniforms(
     const std::shared_ptr<RuntimeMaterial>& material,
     const glm::mat4& projection, const glm::mat4& view,
     float sceneElapsedTime) const
@@ -404,15 +405,16 @@ void Scene::drawRuntimeObject(const RuntimeSceneObject& runtimeObject) const
 {
     std::shared_ptr<Object>          object   = runtimeObject.core.object;
     std::shared_ptr<RuntimeMaterial> material = runtimeObject.core.material;
-    glBindVertexArray(object->getVAO());
+    runtimeObject.core.mesh->bind();
     glm::mat4 model = object->getModelMatrix();
     material->shader->setMat4("model", model);
     const glm::mat3 normalMatrix =
         glm::mat3(glm::transpose(glm::inverse(model)));
     material->shader->setMat3("normalMatrix", normalMatrix);
-    glDrawElements(GL_TRIANGLES,
-                   static_cast<GLsizei>(runtimeObject.core.indexCount),
-                   GL_UNSIGNED_INT, nullptr);
+    glDrawElements(
+        GL_TRIANGLES,
+        static_cast<GLsizei>(runtimeObject.core.mesh->getIndexCount()),
+        GL_UNSIGNED_INT, nullptr);
 }
 
 void Scene::render(const Camera& camera, const glm::mat4& projection,
@@ -425,7 +427,7 @@ void Scene::render(const Camera& camera, const glm::mat4& projection,
     const int maxLightSources = std::max(renderingConfig.maxLightSources, 1);
 
     const PerFrameLightUniforms perFrameLightUniforms =
-        buildPerFrameLightUniforms(maxLightSources);
+        collectLightUniforms(maxLightSources);
 
     // Draw visible scene objects.
     renderRuntimeObjects(camera, projection, view, sceneElapsedTime,

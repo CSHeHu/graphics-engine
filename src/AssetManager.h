@@ -10,7 +10,10 @@
 
 #include <SDL_mixer.h>
 
+#include "VertexLayout.h"
+
 class Shader;
+class GpuMesh;
 
 /**
  * @brief Lazy-loading cache for meshes and shader programs.
@@ -37,32 +40,15 @@ class AssetManager
          * @return Cached mesh data for the requested mesh.
          */
         const MeshData& loadMeshData(const std::string& meshName);
+
         /**
-         * @brief Get vertex buffer data for an already loaded mesh.
-         * @param meshName Mesh file name used as cache key.
-         * @return Vertex data array in position-normal interleaved format.
+         * @brief Load a mesh into GPU memory if needed and return the shared
+         * handle.
+         * @param meshName Mesh file name as referenced by scene content.
+         * @return Cached GPU mesh for the requested mesh.
          */
-        const std::vector<float>&
-        getMeshVertexBuffer(const std::string& meshName) const;
-        /**
-         * @brief Get number of vertices for an already loaded mesh.
-         * @param meshName Mesh file name used as cache key.
-         * @return Vertex count derived from cached interleaved vertex data.
-         */
-        std::size_t getMeshVertexCount(const std::string& meshName) const;
-        /**
-         * @brief Get index buffer data for an already loaded mesh.
-         * @param meshName Mesh file name used as cache key.
-         * @return Index data array used for indexed drawing.
-         */
-        const std::vector<unsigned int>&
-        getMeshIndexBuffer(const std::string& meshName) const;
-        /**
-         * @brief Get number of indices for an already loaded mesh.
-         * @param meshName Mesh file name used as cache key.
-         * @return Total index count in cached index buffer.
-         */
-        std::size_t getMeshIndexCount(const std::string& meshName) const;
+        std::shared_ptr<GpuMesh> loadGpuMesh(const std::string& meshName,
+                                             VertexLayout       layout);
 
         /**
          * @brief Load shader program into cache if needed and return it.
@@ -161,6 +147,8 @@ class AssetManager
 
         /** Mesh cache keyed by mesh file name. */
         std::unordered_map<std::string, std::shared_ptr<MeshData>> meshCache;
+        /** GPU mesh cache keyed by mesh file name. */
+        std::unordered_map<std::string, std::shared_ptr<GpuMesh>> gpuMeshCache;
         /** Shader cache keyed by explicit shader paths. */
         std::map<ShaderKey, std::shared_ptr<Shader>> shaderCache;
 

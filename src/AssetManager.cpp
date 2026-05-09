@@ -11,6 +11,7 @@
 
 #include <glm.hpp>
 
+#include "GpuMesh.h"
 #include "Shader.h"
 
 AssetManager::AssetManager(const std::string& meshesPathValue)
@@ -101,29 +102,20 @@ AssetManager::loadMeshData(const std::string& meshName)
     return *inserted.first->second;
 }
 
-const std::vector<float>&
-AssetManager::getMeshVertexBuffer(const std::string& meshName) const
+std::shared_ptr<GpuMesh> AssetManager::loadGpuMesh(const std::string& meshName,
+                                                   VertexLayout       layout)
 {
-    return requireCachedMeshData(meshName).vertices;
-}
+    auto it = gpuMeshCache.find(meshName);
+    if (it != gpuMeshCache.end())
+    {
+        return it->second;
+    }
 
-std::size_t AssetManager::getMeshVertexCount(const std::string& meshName) const
-{
-    const auto&           verts           = getMeshVertexBuffer(meshName);
-    constexpr std::size_t floatsPerVertex = 6; // x,y,z + nx,ny,nz
-    return verts.size() / floatsPerVertex;
-}
-
-const std::vector<unsigned int>&
-AssetManager::getMeshIndexBuffer(const std::string& meshName) const
-{
-    return requireCachedMeshData(meshName).indices;
-}
-
-std::size_t AssetManager::getMeshIndexCount(const std::string& meshName) const
-{
-    const auto& indices = getMeshIndexBuffer(meshName);
-    return indices.size();
+    const MeshData&          meshData = loadMeshData(meshName);
+    std::shared_ptr<GpuMesh> gpuMesh =
+        std::make_shared<GpuMesh>(meshData.vertices, meshData.indices, layout);
+    gpuMeshCache.emplace(meshName, gpuMesh);
+    return gpuMesh;
 }
 
 std::shared_ptr<Mix_Music> AssetManager::loadAudio(const std::string& file)
