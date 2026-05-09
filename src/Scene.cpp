@@ -156,8 +156,14 @@ bool Scene::initializeRuntimeObjects()
         }
 
         // Add instance to buffer and track index
-        glm::mat4   modelMatrix   = object->getModelMatrix();
-        std::size_t instanceIndex = instanceBuffer->addInstance(modelMatrix);
+        const glm::vec4 instanceColor =
+            objectDef.role == SceneRole::LightSource
+                ? glm::vec4(objectDef.lightColor * objectDef.lightIntensity,
+                            1.0f)
+                : glm::vec4(1.0f);
+        glm::mat4   modelMatrix = object->getModelMatrix();
+        std::size_t instanceIndex =
+            instanceBuffer->addInstance(modelMatrix, instanceColor);
 
         RuntimeSceneObject runtimeObject;
         runtimeObject.core.mesh           = gpuMesh;
@@ -335,27 +341,13 @@ void Scene::renderRuntimeObjects(
 
         if (material->renderMode == RenderMode::LightSource)
         {
-            // Keep the current per-object path for light emitters so their
-            // color tint remains exactly the same.
-            for (const std::string& objectId : group.objectIds)
-            {
-                const RuntimeSceneObject& runtimeObject =
-                    runtimeObjects.at(objectId);
-
-                std::shared_ptr<Object> object = runtimeObject.core.object;
-                glm::mat4               model  = object->getModelMatrix();
-                material->shader->setMat4("model", model);
-                const glm::mat3 normalMatrix =
-                    glm::mat3(glm::transpose(glm::inverse(model)));
-                material->shader->setMat3("normalMatrix", normalMatrix);
-                material->shader->setVec3("objectColor",
-                                          runtimeObject.light.color *
-                                              runtimeObject.light.intensity);
-
-                glDrawElements(GL_TRIANGLES,
-                               static_cast<GLsizei>(mesh->getIndexCount()),
-                               GL_UNSIGNED_INT, nullptr);
-            }
+            const std::size_t instanceCount =
+                firstObject.core.instanceBuffer->getInstanceCount();
+            material->shader->setMat4("model", glm::mat4(1.0f));
+            material->shader->setMat3("normalMatrix", glm::mat3(1.0f));
+            glDrawElementsInstanced(
+                GL_TRIANGLES, static_cast<GLsizei>(mesh->getIndexCount()),
+                GL_UNSIGNED_INT, nullptr, static_cast<GLsizei>(instanceCount));
         }
         else
         {

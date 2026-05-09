@@ -13,7 +13,9 @@ class InstanceBuffer
         InstanceBuffer();
         ~InstanceBuffer();
 
-        std::size_t addInstance(const glm::mat4& modelMatrix);
+        std::size_t
+             addInstance(const glm::mat4& modelMatrix,
+                         const glm::vec4& instanceColor = glm::vec4(1.0f));
         void updateInstance(std::size_t index, const glm::mat4& modelMatrix);
         void removeInstance(std::size_t index);
 
@@ -24,10 +26,13 @@ class InstanceBuffer
 
     private:
         unsigned int           instanceVbo;
+        unsigned int           colorVbo;
         std::vector<glm::mat4> matrices;
+        std::vector<glm::vec4> colors;
         std::size_t            activeCount;
 
         void uploadMatricesToGpu();
+        void uploadColorsToGpu();
         void uploadInstanceToGpu(std::size_t index);
 };
 
