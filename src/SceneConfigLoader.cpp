@@ -1,6 +1,7 @@
 #include "SceneConfigLoader.h"
 
 #include <algorithm>
+#include <cmath>
 #include <fstream>
 #include <stdexcept>
 #include <string>
@@ -235,7 +236,64 @@ SceneConfigLoader::parseSceneDefinition(const std::string& sceneFilePath)
                       lightColor[2].get<float>());
         object.lightIntensity = objectJson.value("lightIntensity", 1.0f);
 
-        definition.objects.push_back(object);
+        // Support explicit instance lists or simple circular instance
+        // spawning. If the scene author provides an "instances" array of
+        // vec3 positions, expand the template into multiple objects at
+        // those positions. Otherwise, if an integer "instanceCount" is
+        // provided, spawn that many copies evenly around a circle with
+        // optional "instanceRadius" (defaults to 5.0).
+        if (objectJson.contains("instances"))
+        {
+            const nlohmann::json& instancesJson = objectJson.at("instances");
+            if (!instancesJson.is_array())
+            {
+                throw std::runtime_error(
+                    "Expected array for field: objects.instances");
+            }
+            std::size_t idx = 0;
+            for (const auto& posJson : instancesJson)
+            {
+                if (!posJson.is_array() || posJson.size() != 3)
+                {
+                    throw std::runtime_error(
+                        "Expected vec3 array for objects.instances entry");
+                }
+                SceneObjectDefinition inst = object;
+                inst.id = object.id + "_" + std::to_string(idx++);
+                inst.position =
+                    parseVec3(posJson[0].get<float>(), posJson[1].get<float>(),
+                              posJson[2].get<float>());
+                definition.objects.push_back(inst);
+            }
+        }
+        else if (objectJson.contains("instanceCount"))
+        {
+            const int instanceCount = objectJson.at("instanceCount").get<int>();
+            const float radius      = objectJson.value("instanceRadius", 5.0f);
+            if (instanceCount <= 0)
+            {
+                // nothing to spawn
+            }
+            else
+            {
+                for (int i = 0; i < instanceCount; ++i)
+                {
+                    const float angle = 2.0f * static_cast<float>(M_PI) *
+                                        static_cast<float>(i) /
+                                        static_cast<float>(instanceCount);
+                    SceneObjectDefinition inst = object;
+                    inst.id       = object.id + "_" + std::to_string(i);
+                    inst.position = object.position +
+                                    glm::vec3(std::cos(angle) * radius, 0.0f,
+                                              std::sin(angle) * radius);
+                    definition.objects.push_back(inst);
+                }
+            }
+        }
+        else
+        {
+            definition.objects.push_back(object);
+        }
     }
 
     // Parse text overlays

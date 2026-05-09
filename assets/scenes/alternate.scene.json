@@ -35,7 +35,7 @@
   "audio": {
     "musicPath": "assets/audio/babydoll.mp3",
     "loops": -1,
-    "continueOnSceneChange": true 
+    "continueOnSceneChange": true
   },
   "materials": [
     {
@@ -126,7 +126,9 @@
         0.0,
         1.0
       ],
-      "behaviorAmplitude": 0.0
+      "behaviorAmplitude": 0.0,
+      "instanceCount": 30,
+      "instanceRadius": 12.0
     },
     {
       "id": "ground",
