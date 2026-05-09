@@ -142,64 +142,12 @@
       "lightIntensity": 1.25
     },
     {
-      "id": "sunCubeA",
-      "role": "LightTarget",
-      "meshName": "cube.obj",
-      "layout": "PositionNormal",
-      "position": [
-        1.0,
-        0.8,
-        -4.4
-      ],
-      "scale": [
-        0.25,
-        0.25,
-        0.25
-      ],
-      "materialId": "litOrangeMaterial",
-      "castsShadow": true,
-      "behavior": "None",
-      "behaviorSpeed": 0.0,
-      "behaviorAxis": [
-        0.0,
-        1.0,
-        0.0
-      ],
-      "behaviorAmplitude": 0.0
-    },
-    {
-      "id": "sunCubeB",
-      "role": "LightTarget",
-      "meshName": "cube.obj",
-      "layout": "PositionNormal",
-      "position": [
-        -1.0,
-        0.8,
-        -3.7
-      ],
-      "scale": [
-        0.25,
-        0.25,
-        0.25
-      ],
-      "materialId": "litOrangeMaterial",
-      "castsShadow": true,
-      "behavior": "None",
-      "behaviorSpeed": 0.0,
-      "behaviorAxis": [
-        0.0,
-        1.0,
-        0.0
-      ],
-      "behaviorAmplitude": 0.0
-    },
-    {
       "id": "lightTargetCube",
       "role": "LightTarget",
       "meshName": "cube.obj",
       "layout": "PositionNormal",
       "position": [
-        -8,
+        0.0,
         2.0,
         -6.0
       ],
@@ -212,7 +160,9 @@
         0.0,
         1.0
       ],
-      "behaviorAmplitude": 0.0
+      "behaviorAmplitude": 0.0,
+      "instanceCount": 24,
+      "instanceRadius": 6.0
     },
     {
       "id": "ground",
@@ -241,8 +191,8 @@
       "meshName": "Tree.obj",
       "layout": "PositionNormal",
       "position": [
-        -3.0,
-        0.01,
+        0.0,
+        0.0,
         -6.0
       ],
       "scale": [
@@ -259,7 +209,9 @@
         1.0,
         0.0
       ],
-      "behaviorAmplitude": 0.0
+      "behaviorAmplitude": 0.0,
+      "instanceCount": 2,
+      "instanceRadius": 1.0
     }
   ],
   "texts": []
