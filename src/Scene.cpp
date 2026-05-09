@@ -297,12 +297,13 @@ void Scene::renderRuntimeObjects(
     // Render groups with shared mesh/material state.
     for (auto& [groupKey, group] : groups)
     {
+        (void)groupKey;
         if (group.objectIds.empty())
             continue;
 
         // Fetch first object to get mesh and material references
         const RuntimeSceneObject& firstObject =
-            runtimeObjects.at(group.objectIds[0]);
+            runtimeObjects.at(group.objectIds.front());
         std::shared_ptr<GpuMesh>         mesh     = firstObject.core.mesh;
         std::shared_ptr<RuntimeMaterial> material = firstObject.core.material;
 
@@ -339,10 +340,17 @@ void Scene::renderRuntimeObjects(
             }
         }
 
+        const std::size_t instanceCount =
+            firstObject.core.instanceBuffer
+                ? firstObject.core.instanceBuffer->getInstanceCount()
+                : 0;
+        if (instanceCount == 0)
+        {
+            continue;
+        }
+
         if (material->renderMode == RenderMode::LightSource)
         {
-            const std::size_t instanceCount =
-                firstObject.core.instanceBuffer->getInstanceCount();
             material->shader->setMat4("model", glm::mat4(1.0f));
             material->shader->setMat3("normalMatrix", glm::mat3(1.0f));
             glDrawElementsInstanced(
@@ -351,8 +359,6 @@ void Scene::renderRuntimeObjects(
         }
         else
         {
-            const std::size_t instanceCount =
-                firstObject.core.instanceBuffer->getInstanceCount();
             material->shader->setMat4("model", glm::mat4(1.0f));
             material->shader->setMat3("normalMatrix", glm::mat3(1.0f));
             glDrawElementsInstanced(
@@ -379,9 +385,9 @@ void Scene::configureLitShaderUniforms(
     {
         // Backward-compatible single-light uniforms for legacy shaders.
         material->shader->setVec3("lightColor",
-                                  perFrameLightUniforms.lightColors[0]);
+                                  perFrameLightUniforms.lightColors.front());
         material->shader->setVec3("lightPos",
-                                  perFrameLightUniforms.lightPositions[0]);
+                                  perFrameLightUniforms.lightPositions.front());
     }
 
     for (int i = 0; i < perFrameLightUniforms.lightCount; ++i)

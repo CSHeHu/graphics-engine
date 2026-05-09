@@ -1,7 +1,9 @@
 #version 330 core
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec3 aNormal;
-layout (location = 2) in mat4 instanceModel;
+
+#define INSTANCE_MODEL_LOCATION 2
+layout (location = INSTANCE_MODEL_LOCATION) in mat4 instanceModel;
 
 out vec3 FragPos;
 out vec3 Normal;

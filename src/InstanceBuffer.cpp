@@ -2,6 +2,8 @@
 
 #include <glm/glm.hpp>
 
+static constexpr std::size_t kModelMatrixColumnCount = 4;
+
 InstanceBuffer::InstanceBuffer() : instanceVbo(0), colorVbo(0), activeCount(0)
 {
     glGenBuffers(1, &instanceVbo);
@@ -52,18 +54,24 @@ void InstanceBuffer::removeInstance(std::size_t index)
 void InstanceBuffer::attachToBoundVao() const
 {
     glBindBuffer(GL_ARRAY_BUFFER, instanceVbo);
-    for (int i = 0; i < 4; ++i)
+    for (std::size_t column = 0; column < kModelMatrixColumnCount; ++column)
     {
-        glEnableVertexAttribArray(2 + i);
-        glVertexAttribPointer(2 + i, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4),
-                              reinterpret_cast<void*>(i * sizeof(glm::vec4)));
-        glVertexAttribDivisor(2 + i, 1);
+        const GLuint attributeLocation =
+            static_cast<GLuint>(InstanceAttributeLocation::ModelColumn0) +
+            static_cast<GLuint>(column);
+        glEnableVertexAttribArray(attributeLocation);
+        glVertexAttribPointer(
+            attributeLocation, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4),
+            reinterpret_cast<void*>(column * sizeof(glm::vec4)));
+        glVertexAttribDivisor(attributeLocation, 1);
     }
     glBindBuffer(GL_ARRAY_BUFFER, colorVbo);
-    glEnableVertexAttribArray(6);
-    glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4),
-                          reinterpret_cast<void*>(0));
-    glVertexAttribDivisor(6, 1);
+    const GLuint colorLocation =
+        static_cast<GLuint>(InstanceAttributeLocation::Color);
+    glEnableVertexAttribArray(colorLocation);
+    glVertexAttribPointer(colorLocation, 4, GL_FLOAT, GL_FALSE,
+                          sizeof(glm::vec4), nullptr);
+    glVertexAttribDivisor(colorLocation, 1);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 

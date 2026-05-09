@@ -7,6 +7,15 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 
+enum class InstanceAttributeLocation : GLuint
+{
+    ModelColumn0 = 2,
+    ModelColumn1 = 3,
+    ModelColumn2 = 4,
+    ModelColumn3 = 5,
+    Color        = 6,
+};
+
 class InstanceBuffer
 {
     public:
