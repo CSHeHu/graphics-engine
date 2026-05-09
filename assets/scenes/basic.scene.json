@@ -188,7 +188,7 @@
     {
       "id": "tree",
       "role": "None",
-      "meshName": "Tree.obj",
+      "meshName": "Tree_LOD.obj",
       "layout": "PositionNormal",
       "position": [
         0.0,
@@ -210,8 +210,8 @@
         0.0
       ],
       "behaviorAmplitude": 0.0,
-      "instanceCount": 2,
-      "instanceRadius": 1.0
+      "instanceCount": 20,
+      "instanceRadius": 3.0
     }
   ],
   "texts": []
