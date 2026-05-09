@@ -203,6 +203,7 @@ struct RenderingConfig
         float       farPlane;
         bool        depthTestEnabled;
         bool        blendEnabled;
+        bool        frustumCullingEnabled = false;
 };
 
 struct RuntimeConfig

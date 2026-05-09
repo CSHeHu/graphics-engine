@@ -18,6 +18,73 @@
 #include "Shader.h"
 #include "TextManager.h"
 
+std::array<Scene::FrustumPlane, 6>
+Scene::buildFrustumPlanes(const glm::mat4& viewProjection) const
+{
+    std::array<FrustumPlane, 6> planes;
+
+    const auto getColumn = [&viewProjection](MatrixColumn column)
+    {
+        const std::size_t columnIndex = static_cast<std::size_t>(column);
+        return glm::vec4(
+            viewProjection[columnIndex][0], viewProjection[columnIndex][1],
+            viewProjection[columnIndex][2], viewProjection[columnIndex][3]);
+    };
+
+    const glm::vec4 column0 = getColumn(MatrixColumn::X);
+    const glm::vec4 column1 = getColumn(MatrixColumn::Y);
+    const glm::vec4 column2 = getColumn(MatrixColumn::Z);
+    const glm::vec4 column3 = getColumn(MatrixColumn::W);
+
+    const glm::vec4 rawPlanes[6] = {column3 + column0, column3 - column0,
+                                    column3 + column1, column3 - column1,
+                                    column3 + column2, column3 - column2};
+
+    for (std::size_t i = 0; i < planes.size(); ++i)
+    {
+        const glm::vec4 plane         = rawPlanes[i];
+        const float     length        = glm::length(glm::vec3(plane));
+        const float     inverseLength = length > 0.0f ? 1.0f / length : 1.0f;
+        planes[i].normal              = glm::vec3(plane) * inverseLength;
+        planes[i].distance            = plane.w * inverseLength;
+    }
+
+    return planes;
+}
+
+bool Scene::isRuntimeObjectVisible(
+    const RuntimeSceneObject&          runtimeObject,
+    const std::array<FrustumPlane, 6>& frustumPlanes) const
+{
+    const glm::mat4 modelMatrix = runtimeObject.core.object->getModelMatrix();
+    const glm::vec3 center(
+        modelMatrix[static_cast<std::size_t>(MatrixColumn::W)]);
+    const float radius = computeBoundingRadius(*runtimeObject.core.object);
+
+    for (const FrustumPlane& plane : frustumPlanes)
+    {
+        if (glm::dot(plane.normal, center) + plane.distance < -radius)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+float Scene::computeBoundingRadius(const Object& object) const
+{
+    const glm::mat4 modelMatrix = object.getModelMatrix();
+    const float     scaleX      = glm::length(
+        glm::vec3(modelMatrix[static_cast<std::size_t>(MatrixColumn::X)]));
+    const float scaleY = glm::length(
+        glm::vec3(modelMatrix[static_cast<std::size_t>(MatrixColumn::Y)]));
+    const float scaleZ = glm::length(
+        glm::vec3(modelMatrix[static_cast<std::size_t>(MatrixColumn::Z)]));
+    constexpr float kBoundingRadiusPadding = 1.5f;
+    return std::max(std::max(scaleX, scaleY), scaleZ) * kBoundingRadiusPadding;
+}
+
 Scene::Scene(AssetManager&                    assetManager,
              std::shared_ptr<SceneDefinition> definitionValue,
              TextManager& textManager, RenderingConfig renderingConfigValue,
@@ -269,6 +336,10 @@ void Scene::renderRuntimeObjects(
 
     std::unordered_set<unsigned int> configuredLitPrograms;
     std::unordered_set<unsigned int> configuredUnlitPrograms;
+    const bool frustumCullingEnabled = renderingConfig.frustumCullingEnabled;
+    const std::array<FrustumPlane, 6> frustumPlanes =
+        frustumCullingEnabled ? buildFrustumPlanes(projection * view)
+                              : std::array<FrustumPlane, 6>{};
 
     // Group objects by mesh/material so the mesh VAO and instance buffer can
     // be reused across matching objects.
@@ -340,10 +411,34 @@ void Scene::renderRuntimeObjects(
             }
         }
 
+        if (!firstObject.core.instanceBuffer)
+        {
+            continue;
+        }
+
+        std::vector<std::size_t> visibleInstanceIndices;
+        visibleInstanceIndices.reserve(group.objectIds.size());
+        for (const std::string& objectId : group.objectIds)
+        {
+            const RuntimeSceneObject& runtimeObject =
+                runtimeObjects.at(objectId);
+            if (!frustumCullingEnabled ||
+                isRuntimeObjectVisible(runtimeObject, frustumPlanes))
+            {
+                visibleInstanceIndices.push_back(
+                    runtimeObject.core.instanceIndex);
+            }
+        }
+
+        if (visibleInstanceIndices.empty())
+        {
+            continue;
+        }
+
+        firstObject.core.instanceBuffer->prepareDraw(visibleInstanceIndices);
         const std::size_t instanceCount =
-            firstObject.core.instanceBuffer
-                ? firstObject.core.instanceBuffer->getInstanceCount()
-                : 0;
+            firstObject.core.instanceBuffer->getPreparedInstanceCount();
+
         if (instanceCount == 0)
         {
             continue;

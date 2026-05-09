@@ -1,6 +1,7 @@
 #ifndef SCENE_H
 #define SCENE_H
 
+#include <array>
 #include <cstddef>
 #include <glm.hpp>
 #include <memory>
@@ -49,6 +50,20 @@ class Scene
                     bool infoOverlayEnabled, float currentTimeSeconds);
 
     private:
+        enum class MatrixColumn : std::size_t
+        {
+            X = 0,
+            Y = 1,
+            Z = 2,
+            W = 3,
+        };
+
+        struct FrustumPlane
+        {
+                glm::vec3 normal;
+                float     distance;
+        };
+
         /** @brief Runtime material state resolved from scene configuration. */
         struct RuntimeMaterial
         {
@@ -198,6 +213,15 @@ class Scene
             const Camera& camera, const glm::mat4& projection,
             const glm::mat4& view, float sceneElapsedTime, int maxLightSources,
             const PerFrameLightUniforms& perFrameLightUniforms);
+        /** Build view frustum planes for optional CPU culling. */
+        std::array<FrustumPlane, 6>
+        buildFrustumPlanes(const glm::mat4& viewProjection) const;
+        /** Test whether one runtime object intersects the current frustum. */
+        bool isRuntimeObjectVisible(
+            const RuntimeSceneObject&          runtimeObject,
+            const std::array<FrustumPlane, 6>& frustumPlanes) const;
+        /** Compute a conservative bounding sphere radius from object scale. */
+        float computeBoundingRadius(const Object& object) const;
         /** Configure shared per-frame uniforms for lit material shaders. */
         void configureLitShaderUniforms(
             const std::shared_ptr<RuntimeMaterial>& material,

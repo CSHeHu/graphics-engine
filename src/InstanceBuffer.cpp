@@ -4,7 +4,8 @@
 
 static constexpr std::size_t kModelMatrixColumnCount = 4;
 
-InstanceBuffer::InstanceBuffer() : instanceVbo(0), colorVbo(0), activeCount(0)
+InstanceBuffer::InstanceBuffer()
+    : instanceVbo(0), colorVbo(0), activeCount(0), preparedCount(0)
 {
     glGenBuffers(1, &instanceVbo);
     glGenBuffers(1, &colorVbo);
@@ -51,6 +52,29 @@ void InstanceBuffer::removeInstance(std::size_t index)
     }
 }
 
+void InstanceBuffer::prepareDraw(
+    const std::vector<std::size_t>& instanceIndices)
+{
+    drawMatrices.clear();
+    drawColors.clear();
+    drawMatrices.reserve(instanceIndices.size());
+    drawColors.reserve(instanceIndices.size());
+
+    for (std::size_t index : instanceIndices)
+    {
+        if (index >= matrices.size())
+        {
+            continue;
+        }
+
+        drawMatrices.push_back(matrices[index]);
+        drawColors.push_back(colors[index]);
+    }
+
+    preparedCount = drawMatrices.size();
+    uploadDrawBuffersToGpu();
+}
+
 void InstanceBuffer::attachToBoundVao() const
 {
     glBindBuffer(GL_ARRAY_BUFFER, instanceVbo);
@@ -85,6 +109,11 @@ std::size_t InstanceBuffer::getInstanceCount() const
     return activeCount;
 }
 
+std::size_t InstanceBuffer::getPreparedInstanceCount() const
+{
+    return preparedCount;
+}
+
 std::size_t InstanceBuffer::getCapacity() const
 {
     return matrices.size();
@@ -117,5 +146,18 @@ void InstanceBuffer::uploadInstanceToGpu(std::size_t index)
     glBufferSubData(GL_ARRAY_BUFFER,
                     static_cast<GLintptr>(index * sizeof(glm::mat4)),
                     sizeof(glm::mat4), &matrices[index]);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+void InstanceBuffer::uploadDrawBuffersToGpu()
+{
+    glBindBuffer(GL_ARRAY_BUFFER, instanceVbo);
+    glBufferData(GL_ARRAY_BUFFER, drawMatrices.size() * sizeof(glm::mat4),
+                 drawMatrices.empty() ? nullptr : drawMatrices.data(),
+                 GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, colorVbo);
+    glBufferData(GL_ARRAY_BUFFER, drawColors.size() * sizeof(glm::vec4),
+                 drawColors.empty() ? nullptr : drawColors.data(),
+                 GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }

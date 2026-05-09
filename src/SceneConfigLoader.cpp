@@ -366,6 +366,8 @@ RuntimeConfig SceneConfigLoader::parseRuntimeConfig(const nlohmann::json& json)
         renderingJson.at("depthTestEnabled").get<bool>();
     config.rendering.blendEnabled =
         renderingJson.at("blendEnabled").get<bool>();
+    config.rendering.frustumCullingEnabled =
+        renderingJson.value("frustumCullingEnabled", false);
 
     return config;
 }
