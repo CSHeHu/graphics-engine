@@ -32,6 +32,7 @@ Scene::Scene(AssetManager&                    assetManager,
 Scene::~Scene()
 {
     runtimeMaterials.clear();
+    instanceBuffers.clear();
     runtimeObjects.clear();
     runtimeObjectOrder.clear();
     activeLightSources.clear();
@@ -40,6 +41,7 @@ Scene::~Scene()
 bool Scene::init()
 {
     runtimeMaterials.clear();
+    instanceBuffers.clear();
     runtimeObjects.clear();
     runtimeObjectOrder.clear();
 
@@ -122,13 +124,15 @@ bool Scene::initializeRuntimeObjects()
             assets.loadGpuMesh(objectDef.meshName, objectDef.layout);
         std::shared_ptr<RuntimeMaterial> material = materialIt->second;
 
-        // Get or create InstanceBuffer for this mesh
-        auto instanceBufferIt = instanceBuffers.find(objectDef.meshName);
+        const std::string instanceKey =
+            objectDef.meshName + ":" + objectDef.materialId;
+
+        // Get or create InstanceBuffer for this mesh/material pair.
+        auto instanceBufferIt = instanceBuffers.find(instanceKey);
         if (instanceBufferIt == instanceBuffers.end())
         {
-            instanceBuffers[objectDef.meshName] =
-                std::make_shared<InstanceBuffer>();
-            instanceBufferIt = instanceBuffers.find(objectDef.meshName);
+            instanceBuffers[instanceKey] = std::make_shared<InstanceBuffer>();
+            instanceBufferIt             = instanceBuffers.find(instanceKey);
         }
         std::shared_ptr<InstanceBuffer> instanceBuffer =
             instanceBufferIt->second;
@@ -161,6 +165,7 @@ bool Scene::initializeRuntimeObjects()
         runtimeObject.core.material       = material;
         runtimeObject.core.role           = objectDef.role;
         runtimeObject.core.meshName       = objectDef.meshName;
+        runtimeObject.core.materialId     = objectDef.materialId;
         runtimeObject.core.instanceIndex  = instanceIndex;
         runtimeObject.core.instanceBuffer = instanceBuffer;
 
@@ -259,8 +264,8 @@ void Scene::renderRuntimeObjects(
     std::unordered_set<unsigned int> configuredLitPrograms;
     std::unordered_set<unsigned int> configuredUnlitPrograms;
 
-    // Group objects by (mesh name, material id) for efficient batching.
-    // This reduces shader/material binding overhead.
+    // Group objects by mesh/material so the mesh VAO and instance buffer can
+    // be reused across matching objects.
     struct MeshMaterialGroup
     {
             std::string              meshName;
@@ -273,12 +278,12 @@ void Scene::renderRuntimeObjects(
     {
         const RuntimeSceneObject& runtimeObject = runtimeObjects.at(objectId);
         const std::string         groupKey =
-            runtimeObject.core.meshName + "/" +
-            std::to_string(runtimeObject.core.material->shader->ID);
+            runtimeObject.core.meshName + ":" + runtimeObject.core.materialId;
 
         if (groups.find(groupKey) == groups.end())
         {
-            groups[groupKey] = {runtimeObject.core.meshName, groupKey, {}};
+            groups[groupKey] = {
+                runtimeObject.core.meshName, runtimeObject.core.materialId, {}};
         }
         groups[groupKey].objectIds.push_back(objectId);
     }
@@ -296,6 +301,11 @@ void Scene::renderRuntimeObjects(
         std::shared_ptr<RuntimeMaterial> material = firstObject.core.material;
 
         mesh->bind();
+        if (firstObject.core.instanceBuffer)
+        {
+            firstObject.core.instanceBuffer->attachToBoundVao();
+        }
+
         material->shader->use();
         const unsigned int shaderProgramId = material->shader->ID;
 
@@ -323,31 +333,39 @@ void Scene::renderRuntimeObjects(
             }
         }
 
-        // Draw all objects in this group with shared mesh/material state.
-        for (const std::string& objectId : group.objectIds)
+        if (material->renderMode == RenderMode::LightSource)
         {
-            const RuntimeSceneObject& runtimeObject =
-                runtimeObjects.at(objectId);
-
-            // Set per-object uniforms and emit indexed draw.
-            std::shared_ptr<Object> object = runtimeObject.core.object;
-            glm::mat4               model  = object->getModelMatrix();
-            material->shader->setMat4("model", model);
-            const glm::mat3 normalMatrix =
-                glm::mat3(glm::transpose(glm::inverse(model)));
-            material->shader->setMat3("normalMatrix", normalMatrix);
-
-            // For light sources, set per-instance color.
-            if (material->renderMode == RenderMode::LightSource)
+            // Keep the current per-object path for light emitters so their
+            // color tint remains exactly the same.
+            for (const std::string& objectId : group.objectIds)
             {
+                const RuntimeSceneObject& runtimeObject =
+                    runtimeObjects.at(objectId);
+
+                std::shared_ptr<Object> object = runtimeObject.core.object;
+                glm::mat4               model  = object->getModelMatrix();
+                material->shader->setMat4("model", model);
+                const glm::mat3 normalMatrix =
+                    glm::mat3(glm::transpose(glm::inverse(model)));
+                material->shader->setMat3("normalMatrix", normalMatrix);
                 material->shader->setVec3("objectColor",
                                           runtimeObject.light.color *
                                               runtimeObject.light.intensity);
-            }
 
-            glDrawElements(GL_TRIANGLES,
-                           static_cast<GLsizei>(mesh->getIndexCount()),
-                           GL_UNSIGNED_INT, nullptr);
+                glDrawElements(GL_TRIANGLES,
+                               static_cast<GLsizei>(mesh->getIndexCount()),
+                               GL_UNSIGNED_INT, nullptr);
+            }
+        }
+        else
+        {
+            const std::size_t instanceCount =
+                firstObject.core.instanceBuffer->getInstanceCount();
+            material->shader->setMat4("model", glm::mat4(1.0f));
+            material->shader->setMat3("normalMatrix", glm::mat3(1.0f));
+            glDrawElementsInstanced(
+                GL_TRIANGLES, static_cast<GLsizei>(mesh->getIndexCount()),
+                GL_UNSIGNED_INT, nullptr, static_cast<GLsizei>(instanceCount));
         }
     }
 }
