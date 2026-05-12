@@ -96,14 +96,7 @@ Scene::Scene(AssetManager&                    assetManager,
 {
 }
 
-Scene::~Scene()
-{
-    runtimeMaterials.clear();
-    instanceBuffers.clear();
-    runtimeObjects.clear();
-    runtimeObjectOrder.clear();
-    activeLightSources.clear();
-}
+Scene::~Scene() = default;
 
 bool Scene::init()
 {
@@ -444,22 +437,11 @@ void Scene::renderRuntimeObjects(
             continue;
         }
 
-        if (material->renderMode == RenderMode::LightSource)
-        {
-            material->shader->setMat4("model", glm::mat4(1.0f));
-            material->shader->setMat3("normalMatrix", glm::mat3(1.0f));
-            glDrawElementsInstanced(
-                GL_TRIANGLES, static_cast<GLsizei>(mesh->getIndexCount()),
-                GL_UNSIGNED_INT, nullptr, static_cast<GLsizei>(instanceCount));
-        }
-        else
-        {
-            material->shader->setMat4("model", glm::mat4(1.0f));
-            material->shader->setMat3("normalMatrix", glm::mat3(1.0f));
-            glDrawElementsInstanced(
-                GL_TRIANGLES, static_cast<GLsizei>(mesh->getIndexCount()),
-                GL_UNSIGNED_INT, nullptr, static_cast<GLsizei>(instanceCount));
-        }
+        material->shader->setMat4("model", glm::mat4(1.0f));
+        material->shader->setMat3("normalMatrix", glm::mat3(1.0f));
+        glDrawElementsInstanced(
+            GL_TRIANGLES, static_cast<GLsizei>(mesh->getIndexCount()),
+            GL_UNSIGNED_INT, nullptr, static_cast<GLsizei>(instanceCount));
     }
 }
 
@@ -523,7 +505,6 @@ void Scene::updateRuntimeObjectBehavior(RuntimeSceneObject& runtimeObject,
     switch (runtimeObject.behavior.type)
     {
         case BehaviorType::None:
-            applyBehaviorNone(runtimeObject, sceneElapsedTime);
             break;
         case BehaviorType::Oscillate:
             applyBehaviorOscillate(runtimeObject, sceneElapsedTime);
@@ -535,16 +516,8 @@ void Scene::updateRuntimeObjectBehavior(RuntimeSceneObject& runtimeObject,
             applyBehaviorFly(runtimeObject, sceneElapsedTime);
             break;
         default:
-            applyBehaviorNone(runtimeObject, sceneElapsedTime);
             break;
     }
-}
-
-void Scene::applyBehaviorNone(RuntimeSceneObject& runtimeObject,
-                              float               sceneElapsedTime)
-{
-    (void)runtimeObject;
-    (void)sceneElapsedTime;
 }
 
 void Scene::applyBehaviorOscillate(RuntimeSceneObject& runtimeObject,
@@ -599,22 +572,6 @@ void Scene::applyBehaviorFly(RuntimeSceneObject& runtimeObject,
         runtimeObject.core.instanceBuffer->updateInstance(
             runtimeObject.core.instanceIndex, object->getModelMatrix());
     }
-}
-
-void Scene::drawRuntimeObject(const RuntimeSceneObject& runtimeObject) const
-{
-    std::shared_ptr<Object>          object   = runtimeObject.core.object;
-    std::shared_ptr<RuntimeMaterial> material = runtimeObject.core.material;
-    runtimeObject.core.mesh->bind();
-    glm::mat4 model = object->getModelMatrix();
-    material->shader->setMat4("model", model);
-    const glm::mat3 normalMatrix =
-        glm::mat3(glm::transpose(glm::inverse(model)));
-    material->shader->setMat3("normalMatrix", normalMatrix);
-    glDrawElements(
-        GL_TRIANGLES,
-        static_cast<GLsizei>(runtimeObject.core.mesh->getIndexCount()),
-        GL_UNSIGNED_INT, nullptr);
 }
 
 void Scene::render(const Camera& camera, const glm::mat4& projection,

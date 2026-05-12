@@ -158,21 +158,6 @@ AssetManager::loadShader(const std::string& vertexPath,
     return shader;
 }
 
-std::shared_ptr<Shader>
-AssetManager::getShader(const std::string& vertexPath,
-                        const std::string& fragmentPath,
-                        const std::string& geometryPath) const
-{
-    const ShaderKey key{vertexPath, fragmentPath, geometryPath};
-    auto            it = shaderCache.find(key);
-    if (it == shaderCache.end())
-    {
-        throw std::runtime_error("Shader not loaded: " + vertexPath + " | " +
-                                 fragmentPath + " | " + geometryPath);
-    }
-    return it->second;
-}
-
 AssetManager::MeshData
 AssetManager::parseObjMeshDataPositionNormal(const std::string& meshName) const
 {

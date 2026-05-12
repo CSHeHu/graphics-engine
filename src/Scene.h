@@ -198,9 +198,6 @@ class Scene
         /** Apply configured behavior for one runtime object. */
         void updateRuntimeObjectBehavior(RuntimeSceneObject& runtimeObject,
                                          float               sceneElapsedTime);
-        /** Behavior handlers keyed by BehaviorType. */
-        void applyBehaviorNone(RuntimeSceneObject& runtimeObject,
-                               float               sceneElapsedTime);
         /** Apply oscillation behavior around initial position. */
         void applyBehaviorOscillate(RuntimeSceneObject& runtimeObject,
                                     float               sceneElapsedTime);
@@ -236,8 +233,6 @@ class Scene
             const std::shared_ptr<RuntimeMaterial>& material,
             const glm::mat4& projection, const glm::mat4& view,
             float sceneElapsedTime) const;
-        /** Draw one object with model-space uniforms and indexed geometry. */
-        void drawRuntimeObject(const RuntimeSceneObject& runtimeObject) const;
 };
 
 #endif // SCENE_H

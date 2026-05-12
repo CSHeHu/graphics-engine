@@ -4,8 +4,7 @@
 
 static constexpr std::size_t kModelMatrixColumnCount = 4;
 
-InstanceBuffer::InstanceBuffer()
-    : instanceVbo(0), colorVbo(0), activeCount(0), preparedCount(0)
+InstanceBuffer::InstanceBuffer() : instanceVbo(0), colorVbo(0), preparedCount(0)
 {
     glGenBuffers(1, &instanceVbo);
     glGenBuffers(1, &colorVbo);
@@ -25,7 +24,6 @@ std::size_t InstanceBuffer::addInstance(const glm::mat4& modelMatrix,
     const std::size_t index = matrices.size();
     matrices.push_back(modelMatrix);
     colors.push_back(instanceColor);
-    ++activeCount;
     uploadMatricesToGpu();
     uploadColorsToGpu();
     return index;
@@ -37,17 +35,6 @@ void InstanceBuffer::updateInstance(std::size_t      index,
     if (index < matrices.size())
     {
         matrices[index] = modelMatrix;
-        uploadInstanceToGpu(index);
-    }
-}
-
-void InstanceBuffer::removeInstance(std::size_t index)
-{
-    if (index < matrices.size())
-    {
-        matrices[index] = glm::mat4(1.0f);
-        if (activeCount > 0)
-            --activeCount;
         uploadInstanceToGpu(index);
     }
 }
@@ -99,24 +86,9 @@ void InstanceBuffer::attachToBoundVao() const
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void InstanceBuffer::bindBuffer() const
-{
-    glBindBuffer(GL_ARRAY_BUFFER, instanceVbo);
-}
-
-std::size_t InstanceBuffer::getInstanceCount() const
-{
-    return activeCount;
-}
-
 std::size_t InstanceBuffer::getPreparedInstanceCount() const
 {
     return preparedCount;
-}
-
-std::size_t InstanceBuffer::getCapacity() const
-{
-    return matrices.size();
 }
 
 void InstanceBuffer::uploadMatricesToGpu()

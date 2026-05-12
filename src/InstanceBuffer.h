@@ -26,16 +26,12 @@ class InstanceBuffer
              addInstance(const glm::mat4& modelMatrix,
                          const glm::vec4& instanceColor = glm::vec4(1.0f));
         void updateInstance(std::size_t index, const glm::mat4& modelMatrix);
-        void removeInstance(std::size_t index);
 
         /** Prepare a compact draw buffer from a subset of instance indices. */
         void prepareDraw(const std::vector<std::size_t>& instanceIndices);
 
         void        attachToBoundVao() const;
-        void        bindBuffer() const;
-        std::size_t getInstanceCount() const;
         std::size_t getPreparedInstanceCount() const;
-        std::size_t getCapacity() const;
 
     private:
         unsigned int           instanceVbo;
@@ -44,7 +40,6 @@ class InstanceBuffer
         std::vector<glm::vec4> colors;
         std::vector<glm::mat4> drawMatrices;
         std::vector<glm::vec4> drawColors;
-        std::size_t            activeCount;
         std::size_t            preparedCount;
 
         void uploadMatricesToGpu();

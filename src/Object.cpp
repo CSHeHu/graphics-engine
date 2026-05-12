@@ -18,19 +18,9 @@ void Object::setPosition(const glm::vec3& position)
     pos = position;
 }
 
-void Object::setScale(const glm::vec3& scale)
-{
-    size = scale;
-}
-
 float Object::getRotationAngle() const
 {
     return rotationAngle;
-}
-
-const glm::vec3& Object::getRotationAxis() const
-{
-    return rotationAxis;
 }
 
 void Object::setRotation(float angleRadians, const glm::vec3& axis)

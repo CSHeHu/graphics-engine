@@ -61,17 +61,6 @@ class AssetManager
         loadShader(const std::string& vertexPath,
                    const std::string& fragmentPath,
                    const std::string& geometryPath = "");
-        /**
-         * @brief Retrieve a previously loaded shader from cache.
-         * @param vertexPath Vertex shader source path.
-         * @param fragmentPath Fragment shader source path.
-         * @param geometryPath Optional geometry shader source path.
-         * @return Shared shader instance matching the exact shader key.
-         */
-        std::shared_ptr<Shader>
-        getShader(const std::string& vertexPath,
-                  const std::string& fragmentPath,
-                  const std::string& geometryPath = "") const;
 
         /**
          * @brief Load and cache a music track by file path.

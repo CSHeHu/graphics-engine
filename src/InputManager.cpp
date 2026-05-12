@@ -10,7 +10,7 @@ InputManager::InputManager(const InputConfig& inputConfigValue)
       cameraModeToggleLatch(false), infoOverlayToggleLatch(false),
       pauseToggleLatch(false), stepForwardLatch(false),
       stepBackwardLatch(false),
-      pendingActions{false, false, false, false, false},
+      pendingActions{false, false, false, false, false, false},
       inputConfig(inputConfigValue), camera(nullptr)
 {
 }
@@ -157,7 +157,7 @@ void InputManager::setCameraControlEnabled(bool enabled)
 InputActions InputManager::consumeActions()
 {
     const InputActions actions = pendingActions;
-    pendingActions             = {false, false, false, false, false};
+    pendingActions             = {false, false, false, false, false, false};
     return actions;
 }
 
