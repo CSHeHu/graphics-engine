@@ -163,11 +163,12 @@ class Scene
         std::unordered_map<std::string, std::shared_ptr<InstanceBuffer>>
             instanceBuffers;
         /** Runtime object map keyed by object id. */
-        std::unordered_map<std::string, RuntimeSceneObject> runtimeObjects;
+        std::unordered_map<std::string, std::shared_ptr<RuntimeSceneObject>>
+            runtimeObjects;
         /** Deterministic object iteration order matching scene definition
          * order. */
-        std::vector<std::string>         runtimeObjectOrder;
-        std::vector<RuntimeSceneObject*> activeLightSources;
+        std::vector<std::string>                         runtimeObjectOrder;
+        std::vector<std::shared_ptr<RuntimeSceneObject>> activeLightSources;
 
         /** Build shader-backed material instances for the current scene. */
         bool initializeRuntimeMaterials();
@@ -180,17 +181,20 @@ class Scene
         /** Collect per-frame light uniforms from active light sources. */
         PerFrameLightUniforms collectLightUniforms(int maxLightSources) const;
         /** Apply configured behavior for one runtime object. */
-        void updateRuntimeObjectBehavior(RuntimeSceneObject& runtimeObject,
-                                         float               sceneElapsedTime);
+        void updateRuntimeObjectBehavior(
+            std::shared_ptr<RuntimeSceneObject> runtimeObject,
+            float                               sceneElapsedTime);
         /** Apply oscillation behavior around initial position. */
-        void applyBehaviorOscillate(RuntimeSceneObject& runtimeObject,
-                                    float               sceneElapsedTime);
+        void applyBehaviorOscillate(
+            std::shared_ptr<RuntimeSceneObject> runtimeObject,
+            float                               sceneElapsedTime);
         /** Apply spin behavior around configured axis. */
-        void applyBehaviorSpin(RuntimeSceneObject& runtimeObject,
-                               float               sceneElapsedTime);
+        void
+        applyBehaviorSpin(std::shared_ptr<RuntimeSceneObject> runtimeObject,
+                          float                               sceneElapsedTime);
         /** Apply linear fly behavior along configured direction. */
-        void applyBehaviorFly(RuntimeSceneObject& runtimeObject,
-                              float               sceneElapsedTime);
+        void applyBehaviorFly(std::shared_ptr<RuntimeSceneObject> runtimeObject,
+                              float sceneElapsedTime);
         /** Draw all scene objects with per-shader uniform setup. */
         void renderRuntimeObjects(
             const Camera& camera, const glm::mat4& projection,
@@ -201,7 +205,7 @@ class Scene
         buildFrustumPlanes(const glm::mat4& viewProjection) const;
         /** Test whether one runtime object intersects the current frustum. */
         bool isRuntimeObjectVisible(
-            const RuntimeSceneObject& runtimeObject,
+            const std::shared_ptr<RuntimeSceneObject> runtimeObject,
             const std::array<FrustumPlane, FrustumPlane::kFrustumPlaneCount>&
                 frustumPlanes) const;
         /** Compute a conservative bounding sphere radius from object scale. */

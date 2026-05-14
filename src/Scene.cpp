@@ -4,6 +4,7 @@
 #include <cmath>
 #include <glm.hpp>
 #include <iostream>
+#include <memory>
 #include <unordered_set>
 #include <utility>
 
@@ -67,13 +68,13 @@ Scene::buildFrustumPlanes(const glm::mat4& viewProjection) const
 }
 
 bool Scene::isRuntimeObjectVisible(
-    const RuntimeSceneObject&          runtimeObject,
-    const std::array<FrustumPlane, 6>& frustumPlanes) const
+    const std::shared_ptr<RuntimeSceneObject> runtimeObject,
+    const std::array<FrustumPlane, 6>&        frustumPlanes) const
 {
-    const glm::mat4 modelMatrix = runtimeObject.core.object->getModelMatrix();
+    const glm::mat4 modelMatrix = runtimeObject->core.object->getModelMatrix();
     const glm::vec3 center(
         modelMatrix[static_cast<std::size_t>(MatrixColumn::W)]);
-    const float radius = computeBoundingRadius(*runtimeObject.core.object);
+    const float radius = computeBoundingRadius(*runtimeObject->core.object);
 
     for (const FrustumPlane& plane : frustumPlanes)
     {
@@ -226,34 +227,34 @@ bool Scene::initializeRuntimeObjects()
         std::size_t instanceIndex =
             instanceBuffer->addInstance(modelMatrix, instanceColor);
 
-        RuntimeSceneObject runtimeObject;
-        runtimeObject.core.mesh           = gpuMesh;
-        runtimeObject.core.object         = object;
-        runtimeObject.core.material       = material;
-        runtimeObject.core.role           = objectDef.role;
-        runtimeObject.core.meshName       = objectDef.meshName;
-        runtimeObject.core.materialId     = objectDef.materialId;
-        runtimeObject.core.instanceIndex  = instanceIndex;
-        runtimeObject.core.instanceBuffer = instanceBuffer;
+        auto runtimeObject             = std::make_shared<RuntimeSceneObject>();
+        runtimeObject->core.mesh       = gpuMesh;
+        runtimeObject->core.object     = object;
+        runtimeObject->core.material   = material;
+        runtimeObject->core.role       = objectDef.role;
+        runtimeObject->core.meshName   = objectDef.meshName;
+        runtimeObject->core.materialId = objectDef.materialId;
+        runtimeObject->core.instanceIndex  = instanceIndex;
+        runtimeObject->core.instanceBuffer = instanceBuffer;
 
-        runtimeObject.behavior.type            = objectDef.behavior;
-        runtimeObject.behavior.oscillate.speed = objectDef.behaviorSpeed;
-        runtimeObject.behavior.oscillate.axis  = objectDef.behaviorAxis;
-        runtimeObject.behavior.oscillate.amplitude =
+        runtimeObject->behavior.type            = objectDef.behavior;
+        runtimeObject->behavior.oscillate.speed = objectDef.behaviorSpeed;
+        runtimeObject->behavior.oscillate.axis  = objectDef.behaviorAxis;
+        runtimeObject->behavior.oscillate.amplitude =
             objectDef.behaviorAmplitude;
-        runtimeObject.behavior.oscillate.initialPosition = objectDef.position;
+        runtimeObject->behavior.oscillate.initialPosition = objectDef.position;
 
-        runtimeObject.behavior.spin.speed = objectDef.behaviorSpeed;
-        runtimeObject.behavior.spin.axis  = objectDef.behaviorAxis;
-        runtimeObject.behavior.spin.initialRotationAngle =
+        runtimeObject->behavior.spin.speed = objectDef.behaviorSpeed;
+        runtimeObject->behavior.spin.axis  = objectDef.behaviorAxis;
+        runtimeObject->behavior.spin.initialRotationAngle =
             object->getRotationAngle();
 
-        runtimeObject.behavior.fly.speed           = objectDef.behaviorSpeed;
-        runtimeObject.behavior.fly.direction       = objectDef.behaviorAxis;
-        runtimeObject.behavior.fly.initialPosition = objectDef.position;
+        runtimeObject->behavior.fly.speed           = objectDef.behaviorSpeed;
+        runtimeObject->behavior.fly.direction       = objectDef.behaviorAxis;
+        runtimeObject->behavior.fly.initialPosition = objectDef.position;
 
-        runtimeObject.light.color     = objectDef.lightColor;
-        runtimeObject.light.intensity = objectDef.lightIntensity;
+        runtimeObject->light.color     = objectDef.lightColor;
+        runtimeObject->light.intensity = objectDef.lightIntensity;
 
         runtimeObjects[objectDef.id] = runtimeObject;
         runtimeObjectOrder.push_back(objectDef.id);
@@ -268,10 +269,11 @@ void Scene::collectActiveLightSources()
     activeLightSources.clear();
     for (const std::string& objectId : runtimeObjectOrder)
     {
-        RuntimeSceneObject& runtimeObject = runtimeObjects.at(objectId);
-        if (runtimeObject.core.role == SceneRole::LightSource)
+        std::shared_ptr<RuntimeSceneObject> runtimeObject =
+            runtimeObjects.at(objectId);
+        if (runtimeObject->core.role == SceneRole::LightSource)
         {
-            activeLightSources.push_back(&runtimeObject);
+            activeLightSources.push_back(runtimeObject);
         }
     }
 }
@@ -288,7 +290,7 @@ Scene::collectLightUniforms(int maxLightSources) const
         static_cast<std::size_t>(perFrameLightUniforms.lightCount));
     for (int i = 0; i < perFrameLightUniforms.lightCount; ++i)
     {
-        const RuntimeSceneObject* light =
+        const std::shared_ptr<RuntimeSceneObject> light =
             activeLightSources[static_cast<std::size_t>(i)];
         perFrameLightUniforms.lightPositions.push_back(
             light->core.object->getPosition());
@@ -323,14 +325,16 @@ void Scene::renderRuntimeObjects(
 
     for (const std::string& objectId : runtimeObjectOrder)
     {
-        const RuntimeSceneObject& runtimeObject = runtimeObjects.at(objectId);
-        const std::string         groupKey =
-            runtimeObject.core.meshName + ":" + runtimeObject.core.materialId;
+        const std::shared_ptr<RuntimeSceneObject> runtimeObject =
+            runtimeObjects.at(objectId);
+        const std::string groupKey =
+            runtimeObject->core.meshName + ":" + runtimeObject->core.materialId;
 
         if (groups.find(groupKey) == groups.end())
         {
-            groups[groupKey] = {
-                runtimeObject.core.meshName, runtimeObject.core.materialId, {}};
+            groups[groupKey] = {runtimeObject->core.meshName,
+                                runtimeObject->core.materialId,
+                                {}};
         }
         groups[groupKey].objectIds.push_back(objectId);
     }
@@ -343,15 +347,15 @@ void Scene::renderRuntimeObjects(
             continue;
 
         // Fetch first object to get mesh and material references
-        const RuntimeSceneObject& firstObject =
+        const std::shared_ptr<RuntimeSceneObject> firstObject =
             runtimeObjects.at(group.objectIds.front());
-        std::shared_ptr<GpuMesh>         mesh     = firstObject.core.mesh;
-        std::shared_ptr<RuntimeMaterial> material = firstObject.core.material;
+        std::shared_ptr<GpuMesh>         mesh     = firstObject->core.mesh;
+        std::shared_ptr<RuntimeMaterial> material = firstObject->core.material;
 
         mesh->bind();
-        if (firstObject.core.instanceBuffer)
+        if (firstObject->core.instanceBuffer)
         {
-            firstObject.core.instanceBuffer->attachToBoundVao();
+            firstObject->core.instanceBuffer->attachToBoundVao();
         }
 
         material->shader->use();
@@ -381,7 +385,7 @@ void Scene::renderRuntimeObjects(
             }
         }
 
-        if (!firstObject.core.instanceBuffer)
+        if (!firstObject->core.instanceBuffer)
         {
             continue;
         }
@@ -390,13 +394,13 @@ void Scene::renderRuntimeObjects(
         visibleInstanceIndices.reserve(group.objectIds.size());
         for (const std::string& objectId : group.objectIds)
         {
-            const RuntimeSceneObject& runtimeObject =
+            const std::shared_ptr<RuntimeSceneObject> runtimeObject =
                 runtimeObjects.at(objectId);
             if (!frustumCullingEnabled ||
                 isRuntimeObjectVisible(runtimeObject, frustumPlanes))
             {
                 visibleInstanceIndices.push_back(
-                    runtimeObject.core.instanceIndex);
+                    runtimeObject->core.instanceIndex);
             }
         }
 
@@ -405,9 +409,9 @@ void Scene::renderRuntimeObjects(
             continue;
         }
 
-        firstObject.core.instanceBuffer->prepareDraw(visibleInstanceIndices);
+        firstObject->core.instanceBuffer->prepareDraw(visibleInstanceIndices);
         const std::size_t instanceCount =
-            firstObject.core.instanceBuffer->getPreparedInstanceCount();
+            firstObject->core.instanceBuffer->getPreparedInstanceCount();
 
         if (instanceCount == 0)
         {
@@ -480,10 +484,10 @@ void Scene::update(float sceneElapsedTime)
     }
 }
 
-void Scene::updateRuntimeObjectBehavior(RuntimeSceneObject& runtimeObject,
-                                        float               sceneElapsedTime)
+void Scene::updateRuntimeObjectBehavior(
+    std::shared_ptr<RuntimeSceneObject> runtimeObject, float sceneElapsedTime)
 {
-    switch (runtimeObject.behavior.type)
+    switch (runtimeObject->behavior.type)
     {
         case BehaviorType::None:
             break;
@@ -501,57 +505,57 @@ void Scene::updateRuntimeObjectBehavior(RuntimeSceneObject& runtimeObject,
     }
 }
 
-void Scene::applyBehaviorOscillate(RuntimeSceneObject& runtimeObject,
-                                   float               sceneElapsedTime)
+void Scene::applyBehaviorOscillate(
+    std::shared_ptr<RuntimeSceneObject> runtimeObject, float sceneElapsedTime)
 {
-    std::shared_ptr<Object> object = runtimeObject.core.object;
+    std::shared_ptr<Object> object = runtimeObject->core.object;
     const float             delta =
-        std::sin(sceneElapsedTime * runtimeObject.behavior.oscillate.speed) *
-        runtimeObject.behavior.oscillate.amplitude;
-    object->setPosition(runtimeObject.behavior.oscillate.initialPosition +
-                        runtimeObject.behavior.oscillate.axis * delta);
+        std::sin(sceneElapsedTime * runtimeObject->behavior.oscillate.speed) *
+        runtimeObject->behavior.oscillate.amplitude;
+    object->setPosition(runtimeObject->behavior.oscillate.initialPosition +
+                        runtimeObject->behavior.oscillate.axis * delta);
 
     // Sync updated transform to instance buffer
-    if (runtimeObject.core.instanceBuffer)
+    if (runtimeObject->core.instanceBuffer)
     {
-        runtimeObject.core.instanceBuffer->updateInstance(
-            runtimeObject.core.instanceIndex, object->getModelMatrix());
+        runtimeObject->core.instanceBuffer->updateInstance(
+            runtimeObject->core.instanceIndex, object->getModelMatrix());
     }
 }
 
-void Scene::applyBehaviorSpin(RuntimeSceneObject& runtimeObject,
-                              float               sceneElapsedTime)
+void Scene::applyBehaviorSpin(std::shared_ptr<RuntimeSceneObject> runtimeObject,
+                              float sceneElapsedTime)
 {
-    std::shared_ptr<Object> object = runtimeObject.core.object;
-    object->setRotation(runtimeObject.behavior.spin.initialRotationAngle +
-                            runtimeObject.behavior.spin.speed *
+    std::shared_ptr<Object> object = runtimeObject->core.object;
+    object->setRotation(runtimeObject->behavior.spin.initialRotationAngle +
+                            runtimeObject->behavior.spin.speed *
                                 sceneElapsedTime,
-                        runtimeObject.behavior.spin.axis);
+                        runtimeObject->behavior.spin.axis);
 
     // Sync updated transform to instance buffer
-    if (runtimeObject.core.instanceBuffer)
+    if (runtimeObject->core.instanceBuffer)
     {
-        runtimeObject.core.instanceBuffer->updateInstance(
-            runtimeObject.core.instanceIndex, object->getModelMatrix());
+        runtimeObject->core.instanceBuffer->updateInstance(
+            runtimeObject->core.instanceIndex, object->getModelMatrix());
     }
 }
 
-void Scene::applyBehaviorFly(RuntimeSceneObject& runtimeObject,
-                             float               sceneElapsedTime)
+void Scene::applyBehaviorFly(std::shared_ptr<RuntimeSceneObject> runtimeObject,
+                             float sceneElapsedTime)
 {
-    std::shared_ptr<Object> object = runtimeObject.core.object;
+    std::shared_ptr<Object> object = runtimeObject->core.object;
     const glm::vec3         direction =
-        glm::normalize(runtimeObject.behavior.fly.direction);
+        glm::normalize(runtimeObject->behavior.fly.direction);
     const glm::vec3 displacement =
-        direction * (runtimeObject.behavior.fly.speed * sceneElapsedTime);
-    object->setPosition(runtimeObject.behavior.fly.initialPosition +
+        direction * (runtimeObject->behavior.fly.speed * sceneElapsedTime);
+    object->setPosition(runtimeObject->behavior.fly.initialPosition +
                         displacement);
 
     // Sync updated transform to instance buffer
-    if (runtimeObject.core.instanceBuffer)
+    if (runtimeObject->core.instanceBuffer)
     {
-        runtimeObject.core.instanceBuffer->updateInstance(
-            runtimeObject.core.instanceIndex, object->getModelMatrix());
+        runtimeObject->core.instanceBuffer->updateInstance(
+            runtimeObject->core.instanceIndex, object->getModelMatrix());
     }
 }
 
