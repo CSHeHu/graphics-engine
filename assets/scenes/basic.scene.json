@@ -166,7 +166,7 @@
     },
     {
       "id": "ground",
-      "role": "Ground",
+      "role": "None",
       "meshName": "ground.obj",
       "layout": "PositionNormal",
       "position": [

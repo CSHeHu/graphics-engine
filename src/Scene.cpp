@@ -25,17 +25,17 @@ Scene::Scene(AssetManager&                    assetManager,
              AudioManager&                    audioManager)
     : assets(assetManager), textRenderer(textManager), audio(audioManager),
       definition(std::move(definitionValue)),
-      renderingConfig(renderingConfigValue), lightUniformNameTable{0, {}, {}},
+      renderingConfig(renderingConfigValue),
       overlayRenderer(std::make_unique<SceneOverlayRenderer>())
 {
 }
 
 Scene::~Scene() = default;
 
-std::array<Scene::FrustumPlane, Scene::kFrustumPlaneCount>
+std::array<Scene::FrustumPlane, Scene::FrustumPlane::kFrustumPlaneCount>
 Scene::buildFrustumPlanes(const glm::mat4& viewProjection) const
 {
-    std::array<FrustumPlane, kFrustumPlaneCount> planes;
+    std::array<FrustumPlane, FrustumPlane::kFrustumPlaneCount> planes;
 
     const auto getColumn = [&viewProjection](MatrixColumn column)
     {
@@ -50,7 +50,7 @@ Scene::buildFrustumPlanes(const glm::mat4& viewProjection) const
     const glm::vec4 column2 = getColumn(MatrixColumn::Z);
     const glm::vec4 column3 = getColumn(MatrixColumn::W);
 
-    const glm::vec4 rawPlanes[Scene::kFrustumPlaneCount] = {
+    const glm::vec4 rawPlanes[Scene::FrustumPlane::kFrustumPlaneCount] = {
         column3 + column0, column3 - column0, column3 + column1,
         column3 - column1, column3 + column2, column3 - column2};
 
@@ -282,43 +282,21 @@ Scene::collectLightUniforms(int maxLightSources) const
     PerFrameLightUniforms perFrameLightUniforms;
     perFrameLightUniforms.lightCount =
         std::min(static_cast<int>(activeLightSources.size()), maxLightSources);
-    perFrameLightUniforms.lightPositions.assign(
-        static_cast<std::size_t>(maxLightSources), glm::vec3(0.0f));
-    perFrameLightUniforms.lightColors.assign(
-        static_cast<std::size_t>(maxLightSources), glm::vec3(0.0f));
+    perFrameLightUniforms.lightPositions.reserve(
+        static_cast<std::size_t>(perFrameLightUniforms.lightCount));
+    perFrameLightUniforms.lightColors.reserve(
+        static_cast<std::size_t>(perFrameLightUniforms.lightCount));
     for (int i = 0; i < perFrameLightUniforms.lightCount; ++i)
     {
         const RuntimeSceneObject* light =
             activeLightSources[static_cast<std::size_t>(i)];
-        perFrameLightUniforms.lightPositions[static_cast<std::size_t>(i)] =
-            light->core.object->getPosition();
-        perFrameLightUniforms.lightColors[static_cast<std::size_t>(i)] =
-            light->light.color * light->light.intensity;
+        perFrameLightUniforms.lightPositions.push_back(
+            light->core.object->getPosition());
+        perFrameLightUniforms.lightColors.push_back(light->light.color *
+                                                    light->light.intensity);
     }
 
     return perFrameLightUniforms;
-}
-
-void Scene::ensureLightUniformNames(int maxLightSources)
-{
-    if (lightUniformNameTable.capacity == maxLightSources)
-    {
-        return;
-    }
-
-    lightUniformNameTable.lightPosNames.resize(
-        static_cast<std::size_t>(maxLightSources));
-    lightUniformNameTable.lightColorNames.resize(
-        static_cast<std::size_t>(maxLightSources));
-    for (int i = 0; i < maxLightSources; ++i)
-    {
-        const std::size_t idx = static_cast<std::size_t>(i);
-        lightUniformNameTable.lightPosNames[idx] =
-            "lightPos[" + std::to_string(i) + "]";
-        lightUniformNameTable.lightColorNames[idx] =
-            "lightColor[" + std::to_string(i) + "]";
-    }
-    lightUniformNameTable.capacity = maxLightSources;
 }
 
 void Scene::renderRuntimeObjects(
@@ -326,8 +304,6 @@ void Scene::renderRuntimeObjects(
     float sceneElapsedTime, int maxLightSources,
     const PerFrameLightUniforms& perFrameLightUniforms)
 {
-    ensureLightUniformNames(maxLightSources);
-
     std::unordered_set<unsigned int> configuredLitPrograms;
     std::unordered_set<unsigned int> configuredUnlitPrograms;
     const bool frustumCullingEnabled = renderingConfig.frustumCullingEnabled;
@@ -471,9 +447,13 @@ void Scene::configureLitShaderUniforms(
     for (int i = 0; i < perFrameLightUniforms.lightCount; ++i)
     {
         const std::size_t idx = static_cast<std::size_t>(i);
-        material->shader->setVec3(lightUniformNameTable.lightPosNames[idx],
+        const std::string posUniformName =
+            "lightPos[" + std::to_string(i) + "]";
+        const std::string colorUniformName =
+            "lightColor[" + std::to_string(i) + "]";
+        material->shader->setVec3(posUniformName,
                                   perFrameLightUniforms.lightPositions[idx]);
-        material->shader->setVec3(lightUniformNameTable.lightColorNames[idx],
+        material->shader->setVec3(colorUniformName,
                                   perFrameLightUniforms.lightColors[idx]);
     }
 }

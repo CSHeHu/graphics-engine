@@ -86,9 +86,7 @@ class SceneConfigLoader
         const std::unordered_map<std::string, SceneRole> sceneRoleMap = {
             {"None", SceneRole::None},
             {"LightSource", SceneRole::LightSource},
-            {"LightTarget", SceneRole::LightTarget},
-            {"Ground", SceneRole::Ground},
-        };
+            {"LightTarget", SceneRole::LightTarget}};
         const std::unordered_map<std::string, BehaviorType> behaviorTypeMap = {
             {"None", BehaviorType::None},
             {"Oscillate", BehaviorType::Oscillate},

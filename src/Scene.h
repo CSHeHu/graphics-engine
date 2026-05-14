@@ -50,8 +50,6 @@ class Scene
                     bool infoOverlayEnabled, float currentTimeSeconds);
 
     private:
-        static constexpr std::size_t kFrustumPlaneCount = 6;
-
         enum class MatrixColumn : std::size_t
         {
             X = 0,
@@ -62,8 +60,9 @@ class Scene
 
         struct FrustumPlane
         {
-                glm::vec3 normal;
-                float     distance;
+                glm::vec3                    normal;
+                float                        distance;
+                static constexpr std::size_t kFrustumPlaneCount = 6;
         };
 
         /** @brief Runtime material state resolved from scene configuration. */
@@ -144,21 +143,10 @@ class Scene
                 /** Number of active lights written into uniform arrays this
                  * frame. */
                 int lightCount;
-                /** World-space light positions padded to max light count. */
+                /** World-space light positions for active lights. */
                 std::vector<glm::vec3> lightPositions;
-                /** Final light colors (tint * intensity) padded to max light
-                 * count. */
+                /** Final light colors (tint * intensity) for active lights. */
                 std::vector<glm::vec3> lightColors;
-        };
-
-        struct LightUniformNameTable
-        {
-                /** Last configured max light source capacity. */
-                int capacity;
-                /** Cached uniform names for light position array entries. */
-                std::vector<std::string> lightPosNames;
-                /** Cached uniform names for light color array entries. */
-                std::vector<std::string> lightColorNames;
         };
 
         AssetManager&                         assets;
@@ -166,7 +154,6 @@ class Scene
         AudioManager&                         audio;
         std::shared_ptr<SceneDefinition>      definition;
         RenderingConfig                       renderingConfig;
-        LightUniformNameTable                 lightUniformNameTable;
         std::unique_ptr<SceneOverlayRenderer> overlayRenderer;
 
         /** Runtime material map keyed by material id. */
@@ -192,9 +179,6 @@ class Scene
 
         /** Collect per-frame light uniforms from active light sources. */
         PerFrameLightUniforms collectLightUniforms(int maxLightSources) const;
-        /** Ensure shader light uniform names match current light-array
-         * capacity. */
-        void ensureLightUniformNames(int maxLightSources);
         /** Apply configured behavior for one runtime object. */
         void updateRuntimeObjectBehavior(RuntimeSceneObject& runtimeObject,
                                          float               sceneElapsedTime);
@@ -213,13 +197,13 @@ class Scene
             const glm::mat4& view, float sceneElapsedTime, int maxLightSources,
             const PerFrameLightUniforms& perFrameLightUniforms);
         /** Build view frustum planes for optional CPU culling. */
-        std::array<FrustumPlane, kFrustumPlaneCount>
+        std::array<FrustumPlane, FrustumPlane::kFrustumPlaneCount>
         buildFrustumPlanes(const glm::mat4& viewProjection) const;
         /** Test whether one runtime object intersects the current frustum. */
         bool isRuntimeObjectVisible(
-            const RuntimeSceneObject&                           runtimeObject,
-            const std::array<FrustumPlane, kFrustumPlaneCount>& frustumPlanes)
-            const;
+            const RuntimeSceneObject& runtimeObject,
+            const std::array<FrustumPlane, FrustumPlane::kFrustumPlaneCount>&
+                frustumPlanes) const;
         /** Compute a conservative bounding sphere radius from object scale. */
         float computeBoundingRadius(const Object& object) const;
         /** Configure shared per-frame uniforms for lit material shaders. */

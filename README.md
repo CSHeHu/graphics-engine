@@ -61,7 +61,3 @@ cmake --build .
 - Build copies assets into `build/assets` automatically (`copy_assets` target).
 - Because runtime file IO is used, the executable currently expects assets to be present next to the build output.
 
-## Notes
-
-- Ground and other object roles are semantic scene tags.
-- Render behavior is controlled by material `renderMode`.
