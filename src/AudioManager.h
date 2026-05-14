@@ -45,9 +45,6 @@ class AudioManager
         int setPosition(double seconds);
 
     private:
-        /**
-         * @brief Indicates whether the audio system has been initialized.
-         */
         bool                       initialized = false;
         std::shared_ptr<Mix_Music> currentMusic;
 };

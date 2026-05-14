@@ -217,7 +217,8 @@ void Application::run()
             timeState.computeRealDelta(nowRealSeconds);
 
         inputManager->processInput(window.get(), realDeltaSeconds);
-        const InputActions actions = inputManager->consumeActions();
+        const InputManager::InputActions actions =
+            inputManager->consumeActions();
 
         if (actions.toggleCameraMode)
         {

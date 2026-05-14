@@ -2,14 +2,13 @@
 
 #include <cstdio>
 #include <fstream>
+#include <glm.hpp>
 #include <iostream>
 #include <map>
 #include <sstream>
 #include <stdexcept>
 #include <unordered_map>
 #include <utility>
-
-#include <glm.hpp>
 
 #include "GpuMesh.h"
 #include "Shader.h"

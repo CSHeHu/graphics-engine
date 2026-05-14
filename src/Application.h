@@ -40,27 +40,25 @@ class Application
 
     private:
         using WindowHandle = std::unique_ptr<GLFWwindow, void (*)(GLFWwindow*)>;
-
         WindowHandle window;
 
-        SceneConfigLoader                sceneConfigLoader;
-        RuntimeConfig                    runtimeConfig;
-        WindowConfig                     windowConfig;
-        UIOverlayConfig                  uiOverlayConfig;
-        std::vector<SceneCycleEntry>     sceneCycle;
-        std::unique_ptr<AudioManager>    audioManager;
-        std::unique_ptr<Camera>          camera;
-        bool                             scriptedCameraEnabled;
-        std::shared_ptr<SceneDefinition> activeSceneDefinition;
+        SceneConfigLoader sceneConfigLoader;
+        RuntimeConfig     runtimeConfig;
+        WindowConfig      windowConfig;
+        UIOverlayConfig   uiOverlayConfig;
+        bool              scriptedCameraEnabled;
+        TimeState         timeState;
+        ScenePlaylist     scenePlaylist;
+        bool              infoOverlayEnabled;
 
-        TimeState     timeState;
-        ScenePlaylist scenePlaylist;
-
+        std::vector<SceneCycleEntry>           sceneCycle;
+        std::unique_ptr<AudioManager>          audioManager;
+        std::unique_ptr<Camera>                camera;
+        std::shared_ptr<SceneDefinition>       activeSceneDefinition;
         std::unique_ptr<Scene>                 scene;
         std::unique_ptr<AssetManager>          assetManager;
         std::unique_ptr<TextManager>           textManager;
         std::unique_ptr<InputManager>          inputManager;
-        bool                                   infoOverlayEnabled;
         std::unique_ptr<CameraRouteController> cameraRouteController;
 
         /** @brief Load and activate scene runtime objects for a scene id. */

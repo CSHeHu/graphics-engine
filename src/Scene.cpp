@@ -18,6 +18,20 @@
 #include "Shader.h"
 #include "TextManager.h"
 
+Scene::Scene(AssetManager&                    assetManager,
+             std::shared_ptr<SceneDefinition> definitionValue,
+             TextManager&                     textManager,
+             const RenderingConfig&           renderingConfigValue,
+             AudioManager&                    audioManager)
+    : assets(assetManager), textRenderer(textManager), audio(audioManager),
+      definition(std::move(definitionValue)),
+      renderingConfig(renderingConfigValue), lightUniformNameTable{0, {}, {}},
+      overlayRenderer(std::make_unique<SceneOverlayRenderer>())
+{
+}
+
+Scene::~Scene() = default;
+
 std::array<Scene::FrustumPlane, Scene::kFrustumPlaneCount>
 Scene::buildFrustumPlanes(const glm::mat4& viewProjection) const
 {
@@ -84,19 +98,6 @@ float Scene::computeBoundingRadius(const Object& object) const
     constexpr float kBoundingRadiusPadding = 1.5f;
     return std::max(std::max(scaleX, scaleY), scaleZ) * kBoundingRadiusPadding;
 }
-
-Scene::Scene(AssetManager&                    assetManager,
-             std::shared_ptr<SceneDefinition> definitionValue,
-             TextManager& textManager, RenderingConfig renderingConfigValue,
-             AudioManager& audioManager)
-    : assets(assetManager), textRenderer(textManager), audio(audioManager),
-      definition(std::move(definitionValue)),
-      renderingConfig(renderingConfigValue), lightUniformNameTable{0, {}, {}},
-      overlayRenderer(std::make_unique<SceneOverlayRenderer>())
-{
-}
-
-Scene::~Scene() = default;
 
 bool Scene::init()
 {

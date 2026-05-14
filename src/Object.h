@@ -8,7 +8,6 @@ class Object
     public:
         /** @brief Construct lightweight runtime object transform. */
         Object(const glm::vec3& position, const glm::vec3& scale);
-
         /** @brief Get object world position. */
         const glm::vec3& getPosition() const;
         /** @brief Set object world position. */

@@ -32,7 +32,7 @@ class Scene
          * managers. */
         Scene(AssetManager&                    assetManager,
               std::shared_ptr<SceneDefinition> definition,
-              TextManager& textManager, RenderingConfig renderingConfig,
+              TextManager& textManager, const RenderingConfig& renderingConfig,
               AudioManager& audioManager);
         /** @brief Destroy scene runtime resources. */
         ~Scene();
@@ -50,6 +50,8 @@ class Scene
                     bool infoOverlayEnabled, float currentTimeSeconds);
 
     private:
+        static constexpr std::size_t kFrustumPlaneCount = 6;
+
         enum class MatrixColumn : std::size_t
         {
             X = 0,
@@ -63,8 +65,6 @@ class Scene
                 glm::vec3 normal;
                 float     distance;
         };
-
-        static constexpr std::size_t kFrustumPlaneCount = 6;
 
         /** @brief Runtime material state resolved from scene configuration. */
         struct RuntimeMaterial
@@ -161,11 +161,13 @@ class Scene
                 std::vector<std::string> lightColorNames;
         };
 
-        AssetManager&                    assets;
-        TextManager&                     textRenderer;
-        AudioManager&                    audio;
-        std::shared_ptr<SceneDefinition> definition;
-        RenderingConfig                  renderingConfig;
+        AssetManager&                         assets;
+        TextManager&                          textRenderer;
+        AudioManager&                         audio;
+        std::shared_ptr<SceneDefinition>      definition;
+        RenderingConfig                       renderingConfig;
+        LightUniformNameTable                 lightUniformNameTable;
+        std::unique_ptr<SceneOverlayRenderer> overlayRenderer;
 
         /** Runtime material map keyed by material id. */
         std::unordered_map<std::string, std::shared_ptr<RuntimeMaterial>>
@@ -177,10 +179,8 @@ class Scene
         std::unordered_map<std::string, RuntimeSceneObject> runtimeObjects;
         /** Deterministic object iteration order matching scene definition
          * order. */
-        std::vector<std::string>              runtimeObjectOrder;
-        std::vector<RuntimeSceneObject*>      activeLightSources;
-        LightUniformNameTable                 lightUniformNameTable;
-        std::unique_ptr<SceneOverlayRenderer> overlayRenderer;
+        std::vector<std::string>         runtimeObjectOrder;
+        std::vector<RuntimeSceneObject*> activeLightSources;
 
         /** Build shader-backed material instances for the current scene. */
         bool initializeRuntimeMaterials();

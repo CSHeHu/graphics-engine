@@ -7,18 +7,17 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 
-enum class InstanceAttributeLocation : GLuint
-{
-    ModelColumn0 = 2,
-    ModelColumn1 = 3,
-    ModelColumn2 = 4,
-    ModelColumn3 = 5,
-    Color        = 6,
-};
-
 class InstanceBuffer
 {
     public:
+        enum class InstanceAttributeLocation : GLuint
+        {
+            ModelColumn0 = 2,
+            ModelColumn1 = 3,
+            ModelColumn2 = 4,
+            ModelColumn3 = 5,
+            Color        = 6,
+        };
         InstanceBuffer();
         ~InstanceBuffer();
 
@@ -34,13 +33,14 @@ class InstanceBuffer
         std::size_t getPreparedInstanceCount() const;
 
     private:
-        unsigned int           instanceVbo;
-        unsigned int           colorVbo;
+        unsigned int instanceVbo;
+        unsigned int colorVbo;
+        std::size_t  preparedCount;
+
         std::vector<glm::mat4> matrices;
         std::vector<glm::vec4> colors;
         std::vector<glm::mat4> drawMatrices;
         std::vector<glm::vec4> drawColors;
-        std::size_t            preparedCount;
 
         void uploadMatricesToGpu();
         void uploadColorsToGpu();

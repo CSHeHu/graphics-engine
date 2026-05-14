@@ -7,21 +7,6 @@
 #include "Camera.h"
 #include "SceneDefinition.h"
 
-struct InputActions
-{
-        /** Toggle scripted/manual camera mode. */
-        bool toggleCameraMode;
-        /** Toggle info overlay visibility. */
-        bool toggleInfoOverlay;
-        /** Toggle simulation pause state. */
-        bool togglePause;
-        /** Step simulation time forward by fixed increment. */
-        bool stepTimeForward;
-        /** Step simulation time backward by fixed increment. */
-        bool stepTimeBackward;
-        bool resetTime;
-};
-
 /**
  * @brief Handles user input, camera control, and action toggles for the
  * application.
@@ -29,11 +14,25 @@ struct InputActions
 class InputManager
 {
     public:
+        struct InputActions
+        {
+                /** Toggle scripted/manual camera mode. */
+                bool toggleCameraMode;
+                /** Toggle info overlay visibility. */
+                bool toggleInfoOverlay;
+                /** Toggle simulation pause state. */
+                bool togglePause;
+                /** Step simulation time forward by fixed increment. */
+                bool stepTimeForward;
+                /** Step simulation time backward by fixed increment. */
+                bool stepTimeBackward;
+                bool resetTime;
+        };
         /**
          * @brief Construct an InputManager with the given input configuration.
          * @param inputConfig Input configuration struct.
          */
-        explicit InputManager(const InputConfig& inputConfig);
+        InputManager(const InputConfig& inputConfig);
         ~InputManager();
 
         /**

@@ -1,8 +1,7 @@
 #include "InstanceBuffer.h"
+#include "ext/matrix_float4x4.hpp"
 
 #include <glm/glm.hpp>
-
-static constexpr std::size_t kModelMatrixColumnCount = 4;
 
 InstanceBuffer::InstanceBuffer() : instanceVbo(0), colorVbo(0), preparedCount(0)
 {
@@ -65,7 +64,7 @@ void InstanceBuffer::prepareDraw(
 void InstanceBuffer::attachToBoundVao() const
 {
     glBindBuffer(GL_ARRAY_BUFFER, instanceVbo);
-    for (std::size_t column = 0; column < kModelMatrixColumnCount; ++column)
+    for (std::size_t column = 0; column < glm::mat4::length(); ++column)
     {
         const GLuint attributeLocation =
             static_cast<GLuint>(InstanceAttributeLocation::ModelColumn0) +

@@ -16,7 +16,6 @@ enum class SceneRole
     None,        /**< No special role. */
     LightSource, /**< Acts as a light source. */
     LightTarget, /**< Target for light. */
-    Ground,      /**< Ground object. */
 };
 
 /**

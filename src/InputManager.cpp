@@ -154,7 +154,7 @@ void InputManager::setCameraControlEnabled(bool enabled)
     firstMouse           = true;
 }
 
-InputActions InputManager::consumeActions()
+InputManager::InputActions InputManager::consumeActions()
 {
     const InputActions actions = pendingActions;
     pendingActions             = {false, false, false, false, false, false};

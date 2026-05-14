@@ -1,14 +1,12 @@
 #ifndef ASSETMANAGER_H
 #define ASSETMANAGER_H
 
-#include <cstddef>
+#include <SDL_mixer.h>
 #include <map>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
-
-#include <SDL_mixer.h>
 
 #include "VertexLayout.h"
 
@@ -70,6 +68,8 @@ class AssetManager
         std::shared_ptr<Mix_Music> loadAudio(const std::string& file);
 
     private:
+        std::string meshesPath;
+
         struct FaceVertex
         {
                 int positionIndex;
@@ -95,6 +95,15 @@ class AssetManager
                     return geometryPath < other.geometryPath;
                 }
         };
+
+        /** Mesh cache keyed by mesh file name. */
+        std::unordered_map<std::string, std::shared_ptr<MeshData>> meshCache;
+        /** GPU mesh cache keyed by mesh file name. */
+        std::unordered_map<std::string, std::shared_ptr<GpuMesh>> gpuMeshCache;
+        /** Shader cache keyed by explicit shader paths. */
+        std::map<ShaderKey, std::shared_ptr<Shader>> shaderCache;
+
+        std::unordered_map<std::string, std::shared_ptr<Mix_Music>> audioCache;
 
         /**
          * @brief Resolve positive/negative OBJ indices into absolute index
@@ -131,17 +140,6 @@ class AssetManager
          */
         MeshData
         parseObjMeshDataPositionNormal(const std::string& meshName) const;
-
-        std::string meshesPath;
-
-        /** Mesh cache keyed by mesh file name. */
-        std::unordered_map<std::string, std::shared_ptr<MeshData>> meshCache;
-        /** GPU mesh cache keyed by mesh file name. */
-        std::unordered_map<std::string, std::shared_ptr<GpuMesh>> gpuMeshCache;
-        /** Shader cache keyed by explicit shader paths. */
-        std::map<ShaderKey, std::shared_ptr<Shader>> shaderCache;
-
-        std::unordered_map<std::string, std::shared_ptr<Mix_Music>> audioCache;
 };
 
 #endif // ASSETMANAGER_H

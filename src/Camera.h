@@ -112,9 +112,6 @@ class Camera
         void setZoom(float zoom);
 
     private:
-        /** @brief Recompute direction vectors from Euler angles. */
-        void updateCameraVectors();
-
         // camera Attributes
         glm::vec3 Position;
         glm::vec3 Front;
@@ -129,5 +126,8 @@ class Camera
         float MovementSpeed;
         float MouseSensitivity;
         float Zoom;
+
+        /** @brief Recompute direction vectors from Euler angles. */
+        void updateCameraVectors();
 };
 #endif
