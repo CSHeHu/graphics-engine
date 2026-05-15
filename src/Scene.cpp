@@ -19,14 +19,12 @@
 #include "Shader.h"
 #include "TextManager.h"
 
-Scene::Scene(AssetManager&                    assetManager,
-             std::shared_ptr<SceneDefinition> definitionValue,
-             TextManager&                     textManager,
-             const RenderingConfig&           renderingConfigValue,
-             AudioManager&                    audioManager)
+Scene::Scene(AssetManager& assetManager, SceneDefinition& definitionValue,
+             TextManager&           textManager,
+             const RenderingConfig& renderingConfigValue,
+             AudioManager&          audioManager)
     : assets(assetManager), textRenderer(textManager), audio(audioManager),
-      definition(std::move(definitionValue)),
-      renderingConfig(renderingConfigValue),
+      definition(definitionValue), renderingConfig(renderingConfigValue),
       overlayRenderer(std::make_unique<SceneOverlayRenderer>())
 {
 }
@@ -127,22 +125,22 @@ bool Scene::init()
         return false;
     }
 
-    if (definition->audio.continueOnSceneChange)
+    if (definition.audio.continueOnSceneChange)
     {
         // Keep the current track alive and playing across scene switches.
     }
-    else if (definition->audio.musicPath.empty())
+    else if (definition.audio.musicPath.empty())
     {
         audio.stop();
     }
     else
     {
         std::shared_ptr<Mix_Music> sceneMusic =
-            assets.loadAudio(definition->audio.musicPath);
-        if (audio.play(sceneMusic, definition->audio.loops) != 0)
+            assets.loadAudio(definition.audio.musicPath);
+        if (audio.play(sceneMusic, definition.audio.loops) != 0)
         {
             std::cout << "Failed to start scene music: "
-                      << definition->audio.musicPath << std::endl;
+                      << definition.audio.musicPath << std::endl;
             return false;
         }
     }
@@ -152,7 +150,7 @@ bool Scene::init()
 
 bool Scene::initializeRuntimeMaterials()
 {
-    for (const MaterialDefinition& materialDef : definition->materials)
+    for (const MaterialDefinition& materialDef : definition.materials)
     {
         std::shared_ptr<RuntimeMaterial> material =
             std::make_shared<RuntimeMaterial>();
@@ -171,7 +169,7 @@ bool Scene::initializeRuntimeMaterials()
 bool Scene::initializeRuntimeObjects()
 {
     // Build runtime objects from scene definition data.
-    for (const SceneObjectDefinition& objectDef : definition->objects)
+    for (const SceneObjectDefinition& objectDef : definition.objects)
     {
         const auto materialIt = runtimeMaterials.find(objectDef.materialId);
         if (materialIt == runtimeMaterials.end())
@@ -576,7 +574,7 @@ void Scene::render(const Camera& camera, const glm::mat4& projection,
                          maxLightSources, perFrameLightUniforms);
 
     // Render scene text and runtime overlays through a dedicated presenter.
-    overlayRenderer->render(textRenderer, *definition, overlayConfig,
+    overlayRenderer->render(textRenderer, definition, overlayConfig,
                             infoOverlayEnabled, fps, sceneElapsedTime,
                             currentTimeSeconds);
 }

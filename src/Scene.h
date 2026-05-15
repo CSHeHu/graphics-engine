@@ -30,8 +30,7 @@ class Scene
     public:
         /** @brief Construct scene runtime from parsed definition and shared
          * managers. */
-        Scene(AssetManager&                    assetManager,
-              std::shared_ptr<SceneDefinition> definition,
+        Scene(AssetManager& assetManager, SceneDefinition& definition,
               TextManager& textManager, const RenderingConfig& renderingConfig,
               AudioManager& audioManager);
         /** @brief Destroy scene runtime resources. */
@@ -152,7 +151,7 @@ class Scene
         AssetManager&                         assets;
         TextManager&                          textRenderer;
         AudioManager&                         audio;
-        std::shared_ptr<SceneDefinition>      definition;
+        SceneDefinition&                      definition;
         RenderingConfig                       renderingConfig;
         std::unique_ptr<SceneOverlayRenderer> overlayRenderer;
 
