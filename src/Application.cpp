@@ -353,7 +353,6 @@ void Application::renderFrame()
                                  : 0.0f;
     float sceneElapsedTime = timeState.currentTimeSeconds() -
                              scenePlaylist.activeSceneStartTimeSeconds();
-    scene->update(sceneElapsedTime);
     scene->render(*camera, projection, view, fps, sceneElapsedTime,
                   uiOverlayConfig, infoOverlayEnabled,
                   timeState.currentTimeSeconds());

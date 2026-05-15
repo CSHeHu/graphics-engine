@@ -1,7 +1,6 @@
 #include "Scene.h"
 
 #include <algorithm>
-#include <cmath>
 #include <glm.hpp>
 #include <iostream>
 #include <memory>
@@ -30,73 +29,6 @@ Scene::Scene(AssetManager& assetManager, SceneDefinition& definitionValue,
 }
 
 Scene::~Scene() = default;
-
-std::array<Scene::FrustumPlane, Scene::FrustumPlane::kFrustumPlaneCount>
-Scene::buildFrustumPlanes(const glm::mat4& viewProjection) const
-{
-    std::array<FrustumPlane, FrustumPlane::kFrustumPlaneCount> planes;
-
-    const auto getColumn = [&viewProjection](MatrixColumn column)
-    {
-        const std::size_t columnIndex = static_cast<std::size_t>(column);
-        return glm::vec4(
-            viewProjection[columnIndex][0], viewProjection[columnIndex][1],
-            viewProjection[columnIndex][2], viewProjection[columnIndex][3]);
-    };
-
-    const glm::vec4 column0 = getColumn(MatrixColumn::X);
-    const glm::vec4 column1 = getColumn(MatrixColumn::Y);
-    const glm::vec4 column2 = getColumn(MatrixColumn::Z);
-    const glm::vec4 column3 = getColumn(MatrixColumn::W);
-
-    const glm::vec4 rawPlanes[Scene::FrustumPlane::kFrustumPlaneCount] = {
-        column3 + column0, column3 - column0, column3 + column1,
-        column3 - column1, column3 + column2, column3 - column2};
-
-    for (std::size_t i = 0; i < planes.size(); ++i)
-    {
-        const glm::vec4 plane         = rawPlanes[i];
-        const float     length        = glm::length(glm::vec3(plane));
-        const float     inverseLength = length > 0.0f ? 1.0f / length : 1.0f;
-        planes[i].normal              = glm::vec3(plane) * inverseLength;
-        planes[i].distance            = plane.w * inverseLength;
-    }
-
-    return planes;
-}
-
-bool Scene::isRuntimeObjectVisible(
-    const std::shared_ptr<RuntimeSceneObject> runtimeObject,
-    const std::array<FrustumPlane, 6>&        frustumPlanes) const
-{
-    const glm::mat4 modelMatrix = runtimeObject->core.object->getModelMatrix();
-    const glm::vec3 center(
-        modelMatrix[static_cast<std::size_t>(MatrixColumn::W)]);
-    const float radius = computeBoundingRadius(*runtimeObject->core.object);
-
-    for (const FrustumPlane& plane : frustumPlanes)
-    {
-        if (glm::dot(plane.normal, center) + plane.distance < -radius)
-        {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-float Scene::computeBoundingRadius(const Object& object) const
-{
-    const glm::mat4 modelMatrix = object.getModelMatrix();
-    const float     scaleX      = glm::length(
-        glm::vec3(modelMatrix[static_cast<std::size_t>(MatrixColumn::X)]));
-    const float scaleY = glm::length(
-        glm::vec3(modelMatrix[static_cast<std::size_t>(MatrixColumn::Y)]));
-    const float scaleZ = glm::length(
-        glm::vec3(modelMatrix[static_cast<std::size_t>(MatrixColumn::Z)]));
-    constexpr float kBoundingRadiusPadding = 1.5f;
-    return std::max(std::max(scaleX, scaleY), scaleZ) * kBoundingRadiusPadding;
-}
 
 bool Scene::init()
 {
@@ -215,15 +147,22 @@ bool Scene::initializeRuntimeObjects()
             object->rotate(objectDef.rotation.z, glm::vec3(0.0f, 0.0f, 1.0f));
         }
 
-        // Add instance to buffer and track index
-        const glm::vec4 instanceColor =
+        InstanceBuffer::InstanceData instanceData;
+        instanceData.basePosition      = objectDef.position;
+        instanceData.baseRotationAngle = object->getRotationAngle();
+        instanceData.baseScale         = objectDef.scale;
+        instanceData.behaviorType =
+            static_cast<float>(static_cast<int>(objectDef.behavior));
+        instanceData.baseRotationAxis  = object->getRotationAxis();
+        instanceData.behaviorSpeed     = objectDef.behaviorSpeed;
+        instanceData.behaviorAxis      = objectDef.behaviorAxis;
+        instanceData.behaviorAmplitude = objectDef.behaviorAmplitude;
+        instanceData.instanceColor =
             objectDef.role == SceneRole::LightSource
                 ? glm::vec4(objectDef.lightColor * objectDef.lightIntensity,
                             1.0f)
                 : glm::vec4(1.0f);
-        glm::mat4   modelMatrix = object->getModelMatrix();
-        std::size_t instanceIndex =
-            instanceBuffer->addInstance(modelMatrix, instanceColor);
+        instanceBuffer->addInstance(instanceData);
 
         auto runtimeObject             = std::make_shared<RuntimeSceneObject>();
         runtimeObject->core.mesh       = gpuMesh;
@@ -232,7 +171,6 @@ bool Scene::initializeRuntimeObjects()
         runtimeObject->core.role       = objectDef.role;
         runtimeObject->core.meshName   = objectDef.meshName;
         runtimeObject->core.materialId = objectDef.materialId;
-        runtimeObject->core.instanceIndex  = instanceIndex;
         runtimeObject->core.instanceBuffer = instanceBuffer;
 
         runtimeObject->behavior.type            = objectDef.behavior;
@@ -282,7 +220,15 @@ Scene::collectLightUniforms(int maxLightSources) const
     PerFrameLightUniforms perFrameLightUniforms;
     perFrameLightUniforms.lightCount =
         std::min(static_cast<int>(activeLightSources.size()), maxLightSources);
-    perFrameLightUniforms.lightPositions.reserve(
+    perFrameLightUniforms.lightBasePositions.reserve(
+        static_cast<std::size_t>(perFrameLightUniforms.lightCount));
+    perFrameLightUniforms.lightBehaviorTypes.reserve(
+        static_cast<std::size_t>(perFrameLightUniforms.lightCount));
+    perFrameLightUniforms.lightBehaviorSpeeds.reserve(
+        static_cast<std::size_t>(perFrameLightUniforms.lightCount));
+    perFrameLightUniforms.lightBehaviorAxes.reserve(
+        static_cast<std::size_t>(perFrameLightUniforms.lightCount));
+    perFrameLightUniforms.lightBehaviorAmplitudes.reserve(
         static_cast<std::size_t>(perFrameLightUniforms.lightCount));
     perFrameLightUniforms.lightColors.reserve(
         static_cast<std::size_t>(perFrameLightUniforms.lightCount));
@@ -290,8 +236,26 @@ Scene::collectLightUniforms(int maxLightSources) const
     {
         const std::shared_ptr<RuntimeSceneObject> light =
             activeLightSources[static_cast<std::size_t>(i)];
-        perFrameLightUniforms.lightPositions.push_back(
+        perFrameLightUniforms.lightBasePositions.push_back(
             light->core.object->getPosition());
+        perFrameLightUniforms.lightBehaviorTypes.push_back(
+            static_cast<int>(light->behavior.type));
+        const float behaviorSpeed = light->behavior.type == BehaviorType::Spin
+                                        ? light->behavior.spin.speed
+                                    : light->behavior.type == BehaviorType::Fly
+                                        ? light->behavior.fly.speed
+                                        : light->behavior.oscillate.speed;
+        const glm::vec3 behaviorAxis =
+            light->behavior.type == BehaviorType::Spin
+                ? light->behavior.spin.axis
+            : light->behavior.type == BehaviorType::Fly
+                ? light->behavior.fly.direction
+                : light->behavior.oscillate.axis;
+        const float behaviorAmplitude = light->behavior.oscillate.amplitude;
+        perFrameLightUniforms.lightBehaviorSpeeds.push_back(behaviorSpeed);
+        perFrameLightUniforms.lightBehaviorAxes.push_back(behaviorAxis);
+        perFrameLightUniforms.lightBehaviorAmplitudes.push_back(
+            behaviorAmplitude);
         perFrameLightUniforms.lightColors.push_back(light->light.color *
                                                     light->light.intensity);
     }
@@ -306,10 +270,6 @@ void Scene::renderRuntimeObjects(
 {
     std::unordered_set<unsigned int> configuredLitPrograms;
     std::unordered_set<unsigned int> configuredUnlitPrograms;
-    const bool frustumCullingEnabled = renderingConfig.frustumCullingEnabled;
-    const std::array<FrustumPlane, 6> frustumPlanes =
-        frustumCullingEnabled ? buildFrustumPlanes(projection * view)
-                              : std::array<FrustumPlane, 6>{};
 
     // Group objects by mesh/material so the mesh VAO and instance buffer can
     // be reused across matching objects.
@@ -388,36 +348,7 @@ void Scene::renderRuntimeObjects(
             continue;
         }
 
-        std::vector<std::size_t> visibleInstanceIndices;
-        visibleInstanceIndices.reserve(group.objectIds.size());
-        for (const std::string& objectId : group.objectIds)
-        {
-            const std::shared_ptr<RuntimeSceneObject> runtimeObject =
-                runtimeObjects.at(objectId);
-            if (!frustumCullingEnabled ||
-                isRuntimeObjectVisible(runtimeObject, frustumPlanes))
-            {
-                visibleInstanceIndices.push_back(
-                    runtimeObject->core.instanceIndex);
-            }
-        }
-
-        if (visibleInstanceIndices.empty())
-        {
-            continue;
-        }
-
-        firstObject->core.instanceBuffer->prepareDraw(visibleInstanceIndices);
-        const std::size_t instanceCount =
-            firstObject->core.instanceBuffer->getPreparedInstanceCount();
-
-        if (instanceCount == 0)
-        {
-            continue;
-        }
-
-        material->shader->setMat4("model", glm::mat4(1.0f));
-        material->shader->setMat3("normalMatrix", glm::mat3(1.0f));
+        const std::size_t instanceCount = group.objectIds.size();
         glDrawElementsInstanced(
             GL_TRIANGLES, static_cast<GLsizei>(mesh->getIndexCount()),
             GL_UNSIGNED_INT, nullptr, static_cast<GLsizei>(instanceCount));
@@ -437,24 +368,33 @@ void Scene::configureLitShaderUniforms(
     material->shader->setVec3("viewPos", camera.getPosition());
     material->shader->setInt("lightCount", perFrameLightUniforms.lightCount);
 
-    if (perFrameLightUniforms.lightCount > 0)
-    {
-        // Backward-compatible single-light uniforms for legacy shaders.
-        material->shader->setVec3("lightColor",
-                                  perFrameLightUniforms.lightColors.front());
-        material->shader->setVec3("lightPos",
-                                  perFrameLightUniforms.lightPositions.front());
-    }
-
     for (int i = 0; i < perFrameLightUniforms.lightCount; ++i)
     {
         const std::size_t idx = static_cast<std::size_t>(i);
-        const std::string posUniformName =
-            "lightPos[" + std::to_string(i) + "]";
+        const std::string basePosUniformName =
+            "lightBasePos[" + std::to_string(i) + "]";
+        const std::string behaviorTypeUniformName =
+            "lightBehaviorType[" + std::to_string(i) + "]";
+        const std::string behaviorSpeedUniformName =
+            "lightBehaviorSpeed[" + std::to_string(i) + "]";
+        const std::string behaviorAxisUniformName =
+            "lightBehaviorAxis[" + std::to_string(i) + "]";
+        const std::string behaviorAmplitudeUniformName =
+            "lightBehaviorAmplitude[" + std::to_string(i) + "]";
         const std::string colorUniformName =
             "lightColor[" + std::to_string(i) + "]";
-        material->shader->setVec3(posUniformName,
-                                  perFrameLightUniforms.lightPositions[idx]);
+        material->shader->setVec3(
+            basePosUniformName, perFrameLightUniforms.lightBasePositions[idx]);
+        material->shader->setInt(behaviorTypeUniformName,
+                                 perFrameLightUniforms.lightBehaviorTypes[idx]);
+        material->shader->setFloat(
+            behaviorSpeedUniformName,
+            perFrameLightUniforms.lightBehaviorSpeeds[idx]);
+        material->shader->setVec3(behaviorAxisUniformName,
+                                  perFrameLightUniforms.lightBehaviorAxes[idx]);
+        material->shader->setFloat(
+            behaviorAmplitudeUniformName,
+            perFrameLightUniforms.lightBehaviorAmplitudes[idx]);
         material->shader->setVec3(colorUniformName,
                                   perFrameLightUniforms.lightColors[idx]);
     }
@@ -469,92 +409,6 @@ void Scene::configureEmitterShaderUniforms(
     material->shader->setMat4("projection", projection);
     material->shader->setMat4("view", view);
     material->shader->setFloat("uTime", sceneElapsedTime);
-}
-
-void Scene::update(float sceneElapsedTime)
-{
-    // Behaviors are evaluated from the spawn transform, which keeps them
-    // deterministic and avoids accumulating floating-point drift.
-    for (const std::string& objectId : runtimeObjectOrder)
-    {
-        updateRuntimeObjectBehavior(runtimeObjects.at(objectId),
-                                    sceneElapsedTime);
-    }
-}
-
-void Scene::updateRuntimeObjectBehavior(
-    std::shared_ptr<RuntimeSceneObject> runtimeObject, float sceneElapsedTime)
-{
-    switch (runtimeObject->behavior.type)
-    {
-        case BehaviorType::None:
-            break;
-        case BehaviorType::Oscillate:
-            applyBehaviorOscillate(runtimeObject, sceneElapsedTime);
-            break;
-        case BehaviorType::Spin:
-            applyBehaviorSpin(runtimeObject, sceneElapsedTime);
-            break;
-        case BehaviorType::Fly:
-            applyBehaviorFly(runtimeObject, sceneElapsedTime);
-            break;
-        default:
-            break;
-    }
-}
-
-void Scene::applyBehaviorOscillate(
-    std::shared_ptr<RuntimeSceneObject> runtimeObject, float sceneElapsedTime)
-{
-    std::shared_ptr<Object> object = runtimeObject->core.object;
-    const float             delta =
-        std::sin(sceneElapsedTime * runtimeObject->behavior.oscillate.speed) *
-        runtimeObject->behavior.oscillate.amplitude;
-    object->setPosition(runtimeObject->behavior.oscillate.initialPosition +
-                        runtimeObject->behavior.oscillate.axis * delta);
-
-    // Sync updated transform to instance buffer
-    if (runtimeObject->core.instanceBuffer)
-    {
-        runtimeObject->core.instanceBuffer->updateInstance(
-            runtimeObject->core.instanceIndex, object->getModelMatrix());
-    }
-}
-
-void Scene::applyBehaviorSpin(std::shared_ptr<RuntimeSceneObject> runtimeObject,
-                              float sceneElapsedTime)
-{
-    std::shared_ptr<Object> object = runtimeObject->core.object;
-    object->setRotation(runtimeObject->behavior.spin.initialRotationAngle +
-                            runtimeObject->behavior.spin.speed *
-                                sceneElapsedTime,
-                        runtimeObject->behavior.spin.axis);
-
-    // Sync updated transform to instance buffer
-    if (runtimeObject->core.instanceBuffer)
-    {
-        runtimeObject->core.instanceBuffer->updateInstance(
-            runtimeObject->core.instanceIndex, object->getModelMatrix());
-    }
-}
-
-void Scene::applyBehaviorFly(std::shared_ptr<RuntimeSceneObject> runtimeObject,
-                             float sceneElapsedTime)
-{
-    std::shared_ptr<Object> object = runtimeObject->core.object;
-    const glm::vec3         direction =
-        glm::normalize(runtimeObject->behavior.fly.direction);
-    const glm::vec3 displacement =
-        direction * (runtimeObject->behavior.fly.speed * sceneElapsedTime);
-    object->setPosition(runtimeObject->behavior.fly.initialPosition +
-                        displacement);
-
-    // Sync updated transform to instance buffer
-    if (runtimeObject->core.instanceBuffer)
-    {
-        runtimeObject->core.instanceBuffer->updateInstance(
-            runtimeObject->core.instanceIndex, object->getModelMatrix());
-    }
 }
 
 void Scene::render(const Camera& camera, const glm::mat4& projection,

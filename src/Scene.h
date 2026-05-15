@@ -1,8 +1,6 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-#include <array>
-#include <cstddef>
 #include <glm.hpp>
 #include <memory>
 #include <string>
@@ -22,8 +20,7 @@ class SceneOverlayRenderer;
 class AudioManager;
 
 /**
- * @brief Runtime scene container that updates behaviors and renders scene
- * content.
+ * @brief Runtime scene container that renders scene content.
  */
 class Scene
 {
@@ -39,9 +36,6 @@ class Scene
         /** @brief Initialize runtime materials and objects for the active
          * definition. */
         bool init();
-        /** @brief Update behavior-driven transforms for the current scene time.
-         */
-        void update(float sceneElapsedTime);
         /** @brief Render scene geometry and optional text overlay. */
         void render(const Camera& camera, const glm::mat4& projection,
                     const glm::mat4& view, float fps, float sceneElapsedTime,
@@ -49,21 +43,6 @@ class Scene
                     bool infoOverlayEnabled, float currentTimeSeconds);
 
     private:
-        enum class MatrixColumn : std::size_t
-        {
-            X = 0,
-            Y = 1,
-            Z = 2,
-            W = 3,
-        };
-
-        struct FrustumPlane
-        {
-                glm::vec3                    normal;
-                float                        distance;
-                static constexpr std::size_t kFrustumPlaneCount = 6;
-        };
-
         /** @brief Runtime material state resolved from scene configuration. */
         struct RuntimeMaterial
         {
@@ -79,9 +58,8 @@ class Scene
                 std::shared_ptr<Object>          object;
                 std::shared_ptr<RuntimeMaterial> material;
                 SceneRole                        role;
-                std::string meshName;      // For grouping during render
-                std::string materialId;    // For grouping during render
-                std::size_t instanceIndex; // Index in InstanceBuffer
+                std::string meshName;   // For grouping during render
+                std::string materialId; // For grouping during render
                 std::shared_ptr<InstanceBuffer>
                     instanceBuffer; // Per-mesh instance storage
         };
@@ -142,8 +120,16 @@ class Scene
                 /** Number of active lights written into uniform arrays this
                  * frame. */
                 int lightCount;
-                /** World-space light positions for active lights. */
-                std::vector<glm::vec3> lightPositions;
+                /** World-space light base positions for active lights. */
+                std::vector<glm::vec3> lightBasePositions;
+                /** Light behavior types for active lights. */
+                std::vector<int> lightBehaviorTypes;
+                /** Light behavior speeds for active lights. */
+                std::vector<float> lightBehaviorSpeeds;
+                /** Light behavior axes for active lights. */
+                std::vector<glm::vec3> lightBehaviorAxes;
+                /** Light behavior amplitudes for active lights. */
+                std::vector<float> lightBehaviorAmplitudes;
                 /** Final light colors (tint * intensity) for active lights. */
                 std::vector<glm::vec3> lightColors;
         };
@@ -179,36 +165,11 @@ class Scene
 
         /** Collect per-frame light uniforms from active light sources. */
         PerFrameLightUniforms collectLightUniforms(int maxLightSources) const;
-        /** Apply configured behavior for one runtime object. */
-        void updateRuntimeObjectBehavior(
-            std::shared_ptr<RuntimeSceneObject> runtimeObject,
-            float                               sceneElapsedTime);
-        /** Apply oscillation behavior around initial position. */
-        void applyBehaviorOscillate(
-            std::shared_ptr<RuntimeSceneObject> runtimeObject,
-            float                               sceneElapsedTime);
-        /** Apply spin behavior around configured axis. */
-        void
-        applyBehaviorSpin(std::shared_ptr<RuntimeSceneObject> runtimeObject,
-                          float                               sceneElapsedTime);
-        /** Apply linear fly behavior along configured direction. */
-        void applyBehaviorFly(std::shared_ptr<RuntimeSceneObject> runtimeObject,
-                              float sceneElapsedTime);
         /** Draw all scene objects with per-shader uniform setup. */
         void renderRuntimeObjects(
             const Camera& camera, const glm::mat4& projection,
             const glm::mat4& view, float sceneElapsedTime, int maxLightSources,
             const PerFrameLightUniforms& perFrameLightUniforms);
-        /** Build view frustum planes for optional CPU culling. */
-        std::array<FrustumPlane, FrustumPlane::kFrustumPlaneCount>
-        buildFrustumPlanes(const glm::mat4& viewProjection) const;
-        /** Test whether one runtime object intersects the current frustum. */
-        bool isRuntimeObjectVisible(
-            const std::shared_ptr<RuntimeSceneObject> runtimeObject,
-            const std::array<FrustumPlane, FrustumPlane::kFrustumPlaneCount>&
-                frustumPlanes) const;
-        /** Compute a conservative bounding sphere radius from object scale. */
-        float computeBoundingRadius(const Object& object) const;
         /** Configure shared per-frame uniforms for lit material shaders. */
         void configureLitShaderUniforms(
             const std::shared_ptr<RuntimeMaterial>& material,

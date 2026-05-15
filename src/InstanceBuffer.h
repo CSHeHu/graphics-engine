@@ -12,40 +12,50 @@ class InstanceBuffer
     public:
         enum class InstanceAttributeLocation : GLuint
         {
-            ModelColumn0 = 2,
-            ModelColumn1 = 3,
-            ModelColumn2 = 4,
-            ModelColumn3 = 5,
-            Color        = 6,
+            BasePositionRotationAngle = 2,
+            BaseScaleBehaviorType     = 3,
+            BaseRotationAxisSpeed     = 4,
+            BehaviorAxisAmplitude     = 5,
+            Color                     = 6,
         };
+
+        struct InstanceData
+        {
+                glm::vec3 basePosition;
+                float     baseRotationAngle;
+                glm::vec3 baseScale;
+                float     behaviorType;
+                glm::vec3 baseRotationAxis;
+                float     behaviorSpeed;
+                glm::vec3 behaviorAxis;
+                float     behaviorAmplitude;
+                glm::vec4 instanceColor = glm::vec4(1.0f);
+        };
+
+        struct InstanceGpuData
+        {
+                glm::vec4 basePositionRotationAngle;
+                glm::vec4 baseScaleBehaviorType;
+                glm::vec4 baseRotationAxisSpeed;
+                glm::vec4 behaviorAxisAmplitude;
+        };
+
         InstanceBuffer();
         ~InstanceBuffer();
 
-        std::size_t
-             addInstance(const glm::mat4& modelMatrix,
-                         const glm::vec4& instanceColor = glm::vec4(1.0f));
-        void updateInstance(std::size_t index, const glm::mat4& modelMatrix);
+        std::size_t addInstance(const InstanceData& instanceData);
 
-        /** Prepare a compact draw buffer from a subset of instance indices. */
-        void prepareDraw(const std::vector<std::size_t>& instanceIndices);
-
-        void        attachToBoundVao() const;
-        std::size_t getPreparedInstanceCount() const;
+        void attachToBoundVao() const;
 
     private:
         unsigned int instanceVbo;
         unsigned int colorVbo;
-        std::size_t  preparedCount;
 
-        std::vector<glm::mat4> matrices;
-        std::vector<glm::vec4> colors;
-        std::vector<glm::mat4> drawMatrices;
-        std::vector<glm::vec4> drawColors;
+        std::vector<InstanceGpuData> instanceGpuData;
+        std::vector<glm::vec4>       colors;
 
-        void uploadMatricesToGpu();
+        void uploadInstanceDataToGpu();
         void uploadColorsToGpu();
-        void uploadInstanceToGpu(std::size_t index);
-        void uploadDrawBuffersToGpu();
 };
 
 #endif // INSTANCEBUFFER_H

@@ -23,6 +23,11 @@ float Object::getRotationAngle() const
     return rotationAngle;
 }
 
+const glm::vec3& Object::getRotationAxis() const
+{
+    return rotationAxis;
+}
+
 void Object::setRotation(float angleRadians, const glm::vec3& axis)
 {
     rotationAngle = angleRadians;
