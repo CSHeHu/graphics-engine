@@ -1,6 +1,7 @@
 #include "Scene.h"
 
 #include <algorithm>
+#include <array>
 #include <glm.hpp>
 #include <iostream>
 #include <memory>
@@ -162,7 +163,8 @@ bool Scene::initializeRuntimeObjects()
                 ? glm::vec4(objectDef.lightColor * objectDef.lightIntensity,
                             1.0f)
                 : glm::vec4(1.0f);
-        instanceBuffer->addInstance(instanceData);
+        const std::size_t instanceIndex =
+            instanceBuffer->addInstance(instanceData);
 
         auto runtimeObject             = std::make_shared<RuntimeSceneObject>();
         runtimeObject->core.mesh       = gpuMesh;
@@ -172,6 +174,9 @@ bool Scene::initializeRuntimeObjects()
         runtimeObject->core.meshName   = objectDef.meshName;
         runtimeObject->core.materialId = objectDef.materialId;
         runtimeObject->core.instanceBuffer = instanceBuffer;
+        runtimeObject->core.instanceIndex  = instanceIndex;
+        runtimeObject->core.cullingRadius =
+            std::max({objectDef.scale.x, objectDef.scale.y, objectDef.scale.z});
 
         runtimeObject->behavior.type            = objectDef.behavior;
         runtimeObject->behavior.oscillate.speed = objectDef.behaviorSpeed;
@@ -194,6 +199,71 @@ bool Scene::initializeRuntimeObjects()
 
         runtimeObjects[objectDef.id] = runtimeObject;
         runtimeObjectOrder.push_back(objectDef.id);
+    }
+
+    return true;
+}
+
+std::array<Scene::FrustumPlane, 6>
+Scene::buildFrustumPlanes(const glm::mat4& projection,
+                          const glm::mat4& view) const
+{
+    const glm::mat4 clip = projection * view;
+
+    auto makePlane = [](float a, float b, float c, float d)
+    {
+        const glm::vec3 normal(a, b, c);
+        const float     lengthNormal = glm::length(normal);
+        if (lengthNormal <= 0.0001f)
+        {
+            return FrustumPlane{glm::vec3(0.0f, 0.0f, 1.0f), 0.0f};
+        }
+        return FrustumPlane{normal / lengthNormal, d / lengthNormal};
+    };
+
+    std::array<FrustumPlane, 6> planes;
+    planes[0] = makePlane(clip[0][3] + clip[0][0], clip[1][3] + clip[1][0],
+                          clip[2][3] + clip[2][0], clip[3][3] + clip[3][0]);
+    planes[1] = makePlane(clip[0][3] - clip[0][0], clip[1][3] - clip[1][0],
+                          clip[2][3] - clip[2][0], clip[3][3] - clip[3][0]);
+    planes[2] = makePlane(clip[0][3] + clip[0][1], clip[1][3] + clip[1][1],
+                          clip[2][3] + clip[2][1], clip[3][3] + clip[3][1]);
+    planes[3] = makePlane(clip[0][3] - clip[0][1], clip[1][3] - clip[1][1],
+                          clip[2][3] - clip[2][1], clip[3][3] - clip[3][1]);
+    planes[4] = makePlane(clip[0][3] + clip[0][2], clip[1][3] + clip[1][2],
+                          clip[2][3] + clip[2][2], clip[3][3] + clip[3][2]);
+    planes[5] = makePlane(clip[0][3] - clip[0][2], clip[1][3] - clip[1][2],
+                          clip[2][3] - clip[2][2], clip[3][3] - clip[3][2]);
+    return planes;
+}
+
+bool Scene::isRuntimeObjectVisible(
+    const RuntimeSceneObject&          runtimeObject,
+    const std::array<FrustumPlane, 6>& frustumPlanes) const
+{
+    // Fly behavior drifts infinitely over time in shaders, so static CPU-side
+    // bounds cannot be conservative without becoming useless.
+    if (runtimeObject.behavior.type == BehaviorType::Fly)
+    {
+        return true;
+    }
+
+    const glm::vec3 center = runtimeObject.core.object->getPosition();
+    float           radius = std::max(runtimeObject.core.cullingRadius, 0.1f);
+
+    if (runtimeObject.behavior.type == BehaviorType::Oscillate)
+    {
+        radius += std::max(runtimeObject.behavior.oscillate.amplitude, 0.0f);
+    }
+
+    for (const FrustumPlane& plane : frustumPlanes)
+    {
+        const float signedDistance =
+            glm::dot(plane.normal, center) + plane.distance;
+        if (signedDistance < -radius)
+        {
+            return false;
+        }
     }
 
     return true;
@@ -265,11 +335,12 @@ Scene::collectLightUniforms(int maxLightSources) const
 
 void Scene::renderRuntimeObjects(
     const Camera& camera, const glm::mat4& projection, const glm::mat4& view,
-    float sceneElapsedTime, int maxLightSources,
-    const PerFrameLightUniforms& perFrameLightUniforms)
+    float sceneElapsedTime, const PerFrameLightUniforms& perFrameLightUniforms)
 {
-    std::unordered_set<unsigned int> configuredLitPrograms;
-    std::unordered_set<unsigned int> configuredUnlitPrograms;
+    std::unordered_set<unsigned int>  configuredLitPrograms;
+    std::unordered_set<unsigned int>  configuredUnlitPrograms;
+    const std::array<FrustumPlane, 6> frustumPlanes =
+        buildFrustumPlanes(projection, view);
 
     // Group objects by mesh/material so the mesh VAO and instance buffer can
     // be reused across matching objects.
@@ -311,10 +382,6 @@ void Scene::renderRuntimeObjects(
         std::shared_ptr<RuntimeMaterial> material = firstObject->core.material;
 
         mesh->bind();
-        if (firstObject->core.instanceBuffer)
-        {
-            firstObject->core.instanceBuffer->attachToBoundVao();
-        }
 
         material->shader->use();
         const unsigned int shaderProgramId = material->shader->ID;
@@ -348,7 +415,29 @@ void Scene::renderRuntimeObjects(
             continue;
         }
 
-        const std::size_t instanceCount = group.objectIds.size();
+        std::vector<std::size_t> visibleInstanceIndices;
+        visibleInstanceIndices.reserve(group.objectIds.size());
+        for (const std::string& objectId : group.objectIds)
+        {
+            const std::shared_ptr<RuntimeSceneObject> runtimeObject =
+                runtimeObjects.at(objectId);
+            if (isRuntimeObjectVisible(*runtimeObject, frustumPlanes))
+            {
+                visibleInstanceIndices.push_back(
+                    runtimeObject->core.instanceIndex);
+            }
+        }
+
+        if (visibleInstanceIndices.empty())
+        {
+            continue;
+        }
+
+        firstObject->core.instanceBuffer->setDrawInstances(
+            visibleInstanceIndices);
+        firstObject->core.instanceBuffer->attachToBoundVao();
+
+        const std::size_t instanceCount = visibleInstanceIndices.size();
         glDrawElementsInstanced(
             GL_TRIANGLES, static_cast<GLsizei>(mesh->getIndexCount()),
             GL_UNSIGNED_INT, nullptr, static_cast<GLsizei>(instanceCount));
@@ -425,7 +514,7 @@ void Scene::render(const Camera& camera, const glm::mat4& projection,
 
     // Draw visible scene objects.
     renderRuntimeObjects(camera, projection, view, sceneElapsedTime,
-                         maxLightSources, perFrameLightUniforms);
+                         perFrameLightUniforms);
 
     // Render scene text and runtime overlays through a dedicated presenter.
     overlayRenderer->render(textRenderer, definition, overlayConfig,

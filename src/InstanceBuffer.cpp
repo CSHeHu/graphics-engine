@@ -30,9 +30,28 @@ std::size_t InstanceBuffer::addInstance(const InstanceData& instanceData)
         glm::vec4(instanceData.behaviorAxis, instanceData.behaviorAmplitude);
     instanceGpuData.push_back(gpuData);
     colors.push_back(instanceData.instanceColor);
+    return index;
+}
+
+void InstanceBuffer::setDrawInstances(const std::vector<std::size_t>& indices)
+{
+    drawInstanceGpuData.clear();
+    drawColors.clear();
+
+    drawInstanceGpuData.reserve(indices.size());
+    drawColors.reserve(indices.size());
+    for (const std::size_t index : indices)
+    {
+        if (index >= instanceGpuData.size() || index >= colors.size())
+        {
+            continue;
+        }
+        drawInstanceGpuData.push_back(instanceGpuData[index]);
+        drawColors.push_back(colors[index]);
+    }
+
     uploadInstanceDataToGpu();
     uploadColorsToGpu();
-    return index;
 }
 
 void InstanceBuffer::attachToBoundVao() const
@@ -97,17 +116,18 @@ void InstanceBuffer::attachToBoundVao() const
 void InstanceBuffer::uploadInstanceDataToGpu()
 {
     glBindBuffer(GL_ARRAY_BUFFER, instanceVbo);
-    glBufferData(GL_ARRAY_BUFFER,
-                 instanceGpuData.size() * sizeof(InstanceGpuData),
-                 instanceGpuData.empty() ? nullptr : instanceGpuData.data(),
-                 GL_DYNAMIC_DRAW);
+    glBufferData(
+        GL_ARRAY_BUFFER, drawInstanceGpuData.size() * sizeof(InstanceGpuData),
+        drawInstanceGpuData.empty() ? nullptr : drawInstanceGpuData.data(),
+        GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void InstanceBuffer::uploadColorsToGpu()
 {
     glBindBuffer(GL_ARRAY_BUFFER, colorVbo);
-    glBufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(glm::vec4),
-                 colors.empty() ? nullptr : colors.data(), GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, drawColors.size() * sizeof(glm::vec4),
+                 drawColors.empty() ? nullptr : drawColors.data(),
+                 GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }

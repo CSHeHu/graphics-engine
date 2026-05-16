@@ -1,6 +1,7 @@
 #ifndef SCENE_H
 #define SCENE_H
 
+#include <array>
 #include <glm.hpp>
 #include <memory>
 #include <string>
@@ -61,7 +62,9 @@ class Scene
                 std::string meshName;   // For grouping during render
                 std::string materialId; // For grouping during render
                 std::shared_ptr<InstanceBuffer>
-                    instanceBuffer; // Per-mesh instance storage
+                            instanceBuffer; // Per-mesh instance storage
+                std::size_t instanceIndex;
+                float       cullingRadius;
         };
 
         /** @brief Runtime light-emitter parameters for a scene object. */
@@ -134,6 +137,12 @@ class Scene
                 std::vector<glm::vec3> lightColors;
         };
 
+        struct FrustumPlane
+        {
+                glm::vec3 normal;
+                float     distance;
+        };
+
         AssetManager&                         assets;
         TextManager&                          textRenderer;
         AudioManager&                         audio;
@@ -168,7 +177,7 @@ class Scene
         /** Draw all scene objects with per-shader uniform setup. */
         void renderRuntimeObjects(
             const Camera& camera, const glm::mat4& projection,
-            const glm::mat4& view, float sceneElapsedTime, int maxLightSources,
+            const glm::mat4& view, float sceneElapsedTime,
             const PerFrameLightUniforms& perFrameLightUniforms);
         /** Configure shared per-frame uniforms for lit material shaders. */
         void configureLitShaderUniforms(
@@ -181,6 +190,13 @@ class Scene
             const std::shared_ptr<RuntimeMaterial>& material,
             const glm::mat4& projection, const glm::mat4& view,
             float sceneElapsedTime) const;
+
+        std::array<FrustumPlane, 6>
+             buildFrustumPlanes(const glm::mat4& projection,
+                                const glm::mat4& view) const;
+        bool isRuntimeObjectVisible(
+            const RuntimeSceneObject&          runtimeObject,
+            const std::array<FrustumPlane, 6>& frustumPlanes) const;
 };
 
 #endif // SCENE_H

@@ -45,6 +45,8 @@ class InstanceBuffer
 
         std::size_t addInstance(const InstanceData& instanceData);
 
+        void setDrawInstances(const std::vector<std::size_t>& indices);
+
         void attachToBoundVao() const;
 
     private:
@@ -53,6 +55,8 @@ class InstanceBuffer
 
         std::vector<InstanceGpuData> instanceGpuData;
         std::vector<glm::vec4>       colors;
+        std::vector<InstanceGpuData> drawInstanceGpuData;
+        std::vector<glm::vec4>       drawColors;
 
         void uploadInstanceDataToGpu();
         void uploadColorsToGpu();
