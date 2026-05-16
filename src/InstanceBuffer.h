@@ -10,15 +10,6 @@
 class InstanceBuffer
 {
     public:
-        enum class InstanceAttributeLocation : GLuint
-        {
-            BasePositionRotationAngle = 2,
-            BaseScaleBehaviorType     = 3,
-            BaseRotationAxisSpeed     = 4,
-            BehaviorAxisAmplitude     = 5,
-            Color                     = 6,
-        };
-
         struct InstanceData
         {
                 glm::vec3 basePosition;
@@ -32,6 +23,14 @@ class InstanceBuffer
                 glm::vec4 instanceColor = glm::vec4(1.0f);
         };
 
+        InstanceBuffer();
+        ~InstanceBuffer();
+
+        std::size_t addInstance(const InstanceData& instanceData);
+        void        setDrawInstances(const std::vector<std::size_t>& indices);
+        void        attachToBoundVao() const;
+
+    private:
         struct InstanceGpuData
         {
                 glm::vec4 basePositionRotationAngle;
@@ -39,17 +38,14 @@ class InstanceBuffer
                 glm::vec4 baseRotationAxisSpeed;
                 glm::vec4 behaviorAxisAmplitude;
         };
-
-        InstanceBuffer();
-        ~InstanceBuffer();
-
-        std::size_t addInstance(const InstanceData& instanceData);
-
-        void setDrawInstances(const std::vector<std::size_t>& indices);
-
-        void attachToBoundVao() const;
-
-    private:
+        enum class InstanceAttributeLocation : GLuint
+        {
+            BasePositionRotationAngle = 2,
+            BaseScaleBehaviorType     = 3,
+            BaseRotationAxisSpeed     = 4,
+            BehaviorAxisAmplitude     = 5,
+            Color                     = 6,
+        };
         unsigned int instanceVbo;
         unsigned int colorVbo;
 
@@ -57,9 +53,8 @@ class InstanceBuffer
         std::vector<glm::vec4>       colors;
         std::vector<InstanceGpuData> drawInstanceGpuData;
         std::vector<glm::vec4>       drawColors;
-
-        void uploadInstanceDataToGpu();
-        void uploadColorsToGpu();
+        void                         uploadInstanceDataToGpu();
+        void                         uploadColorsToGpu();
 };
 
 #endif // INSTANCEBUFFER_H
