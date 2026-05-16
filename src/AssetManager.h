@@ -33,13 +33,6 @@ class AssetManager
         ~AssetManager() = default;
 
         /**
-         * @brief Load mesh data into cache if needed and return it.
-         * @param meshName Mesh file name as referenced by scene content.
-         * @return Cached mesh data for the requested mesh.
-         */
-        const MeshData& loadMeshData(const std::string& meshName);
-
-        /**
          * @brief Load a mesh into GPU memory if needed and return the shared
          * handle.
          * @param meshName Mesh file name as referenced by scene content.
@@ -140,6 +133,13 @@ class AssetManager
          */
         MeshData
         parseObjMeshDataPositionNormal(const std::string& meshName) const;
+
+        /**
+         * @brief Load mesh data into cache if needed and return it.
+         * @param meshName Mesh file name as referenced by scene content.
+         * @return Cached mesh data for the requested mesh.
+         */
+        const MeshData& loadMeshData(const std::string& meshName);
 };
 
 #endif // ASSETMANAGER_H

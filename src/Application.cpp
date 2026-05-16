@@ -142,14 +142,9 @@ bool Application::initSystems(const RuntimeConfig& runtimeConfig,
     glfwSwapInterval(windowConfig.vsyncEnabled ? 1 : 0);
 
     // configure global opengl state
-    if (runtimeConfig.rendering.depthTestEnabled)
-    {
-        glEnable(GL_DEPTH_TEST);
-    }
-    else
-    {
-        glDisable(GL_DEPTH_TEST);
-    }
+    runtimeConfig.rendering.depthTestEnabled ? glEnable(GL_DEPTH_TEST)
+                                             : glDisable(GL_DEPTH_TEST);
+
     if (runtimeConfig.rendering.blendEnabled)
     {
         glEnable(GL_BLEND);
@@ -160,7 +155,6 @@ bool Application::initSystems(const RuntimeConfig& runtimeConfig,
         glDisable(GL_BLEND);
     }
 
-    // Scene order comes from content config instead of app lifecycle code.
     if (!scenePlaylist.initialize(sceneCycle))
     {
         std::cout << "No scenes configured for scene cycle" << std::endl;
@@ -170,7 +164,6 @@ bool Application::initSystems(const RuntimeConfig& runtimeConfig,
     assetManager =
         std::make_unique<AssetManager>(runtimeConfig.assets.meshesPath);
 
-    // Initialize text manager with config
     textManager = std::make_unique<TextManager>();
     if (!textManager->init(uiOverlayConfig.fontPath,
                            uiOverlayConfig.vertexShaderPath,
@@ -195,7 +188,7 @@ bool Application::loadInitialScene()
 {
     if (!loadSceneById(scenePlaylist.activeSceneId()))
     {
-        std::cout << "Failed to initialize scene" << std::endl;
+        std::cout << "Failed to initialize first scene" << std::endl;
         return false;
     }
 
@@ -207,6 +200,7 @@ bool Application::loadInitialScene()
 
 void Application::run()
 {
+    // TODO: move TIME_STEP_SECONDS to config
     constexpr float TIME_STEP_SECONDS = 0.25f;
 
     // render loop
