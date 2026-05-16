@@ -72,8 +72,8 @@ void Camera::ProcessMouseScroll(float yoffset)
     Zoom -= (float)yoffset;
     if (Zoom < 1.0f)
         Zoom = 1.0f;
-    if (Zoom > 110.0f)
-        Zoom = 110.0f;
+    if (Zoom > 140.0f)
+        Zoom = 140.0f;
 }
 
 void Camera::SetPoseLookAt(const glm::vec3& position,

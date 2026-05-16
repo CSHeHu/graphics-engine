@@ -256,11 +256,25 @@ bool Scene::isRuntimeObjectVisible(
         radius += std::max(runtimeObject.behavior.oscillate.amplitude, 0.0f);
     }
 
+    // Add conservative padding so objects render before technically in view
+    // and persist longer when camera approaches; prevents pop-in at screen
+    // edges and disappearance when camera gets close.
+    const float conservativePadding = 10.0f;
+    const float effectiveRadius     = radius + conservativePadding;
+
     for (const FrustumPlane& plane : frustumPlanes)
     {
+        // Skip near-plane checks to avoid objects vanishing when camera is
+        // very close; prefer to keep objects visible until camera passes
+        // through them. Plane order: 0..3 = left/right/top/bottom, 4 = near, 5
+        // = far.
+        const int planeIndex = static_cast<int>(&plane - &frustumPlanes[0]);
+        if (planeIndex == 4)
+            continue;
+
         const float signedDistance =
             glm::dot(plane.normal, center) + plane.distance;
-        if (signedDistance < -radius)
+        if (signedDistance < -effectiveRadius)
         {
             return false;
         }

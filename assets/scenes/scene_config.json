@@ -11,7 +11,7 @@
       "pitch": 0.0,
       "speed": 2.5,
       "sensitivity": 0.1,
-      "zoom": 75.0,
+      "zoom": 55.0,
       "position": [
         0.0,
         5.0,
@@ -42,7 +42,7 @@
     "rendering": {
       "positionNormalStride": 6,
       "maxLightSources": 8,
-      "nearPlane": 0.1,
+      "nearPlane": 0.01,
       "farPlane": 100.0,
       "depthTestEnabled": true,
       "blendEnabled": true
